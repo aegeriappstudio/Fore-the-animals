@@ -1,0 +1,9 @@
+# Render.com Blueprint – wird beim Verbinden des Repos automatisch erkannt
+services:
+  - type: web
+    name: fore-the-animals
+    runtime: node
+    plan: free
+    buildCommand: ""
+    startCommand: node server.js
+    healthCheckPath: /

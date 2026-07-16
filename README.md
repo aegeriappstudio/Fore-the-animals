@@ -44,19 +44,13 @@ Alle Turnierdaten werden in `data.json` gespeichert (wird automatisch erstellt).
 ## Am Turniertag (mehrere Flights gleichzeitig)
 
 Damit alle Spieler auf dem Platz vom Handy aus eintragen können, muss die App
-im Internet erreichbar sein. Am einfachsten:
+im Internet erreichbar sein. **👉 Schritt-für-Schritt-Anleitung: [HOSTING.md](HOSTING.md)**
+(gratis über Render.com, direkt mit diesem GitHub-Repo verbunden – die
+`render.yaml` im Repo konfiguriert alles automatisch).
 
-1. **Render.com (gratis):** Neues «Web Service» → dieses GitHub-Repo verbinden →
-   Build Command leer lassen, Start Command `node server.js`. Fertig – die URL
-   an alle Spieler schicken.
-2. **Railway.app / Fly.io:** funktioniert genauso (Start: `node server.js`).
-3. **Eigener Server / Laptop im gleichen WLAN:** `node server.js` starten und die
-   lokale IP-Adresse teilen, z.B. `http://192.168.1.20:3000`.
-
-> Hinweis: Bei Gratis-Hosting mit ephemerem Dateisystem (z.B. Render Free) geht
-> `data.json` bei einem Neustart des Dienstes verloren. Für ein Tagesturnier ist
-> das in der Praxis kein Problem; wer sichergehen will, hängt ein persistentes
-> Volume ein und setzt `DATA_DIR` auf dessen Pfad.
+Alternativen: Railway.app / Fly.io (Start: `node server.js`) oder ein Laptop im
+gleichen WLAN (`node server.js` starten und die lokale IP teilen, z.B.
+`http://192.168.1.20:3000`).
 
 ## Bedienung
 
