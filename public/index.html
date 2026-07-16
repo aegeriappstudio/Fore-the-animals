@@ -25,77 +25,78 @@
   </header>
 
   <nav class="tabs" id="tabs">
-    <button data-tab="rules" class="active">📖 Regeln</button>
-    <button data-tab="players">👥 Spieler</button>
-    <button data-tab="entry">⛳ Eintragen</button>
-    <button data-tab="leaderboard">🏆 Rangliste</button>
+    <button data-tab="rules" class="active" data-i18n="tab_rules">📖 Regeln</button>
+    <button data-tab="players" data-i18n="tab_players">👥 Spieler</button>
+    <button data-tab="entry" data-i18n="tab_entry">⛳ Eintragen</button>
+    <button data-tab="leaderboard" data-i18n="tab_leaderboard">🏆 Rangliste</button>
+    <button id="lang-toggle" type="button">EN</button>
   </nav>
 
-  <div id="offline-banner" hidden>📶 Kein Empfang – <span id="queue-count">0</span> Einträge warten und werden automatisch nachgesendet</div>
+  <div id="offline-banner" hidden></div>
 
   <main>
 
     <!-- ================= REGELN ================= -->
     <section id="tab-rules" class="tab active">
       <div class="card">
-        <h2>So wird gespielt</h2>
-        <p>Wir spielen <strong>Beat Your Target</strong> als Einzelwettbewerb.</p>
-        <p class="target-formula">🎯 Dein Ziel: <strong>Par 36 + halbes Handicap</strong>, immer aufgerundet.</p>
-        <p>Beispiel: HCP 15 → Ziel = 36 + 8 = <strong>44</strong></p>
+        <h2 data-i18n="r_how_title">So wird gespielt</h2>
+        <p data-i18n="r_how_p1">Wir spielen <strong>Beat Your Target</strong> als Einzelwettbewerb.</p>
+        <p class="target-formula" data-i18n="r_how_target">🎯 Dein Ziel: <strong>Par 36 + halbes Handicap</strong>, immer aufgerundet.</p>
+        <p data-i18n="r_how_example">Beispiel: HCP 15 → Ziel = 36 + 8 = <strong>44</strong></p>
       </div>
 
       <div class="card">
-        <h2>Die Tiere</h2>
-        <p class="animals-sub">Positiv (+1 Punkt):</p>
+        <h2 data-i18n="r_animals_title">Die Tiere</h2>
+        <p class="animals-sub" data-i18n="r_pos">Positiv (+1 Punkt):</p>
         <ul class="animal-list">
-          <li class="pos">🦓 <strong>Zebra</strong> – Fairway getroffen (nur Par 4 / Par 5)</li>
-          <li class="pos">🦒 <strong>Giraffe</strong> – Grün in Regulation</li>
-          <li class="pos">🐇 <strong>Rabbit</strong> – Ein Putt oder eingechippt</li>
+          <li class="pos" data-i18n="r_zebra">🦓 <strong>Zebra</strong> – Fairway getroffen (nur Par 4 / Par 5)</li>
+          <li class="pos" data-i18n="r_giraffe">🦒 <strong>Giraffe</strong> – Grün in Regulation</li>
+          <li class="pos" data-i18n="r_rabbit">🐇 <strong>Rabbit</strong> – Ein Putt oder eingechippt</li>
         </ul>
-        <p class="animals-sub">Negativ (−1 Punkt):</p>
+        <p class="animals-sub" data-i18n="r_neg">Negativ (−1 Punkt):</p>
         <ul class="animal-list">
-          <li class="neg">🦂 <strong>Scorpion</strong> – Ball im Bunker</li>
-          <li class="neg">🐊 <strong>Crocodile</strong> – Ball im Wasser / Penalty Area</li>
-          <li class="neg">🐍 <strong>Snake</strong> – Drei Putts oder mehr</li>
+          <li class="neg" data-i18n="r_scorpion">🦂 <strong>Scorpion</strong> – Ball im Bunker</li>
+          <li class="neg" data-i18n="r_crocodile">🐊 <strong>Crocodile</strong> – Ball im Wasser / Penalty Area</li>
+          <li class="neg" data-i18n="r_snake">🐍 <strong>Snake</strong> – Drei Putts oder mehr</li>
         </ul>
-        <p>Auf demselben Loch können mehrere Tiere gesammelt werden. Jedes Tier zählt pro Loch nur einmal.</p>
+        <p data-i18n="r_once">Auf demselben Loch können mehrere Tiere gesammelt werden. Jedes Tier zählt pro Loch nur einmal.</p>
       </div>
 
       <div class="card">
-        <h2>Schlussresultat</h2>
-        <p><strong>Punkte = Ziel − Brutto + positive Tiere − negative Tiere.</strong></p>
-        <p>Die höchste Punktzahl gewinnt. 🥇</p>
-        <p>Zweiter Preis: 🥈 die meisten gesammelten Tiere insgesamt.</p>
+        <h2 data-i18n="r_final_title">Schlussresultat</h2>
+        <p data-i18n="r_final_p"><strong>Punkte = Ziel − Brutto + positive Tiere − negative Tiere.</strong></p>
+        <p data-i18n="r_final_win">Die höchste Punktzahl gewinnt. 🥇</p>
+        <p data-i18n="r_final_second">Zweiter Preis: 🥈 die meisten gesammelten Tiere insgesamt.</p>
       </div>
 
       <div class="card">
-        <h2>Der Platz – Tee 27</h2>
+        <h2 data-i18n="r_course_title">Der Platz – Tee 27</h2>
         <div class="table-scroll">
           <table class="course-table" id="course-table"></table>
         </div>
-        <p class="hint">Distanz in Meter bis Mitte Grün.</p>
+        <p class="hint" data-i18n="r_course_hint">Distanz in Meter bis Mitte Grün.</p>
       </div>
     </section>
 
     <!-- ================= SPIELER ================= -->
     <section id="tab-players" class="tab">
       <div class="card">
-        <h2>Spieler erfassen</h2>
+        <h2 data-i18n="p_title">Spieler erfassen</h2>
         <form id="player-form" class="row-form">
-          <input type="text" id="player-name" placeholder="Name" maxlength="40" required>
-          <input type="number" id="player-hcp" placeholder="HCP" step="0.1" min="-10" max="54" required>
-          <button type="submit" class="btn primary">Hinzufügen</button>
+          <input type="text" id="player-name" placeholder="Name" maxlength="40" required data-i18n-ph="ph_name">
+          <input type="number" id="player-hcp" placeholder="HCP" step="0.1" min="-10" max="54" required data-i18n-ph="ph_hcp">
+          <button type="submit" class="btn primary" data-i18n="p_add">Hinzufügen</button>
         </form>
         <div id="player-list"></div>
       </div>
 
       <div class="card">
-        <h2>Flights</h2>
+        <h2 data-i18n="p_flights">Flights</h2>
         <form id="flight-form" class="row-form">
-          <input type="text" id="flight-name" placeholder="Flight-Name (z.B. Flight 1)" maxlength="40">
-          <button type="submit" class="btn primary">Flight erstellen</button>
+          <input type="text" id="flight-name" placeholder="Flight-Name (z.B. Flight 1)" maxlength="40" data-i18n-ph="ph_flight">
+          <button type="submit" class="btn primary" data-i18n="p_create_flight">Flight erstellen</button>
         </form>
-        <button type="button" class="btn full" id="randomize-btn">🎲 Spieler zufällig auf Flights verteilen</button>
+        <button type="button" class="btn" id="randomize-btn" data-i18n="p_randomize">🎲 Flights zufällig auslosen</button>
         <div id="flight-list"></div>
       </div>
     </section>
@@ -104,13 +105,12 @@
     <section id="tab-entry" class="tab">
       <div class="card">
         <div class="entry-selectors">
-          <label>Flight
+          <label data-i18n-label="e_flight">Flight
             <select id="entry-flight"></select>
           </label>
-          <div class="picker-group">
-            <span class="picker-title">Loch</span>
+          <label data-i18n-label="e_hole">Loch
             <div class="hole-picker" id="hole-picker"></div>
-          </div>
+          </label>
         </div>
         <div id="hole-info" class="hole-info"></div>
       </div>
@@ -120,54 +120,55 @@
     <!-- ================= RANGLISTE ================= -->
     <section id="tab-leaderboard" class="tab">
       <div class="card">
-        <h2>🥇 Rangliste – Beat Your Target</h2>
+        <h2 data-i18n="lb_title">🥇 Rangliste – Beat Your Target</h2>
         <div class="table-scroll">
           <table class="lb-table" id="lb-main"></table>
         </div>
-        <p class="hint">Punkte = Ziel − Brutto + Tiere. Für noch nicht gespielte Löcher wird Par angenommen (Live-Prognose). Aktualisiert sich automatisch alle 5 Sekunden. Tipp auf einen Spieler zeigt seine Scorekarte.</p>
+        <p class="hint" data-i18n="lb_hint">Punkte = Ziel − Brutto + Tiere. Für noch nicht gespielte Löcher wird Par angenommen (Live-Prognose). Aktualisiert sich automatisch alle 5 Sekunden. Tipp auf einen Spieler zeigt seine Scorekarte.</p>
         <div class="lb-actions">
-          <button type="button" class="btn primary" id="ceremony-btn">🎉 Preisverleihung</button>
-          <button type="button" class="btn" id="share-btn">📸 Als Bild teilen</button>
+          <button type="button" class="btn primary" id="ceremony-btn" data-i18n="lb_ceremony">🎉 Preisverleihung</button>
+          <button type="button" class="btn" id="share-btn" data-i18n="lb_share">📸 Als Bild teilen</button>
         </div>
       </div>
       <div class="card">
-        <h2>🥈 Zweiter Preis – Meiste Tiere</h2>
+        <h2 data-i18n="lb_second_title">🥈 Zweiter Preis – Meiste Tiere</h2>
         <div class="table-scroll">
           <table class="lb-table" id="lb-animals"></table>
         </div>
       </div>
+
       <div class="card">
-        <h2>💾 Runde abschliessen &amp; speichern</h2>
-        <p>Legt die aktuelle Runde mit Schlussrangliste im Archiv ab und leert die
+        <h2 data-i18n="sr_title">💾 Runde abschliessen &amp; speichern</h2>
+        <p data-i18n="sr_p">Legt die aktuelle Runde mit Schlussrangliste im Archiv ab und leert die
            Scores für die nächste Runde. Spieler und Flights bleiben erhalten.</p>
-        <button type="button" class="btn primary" id="save-round-btn">Runde speichern</button>
+        <button type="button" class="btn primary" id="save-round-btn" data-i18n="sr_btn">Runde speichern</button>
       </div>
 
       <div class="card">
-        <h2>🗂️ Gespeicherte Runden</h2>
+        <h2 data-i18n="ar_title">🗂️ Gespeicherte Runden</h2>
         <div id="archive-list"></div>
         <div class="backup-row">
-          <button type="button" class="btn" id="backup-btn">⬇️ Backup herunterladen</button>
-          <label class="btn" for="restore-file">⬆️ Backup wiederherstellen</label>
+          <button type="button" class="btn" id="backup-btn" data-i18n="bk_down">⬇️ Backup herunterladen</button>
+          <label class="btn" for="restore-file" data-i18n="bk_up">⬆️ Backup wiederherstellen</label>
           <input type="file" id="restore-file" accept="application/json,.json" hidden>
         </div>
-        <p class="hint">Das Backup enthält alle Spieler, Flights, Scores und gespeicherten Runden
+        <p class="hint" data-i18n="bk_hint">Das Backup enthält alle Spieler, Flights, Scores und gespeicherten Runden
            als Datei. Tipp: Nach jedem Turnier herunterladen – so ist alles auch dann gesichert,
            wenn der Gratis-Server neu aufgesetzt wird.</p>
       </div>
 
       <div class="card" id="alltime-card" hidden>
-        <h2>🏅 Ewige Bestenliste</h2>
+        <h2 data-i18n="at_title">🏅 Ewige Bestenliste</h2>
         <div class="table-scroll">
           <table class="lb-table" id="lb-alltime"></table>
         </div>
-        <p class="hint">Über alle gespeicherten Runden. Sortiert nach Siegen, dann bestem Einzelresultat.</p>
+        <p class="hint" data-i18n="at_hint">Über alle gespeicherten Runden. Sortiert nach Siegen, dann bestem Einzelresultat.</p>
       </div>
 
       <div class="card danger-zone">
-        <h2>⚠️ Turnier zurücksetzen</h2>
-        <p>Löscht alle eingetragenen Scores (Spieler, Flights und gespeicherte Runden bleiben erhalten).</p>
-        <button class="btn danger" id="reset-btn">Alle Scores löschen</button>
+        <h2 data-i18n="dz_title">⚠️ Turnier zurücksetzen</h2>
+        <p data-i18n="dz_p">Löscht alle eingetragenen Scores (Spieler, Flights und gespeicherte Runden bleiben erhalten).</p>
+        <button class="btn danger" id="reset-btn" data-i18n="dz_btn">Alle Scores löschen</button>
       </div>
     </section>
 

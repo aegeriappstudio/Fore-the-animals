@@ -76,6 +76,9 @@ gleichen WLAN (`node server.js` starten und die lokale IP teilen, z.B.
   Bestenliste über alle Runden sowie Backup-Download/-Restore.
 - **📱 PWA** – «Zum Home-Bildschirm hinzufügen» installiert die App mit eigenem
   Icon und ohne Browser-Leiste.
+- **🌐 Zweisprachig** – Knopf «EN/DE» in der Navigationsleiste schaltet die
+  ganze Oberfläche zwischen Deutsch und Englisch um (Wahl wird pro Gerät
+  gespeichert).
 
 ## Technik
 

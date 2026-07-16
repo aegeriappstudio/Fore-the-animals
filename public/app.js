@@ -2,6 +2,253 @@
 'use strict';
 
 // ---------------------------------------------------------------------------
+// Sprachen / i18n
+// ---------------------------------------------------------------------------
+let lang = localStorage.getItem('fta-lang') || 'de';
+
+const STRINGS = {
+  // Tabs
+  tab_rules: { de: '📖 Regeln', en: '📖 Rules' },
+  tab_players: { de: '👥 Spieler', en: '👥 Players' },
+  tab_entry: { de: '⛳ Eintragen', en: '⛳ Score entry' },
+  tab_leaderboard: { de: '🏆 Rangliste', en: '🏆 Leaderboard' },
+  // Regeln
+  r_how_title: { de: 'So wird gespielt', en: 'How to play' },
+  r_how_p1: {
+    de: 'Wir spielen <strong>Beat Your Target</strong> als Einzelwettbewerb.',
+    en: 'We play <strong>Beat Your Target</strong> as an individual competition.',
+  },
+  r_how_target: {
+    de: '🎯 Dein Ziel: <strong>Par 36 + halbes Handicap</strong>, immer aufgerundet.',
+    en: '🎯 Your target: <strong>Par 36 + half your handicap</strong>, always rounded up.',
+  },
+  r_how_example: {
+    de: 'Beispiel: HCP 15 → Ziel = 36 + 8 = <strong>44</strong>',
+    en: 'Example: HCP 15 → target = 36 + 8 = <strong>44</strong>',
+  },
+  r_animals_title: { de: 'Die Tiere', en: 'The animals' },
+  r_pos: { de: 'Positiv (+1 Punkt):', en: 'Positive (+1 point):' },
+  r_neg: { de: 'Negativ (−1 Punkt):', en: 'Negative (−1 point):' },
+  r_zebra: {
+    de: '🦓 <strong>Zebra</strong> – Fairway getroffen (nur Par 4 / Par 5)',
+    en: '🦓 <strong>Zebra</strong> – fairway hit (Par 4 / Par 5 only)',
+  },
+  r_giraffe: {
+    de: '🦒 <strong>Giraffe</strong> – Grün in Regulation',
+    en: '🦒 <strong>Giraffe</strong> – green in regulation',
+  },
+  r_rabbit: {
+    de: '🐇 <strong>Rabbit</strong> – Ein Putt oder eingechippt',
+    en: '🐇 <strong>Rabbit</strong> – one putt or chip-in',
+  },
+  r_scorpion: {
+    de: '🦂 <strong>Scorpion</strong> – Ball im Bunker',
+    en: '🦂 <strong>Scorpion</strong> – ball finishes in a bunker',
+  },
+  r_crocodile: {
+    de: '🐊 <strong>Crocodile</strong> – Ball im Wasser / Penalty Area',
+    en: '🐊 <strong>Crocodile</strong> – ball enters water / penalty area',
+  },
+  r_snake: {
+    de: '🐍 <strong>Snake</strong> – Drei Putts oder mehr',
+    en: '🐍 <strong>Snake</strong> – three putts or more',
+  },
+  r_once: {
+    de: 'Auf demselben Loch können mehrere Tiere gesammelt werden. Jedes Tier zählt pro Loch nur einmal.',
+    en: 'Different animals can be collected on the same hole. Each animal counts only once per hole.',
+  },
+  r_final_title: { de: 'Schlussresultat', en: 'Final score' },
+  r_final_p: {
+    de: '<strong>Punkte = Ziel − Brutto + positive Tiere − negative Tiere.</strong>',
+    en: '<strong>Score = target − gross score + positive animals − negative animals.</strong>',
+  },
+  r_final_win: { de: 'Die höchste Punktzahl gewinnt. 🥇', en: 'Highest score wins. 🥇' },
+  r_final_second: {
+    de: 'Zweiter Preis: 🥈 die meisten gesammelten Tiere insgesamt.',
+    en: 'Second prize: 🥈 most animals collected in total.',
+  },
+  r_course_title: { de: 'Der Platz – Tee 27', en: 'The course – Tee 27' },
+  r_course_hint: { de: 'Distanz in Meter bis Mitte Grün.', en: 'Distance in metres to the middle of the green.' },
+  // Platztabelle
+  c_hole: { de: 'Loch', en: 'Hole' },
+  c_par: { de: 'Par', en: 'Par' },
+  c_meters: { de: 'Meter', en: 'Metres' },
+  c_index: { de: 'Index', en: 'Index' },
+  c_total: { de: 'Total', en: 'Total' },
+  // Spieler & Flights
+  p_title: { de: 'Spieler erfassen', en: 'Add players' },
+  ph_name: { de: 'Name', en: 'Name' },
+  ph_hcp: { de: 'HCP', en: 'HCP' },
+  p_add: { de: 'Hinzufügen', en: 'Add' },
+  p_flights: { de: 'Flights', en: 'Flights' },
+  ph_flight: { de: 'Flight-Name (z.B. Flight 1)', en: 'Flight name (e.g. Flight 1)' },
+  p_create_flight: { de: 'Flight erstellen', en: 'Create flight' },
+  p_none: { de: 'Noch keine Spieler erfasst.', en: 'No players yet.' },
+  f_none: { de: 'Noch keine Flights erstellt.', en: 'No flights yet.' },
+  p_target: { de: 'Ziel', en: 'Target' },
+  f_count: { de: '({n} Spieler)', en: '({n} players)' },
+  f_no_avail: { de: 'Keine verfügbaren Spieler', en: 'No available players' },
+  p_added: { de: '{name} hinzugefügt 🎉', en: '{name} added 🎉' },
+  p_prompt_name: { de: 'Name:', en: 'Name:' },
+  p_prompt_hcp: { de: 'Handicap:', en: 'Handicap:' },
+  p_confirm_del: {
+    de: '{name} wirklich löschen? Alle Scores gehen verloren.',
+    en: 'Really delete {name}? All their scores will be lost.',
+  },
+  f_confirm_del: {
+    de: 'Flight «{name}» löschen? (Spieler und Scores bleiben erhalten)',
+    en: 'Delete flight “{name}”? (Players and scores are kept)',
+  },
+  // Zufalls-Flights
+  p_randomize: { de: '🎲 Flights zufällig auslosen', en: '🎲 Draw random flights' },
+  fr_first: { de: 'Zuerst Spieler erfassen', en: 'Add players first' },
+  fr_prompt: { de: 'Maximale Anzahl Spieler pro Flight (2–4):', en: 'Maximum players per flight (2–4):' },
+  fr_invalid: { de: 'Bitte 2, 3 oder 4 eingeben', en: 'Please enter 2, 3 or 4' },
+  fr_replace: { de: 'Bestehende Flights werden ersetzt. Weiter?', en: 'Existing flights will be replaced. Continue?' },
+  fr_done: { de: 'Flights zufällig ausgelost 🎲', en: 'Random flights drawn 🎲' },
+  // Eintragen
+  e_flight: { de: 'Flight', en: 'Flight' },
+  e_hole: { de: 'Loch', en: 'Hole' },
+  e_select_first: { de: '– zuerst Flight erstellen –', en: '– create a flight first –' },
+  e_hole_info: { de: 'Loch {h} · Par {p} · {d} m · Index {i}', en: 'Hole {h} · Par {p} · {d} m · Index {i}' },
+  e_no_zebra: { de: ' · 🦓 Zebra nicht möglich (Par 3)', en: ' · 🦓 no Zebra possible (Par 3)' },
+  e_no_players: {
+    de: 'Diesem Flight sind noch keine Spieler zugeteilt.<br>👥 Unter «Spieler» Flight erstellen und Spieler zuteilen.',
+    en: 'No players assigned to this flight yet.<br>👥 Go to “Players” to create flights and assign players.',
+  },
+  e_running: { de: 'Ziel {t} · Brutto {g} nach {n} Löchern', en: 'Target {t} · gross {g} after {n} holes' },
+  e_gross: { de: 'Brutto:', en: 'Gross:' },
+  e_par_n: { de: 'Par {p}', en: 'Par {p}' },
+  e_next: { de: '✅ Loch {h} fertig – weiter zu Loch {n}', en: '✅ Hole {h} done – on to hole {n}' },
+  e_next_last: { de: '✅ Loch 9 fertig – zur Rangliste 🏆', en: '✅ Hole 9 done – to the leaderboard 🏆' },
+  e_missing: { de: 'Noch kein Brutto-Score für: {names}.\nTrotzdem weiter?', en: 'No gross score yet for: {names}.\nContinue anyway?' },
+  e_good_luck: { de: 'Loch {h} – gutes Gelingen! ⛳', en: 'Hole {h} – good luck! ⛳' },
+  // Rangliste
+  lb_title: { de: '🥇 Rangliste – Beat Your Target', en: '🥇 Leaderboard – Beat Your Target' },
+  lb_hint: {
+    de: 'Punkte = Ziel − Brutto + Tiere. Für noch nicht gespielte Löcher wird Par angenommen (Live-Prognose). Aktualisiert sich automatisch alle 5 Sekunden. Tipp auf einen Spieler zeigt seine Scorekarte.',
+    en: 'Score = target − gross + animals. Par is assumed for holes not yet played (live projection). Updates automatically every 5 seconds. Tap a player to see their scorecard.',
+  },
+  lb_ceremony: { de: '🎉 Preisverleihung', en: '🎉 Prize ceremony' },
+  lb_share: { de: '📸 Als Bild teilen', en: '📸 Share as image' },
+  lb_second_title: { de: '🥈 Zweiter Preis – Meiste Tiere', en: '🥈 Second prize – Most animals' },
+  lb_no_players: { de: 'Noch keine Spieler.', en: 'No players yet.' },
+  h_rank: { de: 'Rang', en: 'Rank' },
+  h_player: { de: 'Spieler', en: 'Player' },
+  h_target: { de: 'Ziel', en: 'Target' },
+  h_thru: { de: 'Loch', en: 'Thru' },
+  h_gross: { de: 'Brutto', en: 'Gross' },
+  h_pos: { de: '➕ Tiere', en: '➕ Animals' },
+  h_neg: { de: '➖ Tiere', en: '➖ Animals' },
+  h_points: { de: 'Punkte', en: 'Points' },
+  h_total: { de: 'Total', en: 'Total' },
+  h_rounds: { de: 'Runden', en: 'Rounds' },
+  h_wins: { de: '🏆 Siege', en: '🏆 Wins' },
+  h_animals: { de: '🐾 Tiere', en: '🐾 Animals' },
+  h_best: { de: 'Bestes Resultat', en: 'Best result' },
+  // Runde speichern & Archiv
+  sr_title: { de: '💾 Runde abschliessen &amp; speichern', en: '💾 Finish &amp; save round' },
+  sr_p: {
+    de: 'Legt die aktuelle Runde mit Schlussrangliste im Archiv ab und leert die Scores für die nächste Runde. Spieler und Flights bleiben erhalten.',
+    en: 'Stores the current round with its final standings in the archive and clears the scores for the next round. Players and flights are kept.',
+  },
+  sr_btn: { de: 'Runde speichern', en: 'Save round' },
+  sr_prompt: { de: 'Name der Runde:', en: 'Round name:' },
+  sr_default: { de: 'Runde vom {date}', en: 'Round of {date}' },
+  sr_confirm: {
+    de: 'Runde jetzt abschliessen und speichern?\nDie Scores werden danach für eine neue Runde geleert.',
+    en: 'Finish and save the round now?\nScores will be cleared for a new round afterwards.',
+  },
+  sr_saved: { de: '«{name}» gespeichert 💾', en: '“{name}” saved 💾' },
+  ar_title: { de: '🗂️ Gespeicherte Runden', en: '🗂️ Saved rounds' },
+  ar_none: { de: 'Noch keine gespeicherten Runden.', en: 'No saved rounds yet.' },
+  ar_winner: { de: 'Sieger', en: 'Winner' },
+  ar_delete: { de: '🗑️ Runde löschen', en: '🗑️ Delete round' },
+  ar_confirm_del: { de: '«{name}» endgültig löschen?', en: 'Permanently delete “{name}”?' },
+  bk_down: { de: '⬇️ Backup herunterladen', en: '⬇️ Download backup' },
+  bk_up: { de: '⬆️ Backup wiederherstellen', en: '⬆️ Restore backup' },
+  bk_hint: {
+    de: 'Das Backup enthält alle Spieler, Flights, Scores und gespeicherten Runden als Datei. Tipp: Nach jedem Turnier herunterladen – so ist alles auch dann gesichert, wenn der Gratis-Server neu aufgesetzt wird.',
+    en: 'The backup file contains all players, flights, scores and saved rounds. Tip: download it after every tournament – then nothing is lost even if the free server is reset.',
+  },
+  bk_done: { de: 'Backup heruntergeladen ⬇️', en: 'Backup downloaded ⬇️' },
+  bk_invalid: { de: 'Datei ist kein gültiges Backup', en: 'File is not a valid backup' },
+  bk_confirm: {
+    de: 'Backup wiederherstellen?\nDer aktuelle Stand auf dem Server wird komplett ersetzt.',
+    en: 'Restore this backup?\nThe current state on the server will be completely replaced.',
+  },
+  bk_restored: { de: 'Wiederhergestellt: {p} Spieler, {r} Runden ✅', en: 'Restored: {p} players, {r} rounds ✅' },
+  at_title: { de: '🏅 Ewige Bestenliste', en: '🏅 All-time leaderboard' },
+  at_hint: {
+    de: 'Über alle gespeicherten Runden. Sortiert nach Siegen, dann bestem Einzelresultat.',
+    en: 'Across all saved rounds. Sorted by wins, then best single result.',
+  },
+  dz_title: { de: '⚠️ Turnier zurücksetzen', en: '⚠️ Reset tournament' },
+  dz_p: {
+    de: 'Löscht alle eingetragenen Scores (Spieler, Flights und gespeicherte Runden bleiben erhalten).',
+    en: 'Deletes all entered scores (players, flights and saved rounds are kept).',
+  },
+  dz_btn: { de: 'Alle Scores löschen', en: 'Delete all scores' },
+  dz_prompt: {
+    de: 'Wirklich ALLE Scores löschen? Tippe RESET zum Bestätigen:',
+    en: 'Really delete ALL scores? Type RESET to confirm:',
+  },
+  dz_done: { de: 'Alle Scores gelöscht', en: 'All scores deleted' },
+  // Scorekarte
+  sc_par: { de: 'Par', en: 'Par' },
+  sc_gross: { de: 'Brutto', en: 'Gross' },
+  sc_animals: { de: 'Tiere', en: 'Animals' },
+  sc_tot: { de: 'Tot', en: 'Tot' },
+  sc_legend: {
+    de: '🟢 unter Par · ⚪ Par · 🟠 Bogey · 🔴 Doppelbogey+',
+    en: '🟢 under par · ⚪ par · 🟠 bogey · 🔴 double bogey+',
+  },
+  // Preisverleihung
+  cer_intro_title: { de: 'Preisverleihung', en: 'Prize ceremony' },
+  cer_intro_sub: { de: '9-Hole Golf Safari', en: '9-Hole Golf Safari' },
+  cer_p3: { de: '3. Platz', en: '3rd place' },
+  cer_p2: { de: '2. Platz', en: '2nd place' },
+  cer_second: { de: 'Zweiter Preis – meiste Tiere', en: 'Second prize – most animals' },
+  cer_second_sub: { de: '{n} Tiere gesammelt', en: '{n} animals collected' },
+  cer_win: { de: 'Und der Sieg geht an…', en: 'And the winner is…' },
+  cer_pts: { de: '{pts} Punkte · Brutto {g}', en: '{pts} points · gross {g}' },
+  cer_thanks: { de: 'Applaus!', en: 'Applause!' },
+  cer_thanks_name: { de: 'Danke fürs Mitspielen', en: 'Thanks for playing' },
+  cer_thanks_sub: { de: 'Tippen zum Schliessen', en: 'Tap to close' },
+  cer_tap: { de: 'Tippen für weiter', en: 'Tap to continue' },
+  cer_no_players: { de: 'Noch keine Spieler erfasst', en: 'No players yet' },
+  // Bild-Export
+  img_subtitle: { de: '9-Hole Golf Safari · Rigi Holzhäusern', en: '9-Hole Golf Safari · Rigi Holzhäusern' },
+  img_most_animals: { de: '🐾 Meiste Tiere: {name} ({n})', en: '🐾 Most animals: {name} ({n})' },
+  img_downloaded: { de: 'Bild heruntergeladen 📸', en: 'Image downloaded 📸' },
+  // Offline
+  off_banner: {
+    de: '📶 Kein Empfang – {n} Einträge warten und werden automatisch nachgesendet',
+    en: '📶 No signal – {n} entries queued, they will be sent automatically',
+  },
+};
+
+function t(key, vars) {
+  let s = (STRINGS[key] && STRINGS[key][lang]) || (STRINGS[key] && STRINGS[key].de) || key;
+  if (vars) for (const [k, v] of Object.entries(vars)) s = s.replaceAll(`{${k}}`, v);
+  return s;
+}
+
+function dateLocale() { return lang === 'de' ? 'de-CH' : 'en-GB'; }
+
+// Statische Texte im HTML übersetzen
+function applyStatic() {
+  document.documentElement.lang = lang;
+  document.querySelectorAll('[data-i18n]').forEach((el) => { el.innerHTML = t(el.dataset.i18n); });
+  document.querySelectorAll('[data-i18n-ph]').forEach((el) => { el.placeholder = t(el.dataset.i18nPh); });
+  document.querySelectorAll('[data-i18n-label]').forEach((el) => {
+    // nur den ersten Textknoten ersetzen, Kind-Elemente (Select etc.) bleiben
+    el.childNodes[0].textContent = t(el.dataset.i18nLabel);
+  });
+  document.getElementById('lang-toggle').textContent = lang === 'de' ? 'EN' : 'DE';
+}
+
+// ---------------------------------------------------------------------------
 // Platzdaten – Rigi Holzhäusern, Tee 27
 // ---------------------------------------------------------------------------
 const COURSE = [
@@ -18,12 +265,12 @@ const COURSE = [
 const PAR_TOTAL = 36;
 
 const ANIMALS = [
-  { key: 'zebra',     emoji: '🦓', name: 'Zebra',     type: 'pos', desc: 'Fairway getroffen' },
-  { key: 'giraffe',   emoji: '🦒', name: 'Giraffe',   type: 'pos', desc: 'Grün in Regulation' },
-  { key: 'rabbit',    emoji: '🐇', name: 'Rabbit',    type: 'pos', desc: 'Ein Putt / Chip-in' },
-  { key: 'scorpion',  emoji: '🦂', name: 'Scorpion',  type: 'neg', desc: 'Ball im Bunker' },
-  { key: 'crocodile', emoji: '🐊', name: 'Crocodile', type: 'neg', desc: 'Wasser / Penalty' },
-  { key: 'snake',     emoji: '🐍', name: 'Snake',     type: 'neg', desc: '3 Putts oder mehr' },
+  { key: 'zebra',     emoji: '🦓', name: 'Zebra',     type: 'pos', desc: { de: 'Fairway getroffen', en: 'Fairway hit' } },
+  { key: 'giraffe',   emoji: '🦒', name: 'Giraffe',   type: 'pos', desc: { de: 'Grün in Regulation', en: 'Green in regulation' } },
+  { key: 'rabbit',    emoji: '🐇', name: 'Rabbit',    type: 'pos', desc: { de: 'Ein Putt / Chip-in', en: 'One putt / chip-in' } },
+  { key: 'scorpion',  emoji: '🦂', name: 'Scorpion',  type: 'neg', desc: { de: 'Ball im Bunker', en: 'Ball in a bunker' } },
+  { key: 'crocodile', emoji: '🐊', name: 'Crocodile', type: 'neg', desc: { de: 'Wasser / Penalty', en: 'Water / penalty' } },
+  { key: 'snake',     emoji: '🐍', name: 'Snake',     type: 'neg', desc: { de: '3 Putts oder mehr', en: '3 putts or more' } },
 ];
 
 // ---------------------------------------------------------------------------
@@ -100,7 +347,7 @@ function saveQueue() {
   localStorage.setItem('fta-queue', JSON.stringify(queue));
   const banner = $('#offline-banner');
   banner.hidden = queue.length === 0;
-  $('#queue-count').textContent = queue.length;
+  banner.textContent = t('off_banner', { n: queue.length });
 }
 
 function sendScore(pid, hole, body) {
@@ -173,26 +420,25 @@ function renderAll() {
 
 // --- Regeln: Platztabelle ---
 function renderCourseTable() {
-  const t = $('#course-table');
-  t.innerHTML = `
-    <tr><th>Loch</th>${COURSE.map((h) => `<th>${h.hole}</th>`).join('')}<th>Total</th></tr>
-    <tr><td>Par</td>${COURSE.map((h) => `<td>${h.par}</td>`).join('')}<td><strong>36</strong></td></tr>
-    <tr><td>Meter</td>${COURSE.map((h) => `<td>${h.dist}</td>`).join('')}<td><strong>2682</strong></td></tr>
-    <tr><td>Index</td>${COURSE.map((h) => `<td>${h.index}</td>`).join('')}<td></td></tr>`;
+  $('#course-table').innerHTML = `
+    <tr><th>${t('c_hole')}</th>${COURSE.map((h) => `<th>${h.hole}</th>`).join('')}<th>${t('c_total')}</th></tr>
+    <tr><td>${t('c_par')}</td>${COURSE.map((h) => `<td>${h.par}</td>`).join('')}<td><strong>36</strong></td></tr>
+    <tr><td>${t('c_meters')}</td>${COURSE.map((h) => `<td>${h.dist}</td>`).join('')}<td><strong>2682</strong></td></tr>
+    <tr><td>${t('c_index')}</td>${COURSE.map((h) => `<td>${h.index}</td>`).join('')}<td></td></tr>`;
 }
 
 // --- Spieler ---
 function renderPlayers() {
   const list = $('#player-list');
   if (!state.players.length) {
-    list.innerHTML = '<p class="empty-note">Noch keine Spieler erfasst.</p>';
+    list.innerHTML = `<p class="empty-note">${t('p_none')}</p>`;
     return;
   }
   list.innerHTML = state.players.map((p) => `
     <div class="player-row">
       <span class="p-name">${esc(p.name)}</span>
       <span class="p-meta">HCP ${p.hcp}</span>
-      <span class="badge">Ziel ${targetFor(p.hcp)}</span>
+      <span class="badge">${t('p_target')} ${targetFor(p.hcp)}</span>
       <button type="button" class="btn small" data-edit-player="${p.id}">✏️</button>
       <button type="button" class="btn small" data-del-player="${p.id}">🗑️</button>
     </div>`).join('');
@@ -202,7 +448,7 @@ function renderPlayers() {
 function renderFlights() {
   const list = $('#flight-list');
   if (!state.flights.length) {
-    list.innerHTML = '<p class="empty-note">Noch keine Flights erstellt.</p>';
+    list.innerHTML = `<p class="empty-note">${t('f_none')}</p>`;
     return;
   }
   list.innerHTML = state.flights.map((f) => {
@@ -216,10 +462,10 @@ function renderFlights() {
     return `
       <div class="flight-card">
         <div class="flight-head">
-          <h3>⛳ ${esc(f.name)} <small style="font-weight:400;color:var(--muted)">(${f.playerIds.length} Spieler)</small></h3>
+          <h3>⛳ ${esc(f.name)} <small style="font-weight:400;color:var(--muted)">${t('f_count', { n: f.playerIds.length })}</small></h3>
           <button type="button" class="btn small" data-del-flight="${f.id}">🗑️</button>
         </div>
-        <div class="flight-members">${chips || '<span class="empty-note">Keine verfügbaren Spieler</span>'}</div>
+        <div class="flight-members">${chips || `<span class="empty-note">${t('f_no_avail')}</span>`}</div>
       </div>`;
   }).join('');
 }
@@ -229,7 +475,7 @@ function renderEntry() {
   const sel = $('#entry-flight');
   sel.innerHTML = state.flights.length
     ? state.flights.map((f) => `<option value="${f.id}" ${f.id === currentFlightId ? 'selected' : ''}>${esc(f.name)}</option>`).join('')
-    : '<option value="">– zuerst Flight erstellen –</option>';
+    : `<option value="">${t('e_select_first')}</option>`;
   if (!state.flights.find((f) => f.id === currentFlightId)) {
     currentFlightId = state.flights[0] ? state.flights[0].id : '';
   }
@@ -249,19 +495,19 @@ function renderEntry() {
 
   const hInfo = COURSE[currentHole - 1];
   $('#hole-info').textContent =
-    `Loch ${hInfo.hole} · Par ${hInfo.par} · ${hInfo.dist} m · Index ${hInfo.index}` +
-    (hInfo.par === 3 ? ' · 🦓 Zebra nicht möglich (Par 3)' : '');
+    t('e_hole_info', { h: hInfo.hole, p: hInfo.par, d: hInfo.dist, i: hInfo.index }) +
+    (hInfo.par === 3 ? t('e_no_zebra') : '');
 
   // Spielerkarten
   const wrap = $('#entry-players');
   if (!flight || !flight.playerIds.length) {
-    wrap.innerHTML = '<div class="card"><p class="empty-note">Diesem Flight sind noch keine Spieler zugeteilt.<br>👥 Unter «Spieler» Flight erstellen und Spieler zuteilen.</p></div>';
+    wrap.innerHTML = `<div class="card"><p class="empty-note">${t('e_no_players')}</p></div>`;
     return;
   }
 
   const nextLabel = currentHole < 9
-    ? `✅ Loch ${currentHole} fertig – weiter zu Loch ${currentHole + 1}`
-    : '✅ Loch 9 fertig – zur Rangliste 🏆';
+    ? t('e_next', { h: currentHole, n: currentHole + 1 })
+    : t('e_next_last');
   const nextBtn = `<button type="button" class="btn primary next-hole" id="next-hole-btn">${nextLabel}</button>`;
 
   wrap.innerHTML = flight.playerIds.map((pid) => {
@@ -280,22 +526,22 @@ function renderEntry() {
         <span class="a-pts">${a.type === 'pos' ? '+1' : '−1'}</span>
         <span class="emoji">${a.emoji}</span>
         <span class="a-name">${a.name}</span>
-        <span class="a-desc">${a.desc}</span></button>`;
+        <span class="a-desc">${a.desc[lang]}</span></button>`;
     }).join('');
     return `
       <div class="entry-player">
         <div class="ep-head">
           <h3>${esc(p.name)}</h3>
-          <span class="running">Ziel ${st.target} · Brutto ${st.gross} nach ${st.played} Löchern</span>
+          <span class="running">${t('e_running', { t: st.target, g: st.gross, n: st.played })}</span>
         </div>
         <div class="gross-row">
-          <span class="gross-label">Brutto:</span>
+          <span class="gross-label">${t('e_gross')}</span>
           <div class="stepper">
             <button type="button" data-gross="-1" data-player="${pid}">−</button>
             ${grossDisplay}
             <button type="button" data-gross="1" data-player="${pid}">+</button>
           </div>
-          <span class="hint">Par ${hInfo.par}</span>
+          <span class="hint">${t('e_par_n', { p: hInfo.par })}</span>
         </div>
         <div class="animal-btns">${animalBtns}</div>
       </div>`;
@@ -318,7 +564,7 @@ function renderLeaderboard() {
   const main = $('#lb-main');
   const second = $('#lb-animals');
   if (!state.players.length) {
-    main.innerHTML = second.innerHTML = '<tr><td class="empty-note">Noch keine Spieler.</td></tr>';
+    main.innerHTML = second.innerHTML = `<tr><td class="empty-note">${t('lb_no_players')}</td></tr>`;
     return;
   }
 
@@ -328,7 +574,7 @@ function renderLeaderboard() {
   const sorted = [...rows].sort((a, b) =>
     b.points - a.points || b.totalAnimals - a.totalAnimals || a.gross - b.gross);
   main.innerHTML = `
-    <tr><th>Rang</th><th style="text-align:left">Spieler</th><th>HCP</th><th>Ziel</th><th>Loch</th><th>Brutto</th><th>➕ Tiere</th><th>➖ Tiere</th><th>Punkte</th></tr>` +
+    <tr><th>${t('h_rank')}</th><th style="text-align:left">${t('h_player')}</th><th>HCP</th><th>${t('h_target')}</th><th>${t('h_thru')}</th><th>${t('h_gross')}</th><th>${t('h_pos')}</th><th>${t('h_neg')}</th><th>${t('h_points')}</th></tr>` +
     sorted.map((r, i) => `
       <tr class="rank-${i + 1}" data-pid="${r.p.id}">
         <td>${medal(i + 1)}</td>
@@ -346,7 +592,7 @@ function renderLeaderboard() {
   const byAnimals = [...rows].sort((a, b) =>
     b.totalAnimals - a.totalAnimals || b.pos - a.pos || b.points - a.points);
   second.innerHTML = `
-    <tr><th>Rang</th><th style="text-align:left">Spieler</th><th>🦓</th><th>🦒</th><th>🐇</th><th>🦂</th><th>🐊</th><th>🐍</th><th>Total</th></tr>` +
+    <tr><th>${t('h_rank')}</th><th style="text-align:left">${t('h_player')}</th><th>🦓</th><th>🦒</th><th>🐇</th><th>🦂</th><th>🐊</th><th>🐍</th><th>${t('h_total')}</th></tr>` +
     byAnimals.map((r, i) => {
       const counts = {};
       for (const a of ANIMALS) counts[a.key] = 0;
@@ -370,16 +616,16 @@ function renderArchive() {
   const wrap = $('#archive-list');
   const archive = state.archive || [];
   if (!archive.length) {
-    wrap.innerHTML = '<p class="empty-note">Noch keine gespeicherten Runden.</p>';
+    wrap.innerHTML = `<p class="empty-note">${t('ar_none')}</p>`;
     return;
   }
   wrap.innerHTML = archive.map((r) => {
-    const date = new Date(r.date).toLocaleDateString('de-CH', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const date = new Date(r.date).toLocaleDateString(dateLocale(), { day: '2-digit', month: '2-digit', year: 'numeric' });
     const winner = r.results && r.results[0] ? r.results[0].name : '–';
     const table = `
       <div class="table-scroll">
         <table class="lb-table">
-          <tr><th>Rang</th><th style="text-align:left">Spieler</th><th>HCP</th><th>Ziel</th><th>Brutto</th><th>➕</th><th>➖</th><th>Punkte</th></tr>
+          <tr><th>${t('h_rank')}</th><th style="text-align:left">${t('h_player')}</th><th>HCP</th><th>${t('h_target')}</th><th>${t('h_gross')}</th><th>➕</th><th>➖</th><th>${t('h_points')}</th></tr>
           ${(r.results || []).map((x, i) => `
             <tr class="rank-${i + 1}" data-round="${r.id}" data-rpid="${x.id || ''}">
               <td>${medal(i + 1)}</td>
@@ -397,10 +643,10 @@ function renderArchive() {
       <details class="archive-round">
         <summary>
           <span class="ar-name">🏆 ${esc(r.name)}</span>
-          <span class="ar-meta">${date} · Sieger: ${esc(winner)}</span>
+          <span class="ar-meta">${date} · ${t('ar_winner')}: ${esc(winner)}</span>
         </summary>
         ${table}
-        <button type="button" class="btn small danger" data-del-round="${r.id}">🗑️ Runde löschen</button>
+        <button type="button" class="btn small danger" data-del-round="${r.id}">${t('ar_delete')}</button>
       </details>`;
   }).join('');
 }
@@ -424,7 +670,7 @@ function renderAllTime() {
   }
   const list = Object.values(map).sort((a, b) => b.wins - a.wins || b.best - a.best || b.animals - a.animals);
   $('#lb-alltime').innerHTML = `
-    <tr><th>Rang</th><th style="text-align:left">Spieler</th><th>Runden</th><th>🏆 Siege</th><th>🐾 Tiere</th><th>Bestes Resultat</th></tr>` +
+    <tr><th>${t('h_rank')}</th><th style="text-align:left">${t('h_player')}</th><th>${t('h_rounds')}</th><th>${t('h_wins')}</th><th>${t('h_animals')}</th><th>${t('h_best')}</th></tr>` +
     list.map((m, i) => `
       <tr class="rank-${i + 1}">
         <td>${medal(i + 1)}</td>
@@ -462,16 +708,16 @@ function showScorecard(name, hcp, scores) {
       <h3>🧾 ${esc(name)}</h3>
       <button type="button" class="btn small" id="modal-close">✕</button>
     </div>
-    <p class="hint">HCP ${hcp} · Ziel ${targetFor(hcp)}</p>
+    <p class="hint">HCP ${hcp} · ${t('p_target')} ${targetFor(hcp)}</p>
     <div class="table-scroll">
       <table class="sc-table">
-        <tr><th>Loch</th>${COURSE.map((h) => `<th>${h.hole}</th>`).join('')}<th>Tot</th></tr>
-        <tr><td>Par</td>${COURSE.map((h) => `<td>${h.par}</td>`).join('')}<td>36</td></tr>
-        <tr><td>Brutto</td>${grossCells}<td><strong>${played ? gross : '–'}</strong></td></tr>
-        <tr><td>Tiere</td>${animalCells}<td></td></tr>
+        <tr><th>${t('c_hole')}</th>${COURSE.map((h) => `<th>${h.hole}</th>`).join('')}<th>${t('sc_tot')}</th></tr>
+        <tr><td>${t('sc_par')}</td>${COURSE.map((h) => `<td>${h.par}</td>`).join('')}<td>36</td></tr>
+        <tr><td>${t('sc_gross')}</td>${grossCells}<td><strong>${played ? gross : '–'}</strong></td></tr>
+        <tr><td>${t('sc_animals')}</td>${animalCells}<td></td></tr>
       </table>
     </div>
-    <p class="hint">🟢 unter Par · ⚪ Par · 🟠 Bogey · 🔴 Doppelbogey+</p>`;
+    <p class="hint">${t('sc_legend')}</p>`;
   $('#modal').hidden = false;
 }
 
@@ -491,6 +737,15 @@ $('#tabs').addEventListener('click', (e) => {
   switchTab(btn.dataset.tab);
 });
 
+// Sprache wechseln (DE ↔ EN)
+$('#lang-toggle').addEventListener('click', () => {
+  lang = lang === 'de' ? 'en' : 'de';
+  localStorage.setItem('fta-lang', lang);
+  applyStatic();
+  renderAll();
+  saveQueue(); // Banner-Text in neuer Sprache
+});
+
 // Spieler hinzufügen
 $('#player-form').addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -501,7 +756,7 @@ $('#player-form').addEventListener('submit', async (e) => {
     await api('POST', '/api/players', { name, hcp });
     $('#player-name').value = '';
     $('#player-hcp').value = '';
-    toast(`${name} hinzugefügt 🎉`);
+    toast(t('p_added', { name }));
     refresh(true);
   } catch (err) { toast(err.message, true); }
 });
@@ -512,9 +767,9 @@ $('#player-list').addEventListener('click', async (e) => {
   const delBtn = e.target.closest('[data-del-player]');
   if (editBtn) {
     const p = state.players.find((x) => x.id === editBtn.dataset.editPlayer);
-    const name = prompt('Name:', p.name);
+    const name = prompt(t('p_prompt_name'), p.name);
     if (name === null) return;
-    const hcp = prompt('Handicap:', p.hcp);
+    const hcp = prompt(t('p_prompt_hcp'), p.hcp);
     if (hcp === null) return;
     try {
       await api('PUT', `/api/players/${p.id}`, { name, hcp });
@@ -523,7 +778,7 @@ $('#player-list').addEventListener('click', async (e) => {
   }
   if (delBtn) {
     const p = state.players.find((x) => x.id === delBtn.dataset.delPlayer);
-    if (!confirm(`${p.name} wirklich löschen? Alle Scores gehen verloren.`)) return;
+    if (!confirm(t('p_confirm_del', { name: p.name }))) return;
     try {
       await api('DELETE', `/api/players/${p.id}`);
       refresh(true);
@@ -558,7 +813,7 @@ $('#flight-list').addEventListener('click', async (e) => {
   }
   if (delBtn) {
     const f = state.flights.find((x) => x.id === delBtn.dataset.delFlight);
-    if (!confirm(`Flight «${f.name}» löschen? (Spieler und Scores bleiben erhalten)`)) return;
+    if (!confirm(t('f_confirm_del', { name: f.name }))) return;
     try {
       await api('DELETE', `/api/flights/${f.id}`);
       refresh(true);
@@ -584,15 +839,15 @@ $('#hole-picker').addEventListener('click', (e) => {
 
 // Zufällige Flight-Zuteilung
 $('#randomize-btn').addEventListener('click', async () => {
-  if (state.players.length < 2) return toast('Zuerst Spieler erfassen', true);
-  const answer = prompt('Maximale Anzahl Spieler pro Flight (2–4):', '3');
+  if (state.players.length < 2) return toast(t('fr_first'), true);
+  const answer = prompt(t('fr_prompt'), '3');
   if (answer === null) return;
   const size = parseInt(answer, 10);
-  if (!(size >= 2 && size <= 4)) return toast('Bitte 2, 3 oder 4 eingeben', true);
-  if (state.flights.length && !confirm('Bestehende Flights werden ersetzt. Weiter?')) return;
+  if (!(size >= 2 && size <= 4)) return toast(t('fr_invalid'), true);
+  if (state.flights.length && !confirm(t('fr_replace'))) return;
   try {
     await api('POST', '/api/flights/randomize', { size });
-    toast('Flights zufällig ausgelost 🎲');
+    toast(t('fr_done'));
     refresh(true);
   } catch (err) { toast(err.message, true); }
 });
@@ -611,14 +866,14 @@ $('#entry-players').addEventListener('click', async (e) => {
     }) : [];
     if (missing.length) {
       const names = missing.map((pid) => (state.players.find((p) => p.id === pid) || {}).name).filter(Boolean).join(', ');
-      if (!confirm(`Noch kein Brutto-Score für: ${names}.\nTrotzdem weiter?`)) return;
+      if (!confirm(t('e_missing', { names }))) return;
     }
     if (currentHole < 9) {
       currentHole += 1;
       localStorage.setItem('fta-hole', String(currentHole));
       renderEntry();
       window.scrollTo({ top: 0 });
-      toast(`Loch ${currentHole} – gutes Gelingen! ⛳`);
+      toast(t('e_good_luck', { h: currentHole }));
     } else {
       switchTab('leaderboard');
     }
@@ -679,7 +934,7 @@ function showCeremonyStep() {
     <div class="c-title">${s.title}</div>
     <div class="c-name">${esc(s.name)}</div>
     <div class="c-sub">${esc(s.sub || '')}</div>
-    <div class="c-hint">Tippen für weiter</div>`;
+    <div class="c-hint">${t('cer_tap')}</div>`;
   if (s.confetti) {
     const colors = ['#f5c542', '#e74c3c', '#3498db', '#2ecc71', '#e67e22', '#ffffff'];
     for (let i = 0; i < 90; i++) {
@@ -696,20 +951,20 @@ function showCeremonyStep() {
 
 $('#ceremony-btn').addEventListener('click', () => {
   const rows = standings();
-  if (!rows.length) return toast('Noch keine Spieler erfasst', true);
+  if (!rows.length) return toast(t('cer_no_players'), true);
   const byAnimals = [...rows].sort((a, b) => b.totalAnimals - a.totalAnimals || b.pos - a.pos);
-  const pts = (r) => `${r.points > 0 ? '+' : ''}${r.points} Punkte · Brutto ${r.gross}`;
+  const pts = (r) => t('cer_pts', { pts: `${r.points > 0 ? '+' : ''}${r.points}`, g: r.gross });
 
   ceremonySteps = [
-    { emoji: '🎬', title: 'Preisverleihung', name: 'Fore the Animals!', sub: '9-Hole Golf Safari' },
+    { emoji: '🎬', title: t('cer_intro_title'), name: 'Fore the Animals!', sub: t('cer_intro_sub') },
   ];
-  if (rows[2]) ceremonySteps.push({ emoji: '🥉', title: '3. Platz', name: rows[2].p.name, sub: pts(rows[2]) });
-  if (rows[1]) ceremonySteps.push({ emoji: '🥈', title: '2. Platz', name: rows[1].p.name, sub: pts(rows[1]) });
+  if (rows[2]) ceremonySteps.push({ emoji: '🥉', title: t('cer_p3'), name: rows[2].p.name, sub: pts(rows[2]) });
+  if (rows[1]) ceremonySteps.push({ emoji: '🥈', title: t('cer_p2'), name: rows[1].p.name, sub: pts(rows[1]) });
   if (byAnimals[0] && byAnimals[0].totalAnimals > 0) {
-    ceremonySteps.push({ emoji: '🐾', title: 'Zweiter Preis – meiste Tiere', name: byAnimals[0].p.name, sub: `${byAnimals[0].totalAnimals} Tiere gesammelt` });
+    ceremonySteps.push({ emoji: '🐾', title: t('cer_second'), name: byAnimals[0].p.name, sub: t('cer_second_sub', { n: byAnimals[0].totalAnimals }) });
   }
-  ceremonySteps.push({ emoji: '🏆', title: 'Und der Sieg geht an…', name: rows[0].p.name, sub: pts(rows[0]), confetti: true });
-  ceremonySteps.push({ emoji: '👏', title: 'Applaus!', name: 'Danke fürs Mitspielen', sub: 'Tippen zum Schliessen' });
+  ceremonySteps.push({ emoji: '🏆', title: t('cer_win'), name: rows[0].p.name, sub: pts(rows[0]), confetti: true });
+  ceremonySteps.push({ emoji: '👏', title: t('cer_thanks'), name: t('cer_thanks_name'), sub: t('cer_thanks_sub') });
 
   ceremonyIdx = 0;
   showCeremonyStep();
@@ -725,7 +980,7 @@ $('#ceremony').addEventListener('click', () => {
 // Rangliste als Bild teilen / herunterladen
 $('#share-btn').addEventListener('click', () => {
   const rows = standings();
-  if (!rows.length) return toast('Noch keine Spieler erfasst', true);
+  if (!rows.length) return toast(t('cer_no_players'), true);
   const byAnimals = [...rows].sort((a, b) => b.totalAnimals - a.totalAnimals || b.pos - a.pos);
 
   const W = 1000, headH = 190, rowH = 62, footH = 120;
@@ -740,14 +995,14 @@ $('#share-btn').addEventListener('click', () => {
   ctx.font = 'bold 50px sans-serif';
   ctx.fillText('🦓 FORE THE ANIMALS!', 40, 78);
   ctx.font = '26px sans-serif'; ctx.globalAlpha = 0.9;
-  ctx.fillText('9-Hole Golf Safari · Rigi Holzhäusern', 40, 122);
-  ctx.fillText(new Date().toLocaleDateString('de-CH', { day: '2-digit', month: '2-digit', year: 'numeric' }), 40, 158);
+  ctx.fillText(t('img_subtitle'), 40, 122);
+  ctx.fillText(new Date().toLocaleDateString(dateLocale(), { day: '2-digit', month: '2-digit', year: 'numeric' }), 40, 158);
   ctx.globalAlpha = 1;
 
   let y = headH + 42;
   ctx.fillStyle = '#1d5c3f'; ctx.font = 'bold 24px sans-serif';
-  ctx.fillText('Rang', 40, y); ctx.fillText('Spieler', 150, y);
-  ctx.fillText('Brutto', 560, y); ctx.fillText('Tiere', 700, y); ctx.fillText('Punkte', 850, y);
+  ctx.fillText(t('h_rank'), 40, y); ctx.fillText(t('h_player'), 150, y);
+  ctx.fillText(t('h_gross'), 560, y); ctx.fillText(t('sc_animals'), 700, y); ctx.fillText(t('h_points'), 850, y);
   y += 14;
 
   rows.forEach((r, i) => {
@@ -768,7 +1023,7 @@ $('#share-btn').addEventListener('click', () => {
   const fy = y + rows.length * rowH + 52;
   ctx.fillStyle = '#21302a'; ctx.font = '26px sans-serif';
   if (byAnimals[0] && byAnimals[0].totalAnimals > 0) {
-    ctx.fillText(`🐾 Meiste Tiere: ${byAnimals[0].p.name} (${byAnimals[0].totalAnimals})`, 40, fy);
+    ctx.fillText(t('img_most_animals', { name: byAnimals[0].p.name, n: byAnimals[0].totalAnimals }), 40, fy);
   }
 
   cv.toBlob(async (blob) => {
@@ -786,18 +1041,18 @@ $('#share-btn').addEventListener('click', () => {
     a.download = 'fore-the-animals-rangliste.png';
     a.click();
     URL.revokeObjectURL(a.href);
-    toast('Bild heruntergeladen 📸');
+    toast(t('img_downloaded'));
   }, 'image/png');
 });
 
 // Runde abschliessen & speichern
 $('#save-round-btn').addEventListener('click', async () => {
-  const name = prompt('Name der Runde:', `Runde vom ${new Date().toLocaleDateString('de-CH')}`);
+  const name = prompt(t('sr_prompt'), t('sr_default', { date: new Date().toLocaleDateString(dateLocale()) }));
   if (name === null) return;
-  if (!confirm('Runde jetzt abschliessen und speichern?\nDie Scores werden danach für eine neue Runde geleert.')) return;
+  if (!confirm(t('sr_confirm'))) return;
   try {
     const r = await api('POST', '/api/rounds', { name });
-    toast(`«${r.name}» gespeichert 💾`);
+    toast(t('sr_saved', { name: r.name }));
     refresh(true);
   } catch (err) { toast(err.message, true); }
 });
@@ -816,7 +1071,7 @@ $('#archive-list').addEventListener('click', async (e) => {
   const btn = e.target.closest('[data-del-round]');
   if (!btn) return;
   const round = (state.archive || []).find((r) => r.id === btn.dataset.delRound);
-  if (!round || !confirm(`«${round.name}» endgültig löschen?`)) return;
+  if (!round || !confirm(t('ar_confirm_del', { name: round.name }))) return;
   try {
     await api('DELETE', `/api/rounds/${round.id}`);
     refresh(true);
@@ -832,7 +1087,7 @@ $('#backup-btn').addEventListener('click', () => {
   a.download = `fore-the-animals-backup-${stamp}.json`;
   a.click();
   URL.revokeObjectURL(a.href);
-  toast('Backup heruntergeladen ⬇️');
+  toast(t('bk_done'));
 });
 
 // Backup wiederherstellen
@@ -844,23 +1099,23 @@ $('#restore-file').addEventListener('change', async (e) => {
   try {
     data = JSON.parse(await file.text());
   } catch {
-    return toast('Datei ist kein gültiges Backup', true);
+    return toast(t('bk_invalid'), true);
   }
-  if (!confirm('Backup wiederherstellen?\nDer aktuelle Stand auf dem Server wird komplett ersetzt.')) return;
+  if (!confirm(t('bk_confirm'))) return;
   try {
     const r = await api('POST', '/api/restore', data);
-    toast(`Wiederhergestellt: ${r.players} Spieler, ${r.rounds} Runden ✅`);
+    toast(t('bk_restored', { p: r.players, r: r.rounds }));
     refresh(true);
   } catch (err) { toast(err.message, true); }
 });
 
 // Turnier zurücksetzen
 $('#reset-btn').addEventListener('click', async () => {
-  const answer = prompt('Wirklich ALLE Scores löschen? Tippe RESET zum Bestätigen:');
+  const answer = prompt(t('dz_prompt'));
   if (answer !== 'RESET') return;
   try {
     await api('POST', '/api/reset', { confirm: 'RESET' });
-    toast('Alle Scores gelöscht');
+    toast(t('dz_done'));
     refresh(true);
   } catch (err) { toast(err.message, true); }
 });
@@ -871,6 +1126,8 @@ $('#reset-btn').addEventListener('click', async () => {
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(() => {});
 }
+
+applyStatic(); // gespeicherte Sprache anwenden
 
 saveQueue();  // Banner-Zustand herstellen (evtl. Reste aus letzter Sitzung)
 flushQueue(); // liegengebliebene Einträge sofort nachsenden

@@ -45,12 +45,17 @@ body {
   background: var(--green-dark);
   box-shadow: var(--shadow);
 }
+.tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .tabs button {
-  flex: 1; padding: 12px 4px; border: none; background: transparent;
-  color: rgba(255,255,255,0.75); font-size: 0.85rem; font-weight: 600;
+  flex: 1; padding: 12px 2px; border: none; background: transparent;
+  color: rgba(255,255,255,0.75); font-size: 0.78rem; font-weight: 600;
   cursor: pointer; border-bottom: 3px solid transparent; white-space: nowrap;
 }
 .tabs button.active { color: #fff; border-bottom-color: #a6d9be; background: rgba(255,255,255,0.08); }
+#lang-toggle {
+  flex: 0 0 auto; width: 40px; font-weight: 800; color: #fff;
+  border-left: 1px solid rgba(255, 255, 255, 0.2);
+}
 
 /* ---------- Layout ---------- */
 main { max-width: 860px; margin: 0 auto; padding: 14px 12px 40px; }
