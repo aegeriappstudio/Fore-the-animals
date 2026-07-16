@@ -197,6 +197,21 @@ input:focus, select:focus { outline: 2px solid var(--green); border-color: var(-
 
 .empty-note { color: var(--muted); text-align: center; padding: 20px 0; }
 
+/* ---------- Archiv & Backup ---------- */
+.archive-round {
+  border: 1px solid var(--border); border-radius: 8px;
+  background: var(--green-pale); margin: 8px 0; padding: 0 10px;
+}
+.archive-round summary {
+  cursor: pointer; padding: 10px 0; display: flex; flex-direction: column; gap: 2px;
+}
+.archive-round summary .ar-name { font-weight: 700; color: var(--green-dark); }
+.archive-round summary .ar-meta { font-size: 0.8rem; color: var(--muted); }
+.archive-round .table-scroll { margin-bottom: 8px; background: #fff; border-radius: 8px; }
+.archive-round .btn { margin-bottom: 10px; }
+.backup-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.backup-row .btn { text-align: center; }
+
 /* ---------- Sonstiges ---------- */
 .danger-zone { border-color: #ecc8cd; }
 footer { text-align: center; padding: 20px; color: var(--muted); font-size: 0.85rem; }

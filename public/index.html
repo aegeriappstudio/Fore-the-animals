@@ -123,9 +123,29 @@
           <table class="lb-table" id="lb-animals"></table>
         </div>
       </div>
+      <div class="card">
+        <h2>💾 Runde abschliessen &amp; speichern</h2>
+        <p>Legt die aktuelle Runde mit Schlussrangliste im Archiv ab und leert die
+           Scores für die nächste Runde. Spieler und Flights bleiben erhalten.</p>
+        <button type="button" class="btn primary" id="save-round-btn">Runde speichern</button>
+      </div>
+
+      <div class="card">
+        <h2>🗂️ Gespeicherte Runden</h2>
+        <div id="archive-list"></div>
+        <div class="backup-row">
+          <button type="button" class="btn" id="backup-btn">⬇️ Backup herunterladen</button>
+          <label class="btn" for="restore-file">⬆️ Backup wiederherstellen</label>
+          <input type="file" id="restore-file" accept="application/json,.json" hidden>
+        </div>
+        <p class="hint">Das Backup enthält alle Spieler, Flights, Scores und gespeicherten Runden
+           als Datei. Tipp: Nach jedem Turnier herunterladen – so ist alles auch dann gesichert,
+           wenn der Gratis-Server neu aufgesetzt wird.</p>
+      </div>
+
       <div class="card danger-zone">
         <h2>⚠️ Turnier zurücksetzen</h2>
-        <p>Löscht alle eingetragenen Scores (Spieler und Flights bleiben erhalten).</p>
+        <p>Löscht alle eingetragenen Scores (Spieler, Flights und gespeicherte Runden bleiben erhalten).</p>
         <button class="btn danger" id="reset-btn">Alle Scores löschen</button>
       </div>
     </section>

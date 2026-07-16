@@ -116,6 +116,7 @@ function renderAll() {
   renderFlights();
   renderEntry();
   renderLeaderboard();
+  renderArchive();
 }
 
 // --- Regeln: Platztabelle ---
@@ -305,6 +306,46 @@ function renderLeaderboard() {
     }).join('');
 }
 
+// --- Archiv: gespeicherte Runden ---
+function renderArchive() {
+  const wrap = $('#archive-list');
+  const archive = state.archive || [];
+  if (!archive.length) {
+    wrap.innerHTML = '<p class="empty-note">Noch keine gespeicherten Runden.</p>';
+    return;
+  }
+  wrap.innerHTML = archive.map((r) => {
+    const date = new Date(r.date).toLocaleDateString('de-CH', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const winner = r.results && r.results[0] ? r.results[0].name : '–';
+    const table = `
+      <div class="table-scroll">
+        <table class="lb-table">
+          <tr><th>Rang</th><th style="text-align:left">Spieler</th><th>HCP</th><th>Ziel</th><th>Brutto</th><th>➕</th><th>➖</th><th>Punkte</th></tr>
+          ${(r.results || []).map((x, i) => `
+            <tr class="rank-${i + 1}">
+              <td>${medal(i + 1)}</td>
+              <td class="name-cell">${esc(x.name)}</td>
+              <td>${x.hcp}</td>
+              <td>${x.target}</td>
+              <td>${x.gross}</td>
+              <td>+${x.pos}</td>
+              <td>−${x.neg}</td>
+              <td class="pts ${x.points < 0 ? 'neg-pts' : ''}">${x.points > 0 ? '+' : ''}${x.points}</td>
+            </tr>`).join('')}
+        </table>
+      </div>`;
+    return `
+      <details class="archive-round">
+        <summary>
+          <span class="ar-name">🏆 ${esc(r.name)}</span>
+          <span class="ar-meta">${date} · Sieger: ${esc(winner)}</span>
+        </summary>
+        ${table}
+        <button type="button" class="btn small danger" data-del-round="${r.id}">🗑️ Runde löschen</button>
+      </details>`;
+  }).join('');
+}
+
 // ---------------------------------------------------------------------------
 // Events
 // ---------------------------------------------------------------------------
@@ -489,6 +530,61 @@ $('#entry-players').addEventListener('click', async (e) => {
       state.version = r.version;
     } catch (err) { toast(err.message, true); refresh(true); }
   }
+});
+
+// Runde abschliessen & speichern
+$('#save-round-btn').addEventListener('click', async () => {
+  const name = prompt('Name der Runde:', `Runde vom ${new Date().toLocaleDateString('de-CH')}`);
+  if (name === null) return;
+  if (!confirm('Runde jetzt abschliessen und speichern?\nDie Scores werden danach für eine neue Runde geleert.')) return;
+  try {
+    const r = await api('POST', '/api/rounds', { name });
+    toast(`«${r.name}» gespeichert 💾`);
+    refresh(true);
+  } catch (err) { toast(err.message, true); }
+});
+
+// Gespeicherte Runde löschen
+$('#archive-list').addEventListener('click', async (e) => {
+  const btn = e.target.closest('[data-del-round]');
+  if (!btn) return;
+  const round = (state.archive || []).find((r) => r.id === btn.dataset.delRound);
+  if (!round || !confirm(`«${round.name}» endgültig löschen?`)) return;
+  try {
+    await api('DELETE', `/api/rounds/${round.id}`);
+    refresh(true);
+  } catch (err) { toast(err.message, true); }
+});
+
+// Backup herunterladen
+$('#backup-btn').addEventListener('click', () => {
+  const stamp = new Date().toISOString().slice(0, 10);
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `fore-the-animals-backup-${stamp}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast('Backup heruntergeladen ⬇️');
+});
+
+// Backup wiederherstellen
+$('#restore-file').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  e.target.value = '';
+  if (!file) return;
+  let data;
+  try {
+    data = JSON.parse(await file.text());
+  } catch {
+    return toast('Datei ist kein gültiges Backup', true);
+  }
+  if (!confirm('Backup wiederherstellen?\nDer aktuelle Stand auf dem Server wird komplett ersetzt.')) return;
+  try {
+    const r = await api('POST', '/api/restore', data);
+    toast(`Wiederhergestellt: ${r.players} Spieler, ${r.rounds} Runden ✅`);
+    refresh(true);
+  } catch (err) { toast(err.message, true); }
 });
 
 // Turnier zurücksetzen

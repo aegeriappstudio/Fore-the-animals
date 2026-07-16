@@ -26,6 +26,7 @@ function emptyState() {
     players: [],   // {id, name, hcp}
     flights: [],   // {id, name, playerIds: []}
     scores: {},    // scores[playerId][hole] = {gross, animals:{zebra,giraffe,rabbit,scorpion,crocodile,snake}}
+    archive: [],   // abgeschlossene Runden: {id, name, date, results, players, scores}
     version: 0,
     updatedAt: null,
   };
@@ -59,8 +60,37 @@ function persist() {
 
 const id = () => crypto.randomBytes(6).toString('hex');
 
-const ANIMALS = ['zebra', 'giraffe', 'rabbit', 'scorpion', 'crocodile', 'snake'];
+const POS_ANIMALS = ['zebra', 'giraffe', 'rabbit'];
+const NEG_ANIMALS = ['scorpion', 'crocodile', 'snake'];
+const ANIMALS = [...POS_ANIMALS, ...NEG_ANIMALS];
 const PARS = [4, 4, 4, 3, 4, 4, 4, 5, 4];
+
+// Endresultate der aktuellen Runde (für das Archiv), sortiert nach Punkten
+function computeResults() {
+  return state.players.map((p) => {
+    const sc = state.scores[p.id] || {};
+    let gross = 0, played = 0, pos = 0, neg = 0;
+    const counts = {};
+    for (let h = 1; h <= 9; h++) {
+      const e = sc[h];
+      if (e && e.gross != null) { gross += e.gross; played++; }
+      if (e && e.animals) {
+        for (const a of ANIMALS) {
+          if (e.animals[a]) {
+            counts[a] = (counts[a] || 0) + 1;
+            POS_ANIMALS.includes(a) ? pos++ : neg++;
+          }
+        }
+      }
+    }
+    const target = 36 + Math.ceil(Number(p.hcp) / 2);
+    return {
+      name: p.name, hcp: p.hcp, target, gross, played, pos, neg, counts,
+      points: target - gross + pos - neg,
+      totalAnimals: pos + neg,
+    };
+  }).sort((a, b) => b.points - a.points || b.totalAnimals - a.totalAnimals || a.gross - b.gross);
+}
 
 // ---------------------------------------------------------------------------
 // API
@@ -224,6 +254,54 @@ async function handleApi(req, res, url) {
     state.scores[player.id][hole] = entry;
     persist();
     return json(res, 200, { entry, version: state.version });
+  }
+
+  // POST /api/rounds {name?} – aktuelle Runde abschliessen und im Archiv speichern
+  if (req.method === 'POST' && url.pathname === '/api/rounds') {
+    const body = await readBody(req);
+    const hasScores = Object.values(state.scores).some((byHole) =>
+      Object.values(byHole || {}).some((e) => e && (e.gross != null || Object.values(e.animals || {}).some(Boolean))));
+    if (!hasScores) return json(res, 400, { error: 'Keine Scores vorhanden – nichts zu speichern' });
+    const date = new Date();
+    const defaultName = `Runde vom ${date.toLocaleDateString('de-CH', { day: '2-digit', month: '2-digit', year: 'numeric' })}`;
+    const round = {
+      id: id(),
+      name: String(body.name || '').trim().slice(0, 60) || defaultName,
+      date: date.toISOString(),
+      results: computeResults(),
+      players: state.players.map((p) => ({ ...p })),
+      scores: JSON.parse(JSON.stringify(state.scores)),
+    };
+    state.archive.unshift(round);
+    for (const pid of Object.keys(state.scores)) state.scores[pid] = {};
+    persist();
+    return json(res, 200, round);
+  }
+
+  // DELETE /api/rounds/:id – gespeicherte Runde löschen
+  if (req.method === 'DELETE' && parts[1] === 'rounds' && parts[2]) {
+    const before = state.archive.length;
+    state.archive = state.archive.filter((r) => r.id !== parts[2]);
+    if (state.archive.length === before) return json(res, 404, { error: 'Runde nicht gefunden' });
+    persist();
+    return json(res, 200, { ok: true });
+  }
+
+  // POST /api/restore – kompletten Zustand aus einem Backup wiederherstellen
+  if (req.method === 'POST' && url.pathname === '/api/restore') {
+    const body = await readBody(req);
+    if (!body || !Array.isArray(body.players)) {
+      return json(res, 400, { error: 'Ungültiges Backup: players fehlt' });
+    }
+    const restored = emptyState();
+    restored.players = body.players;
+    restored.flights = Array.isArray(body.flights) ? body.flights : [];
+    restored.scores = (body.scores && typeof body.scores === 'object') ? body.scores : {};
+    restored.archive = Array.isArray(body.archive) ? body.archive : [];
+    restored.version = state.version;
+    state = restored;
+    persist();
+    return json(res, 200, { ok: true, players: state.players.length, rounds: state.archive.length });
   }
 
   // POST /api/reset {confirm:"RESET"} – löscht alle Scores (Spieler/Flights bleiben)
