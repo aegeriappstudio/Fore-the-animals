@@ -342,12 +342,20 @@ async function refresh(force) {
 let queue = [];
 try { queue = JSON.parse(localStorage.getItem('fta-queue') || '[]'); } catch { queue = []; }
 let flushing = false;
+let netDown = false; // erst nach einem tatsächlich fehlgeschlagenen Sendeversuch true
 
 function saveQueue() {
   localStorage.setItem('fta-queue', JSON.stringify(queue));
+  updateOfflineBanner();
+}
+
+// Banner nur zeigen, wenn wirklich kein Netz da ist – nicht während des
+// normalen Sendens (sonst blitzt es bei jedem Eintrag kurz auf)
+function updateOfflineBanner() {
   const banner = $('#offline-banner');
-  banner.hidden = queue.length === 0;
-  banner.textContent = t('off_banner', { n: queue.length });
+  const show = netDown && queue.length > 0;
+  banner.hidden = !show;
+  if (show) banner.textContent = t('off_banner', { n: queue.length });
 }
 
 function sendScore(pid, hole, body) {
@@ -365,16 +373,20 @@ async function flushQueue() {
       try {
         const r = await api('PUT', `/api/scores/${item.pid}/${item.hole}`, item.body);
         state.version = r.version;
+        netDown = false;
         queue.shift();
         saveQueue();
       } catch (err) {
         if (err.status) {
           // Server hat den Eintrag abgelehnt – verwerfen, sonst hängt die Warteschlange
+          netDown = false;
           queue.shift();
           saveQueue();
           toast(err.message, true);
         } else {
-          break; // kein Netz – später erneut versuchen
+          netDown = true; // kein Netz – später erneut versuchen
+          updateOfflineBanner();
+          break;
         }
       }
     }
