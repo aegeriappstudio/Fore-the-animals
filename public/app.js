@@ -65,7 +65,11 @@ async function api(method, url, body) {
       body: body ? JSON.stringify(body) : undefined,
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Fehler');
+    if (!res.ok) {
+      const err = new Error(data.error || 'Fehler');
+      err.status = res.status; // HTTP-Fehler (Server erreichbar) vs. Netzwerkfehler (kein status)
+      throw err;
+    }
     return data;
   } finally {
     if (method !== 'GET') pendingWrites = Math.max(0, pendingWrites - 1);
@@ -75,13 +79,60 @@ async function api(method, url, body) {
 async function refresh(force) {
   try {
     const fresh = await api('GET', '/api/state');
-    if (pendingWrites > 0 && !force) return; // eigene Änderung unterwegs – nicht überschreiben
+    if ((pendingWrites > 0 || queue.length > 0) && !force) return; // eigene Änderung unterwegs – nicht überschreiben
     if (fresh.version !== state.version || force) {
       state = fresh;
       renderAll();
     }
   } catch (err) {
     console.error(err);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Offline-Warteschlange: Scores lokal puffern und nachsenden, sobald Netz da ist
+// ---------------------------------------------------------------------------
+let queue = [];
+try { queue = JSON.parse(localStorage.getItem('fta-queue') || '[]'); } catch { queue = []; }
+let flushing = false;
+
+function saveQueue() {
+  localStorage.setItem('fta-queue', JSON.stringify(queue));
+  const banner = $('#offline-banner');
+  banner.hidden = queue.length === 0;
+  $('#queue-count').textContent = queue.length;
+}
+
+function sendScore(pid, hole, body) {
+  queue.push({ pid, hole, body });
+  saveQueue();
+  flushQueue();
+}
+
+async function flushQueue() {
+  if (flushing || !queue.length) return;
+  flushing = true;
+  try {
+    while (queue.length) {
+      const item = queue[0];
+      try {
+        const r = await api('PUT', `/api/scores/${item.pid}/${item.hole}`, item.body);
+        state.version = r.version;
+        queue.shift();
+        saveQueue();
+      } catch (err) {
+        if (err.status) {
+          // Server hat den Eintrag abgelehnt – verwerfen, sonst hängt die Warteschlange
+          queue.shift();
+          saveQueue();
+          toast(err.message, true);
+        } else {
+          break; // kein Netz – später erneut versuchen
+        }
+      }
+    }
+  } finally {
+    flushing = false;
   }
 }
 
@@ -117,6 +168,7 @@ function renderAll() {
   renderEntry();
   renderLeaderboard();
   renderArchive();
+  renderAllTime();
 }
 
 // --- Regeln: Platztabelle ---
@@ -255,6 +307,13 @@ function medal(rank) {
   return rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank + '.';
 }
 
+// Aktuelle Rangliste, sortiert wie in der Hauptwertung
+function standings() {
+  return state.players
+    .map((p) => ({ p, ...playerStats(p) }))
+    .sort((a, b) => b.points - a.points || b.totalAnimals - a.totalAnimals || a.gross - b.gross);
+}
+
 function renderLeaderboard() {
   const main = $('#lb-main');
   const second = $('#lb-animals');
@@ -271,7 +330,7 @@ function renderLeaderboard() {
   main.innerHTML = `
     <tr><th>Rang</th><th style="text-align:left">Spieler</th><th>HCP</th><th>Ziel</th><th>Loch</th><th>Brutto</th><th>➕ Tiere</th><th>➖ Tiere</th><th>Punkte</th></tr>` +
     sorted.map((r, i) => `
-      <tr class="rank-${i + 1}">
+      <tr class="rank-${i + 1}" data-pid="${r.p.id}">
         <td>${medal(i + 1)}</td>
         <td class="name-cell">${esc(r.p.name)}</td>
         <td>${r.p.hcp}</td>
@@ -322,7 +381,7 @@ function renderArchive() {
         <table class="lb-table">
           <tr><th>Rang</th><th style="text-align:left">Spieler</th><th>HCP</th><th>Ziel</th><th>Brutto</th><th>➕</th><th>➖</th><th>Punkte</th></tr>
           ${(r.results || []).map((x, i) => `
-            <tr class="rank-${i + 1}">
+            <tr class="rank-${i + 1}" data-round="${r.id}" data-rpid="${x.id || ''}">
               <td>${medal(i + 1)}</td>
               <td class="name-cell">${esc(x.name)}</td>
               <td>${x.hcp}</td>
@@ -344,6 +403,76 @@ function renderArchive() {
         <button type="button" class="btn small danger" data-del-round="${r.id}">🗑️ Runde löschen</button>
       </details>`;
   }).join('');
+}
+
+// --- Ewige Bestenliste über alle gespeicherten Runden ---
+function renderAllTime() {
+  const archive = state.archive || [];
+  const card = $('#alltime-card');
+  card.hidden = !archive.length;
+  if (!archive.length) return;
+
+  const map = {};
+  for (const r of archive) {
+    (r.results || []).forEach((x, i) => {
+      const m = map[x.name] || (map[x.name] = { name: x.name, rounds: 0, wins: 0, animals: 0, best: -Infinity });
+      m.rounds += 1;
+      if (i === 0) m.wins += 1;
+      m.animals += x.totalAnimals != null ? x.totalAnimals : (x.pos + x.neg);
+      m.best = Math.max(m.best, x.points);
+    });
+  }
+  const list = Object.values(map).sort((a, b) => b.wins - a.wins || b.best - a.best || b.animals - a.animals);
+  $('#lb-alltime').innerHTML = `
+    <tr><th>Rang</th><th style="text-align:left">Spieler</th><th>Runden</th><th>🏆 Siege</th><th>🐾 Tiere</th><th>Bestes Resultat</th></tr>` +
+    list.map((m, i) => `
+      <tr class="rank-${i + 1}">
+        <td>${medal(i + 1)}</td>
+        <td class="name-cell">${esc(m.name)}</td>
+        <td>${m.rounds}</td>
+        <td>${m.wins}</td>
+        <td>${m.animals}</td>
+        <td class="pts ${m.best < 0 ? 'neg-pts' : ''}">${m.best > 0 ? '+' : ''}${m.best}</td>
+      </tr>`).join('');
+}
+
+// --- Scorekarten-Ansicht (Modal) ---
+function showScorecard(name, hcp, scores) {
+  scores = scores || {};
+  let gross = 0, played = 0;
+  const grossCells = COURSE.map((h) => {
+    const e = scores[h.hole];
+    if (e && e.gross != null) {
+      gross += e.gross; played += 1;
+      const d = e.gross - h.par;
+      const cls = d < 0 ? 'sc-under' : d === 0 ? 'sc-par' : d === 1 ? 'sc-over' : 'sc-dbl';
+      return `<td class="${cls}">${e.gross}</td>`;
+    }
+    return '<td>–</td>';
+  }).join('');
+  const animalCells = COURSE.map((h) => {
+    const e = scores[h.hole];
+    let s = '';
+    if (e && e.animals) for (const a of ANIMALS) if (e.animals[a.key]) s += a.emoji;
+    return `<td class="sc-animals">${s}</td>`;
+  }).join('');
+
+  $('#modal-content').innerHTML = `
+    <div class="modal-head">
+      <h3>🧾 ${esc(name)}</h3>
+      <button type="button" class="btn small" id="modal-close">✕</button>
+    </div>
+    <p class="hint">HCP ${hcp} · Ziel ${targetFor(hcp)}</p>
+    <div class="table-scroll">
+      <table class="sc-table">
+        <tr><th>Loch</th>${COURSE.map((h) => `<th>${h.hole}</th>`).join('')}<th>Tot</th></tr>
+        <tr><td>Par</td>${COURSE.map((h) => `<td>${h.par}</td>`).join('')}<td>36</td></tr>
+        <tr><td>Brutto</td>${grossCells}<td><strong>${played ? gross : '–'}</strong></td></tr>
+        <tr><td>Tiere</td>${animalCells}<td></td></tr>
+      </table>
+    </div>
+    <p class="hint">🟢 unter Par · ⚪ Par · 🟠 Bogey · 🔴 Doppelbogey+</p>`;
+  $('#modal').hidden = false;
 }
 
 // ---------------------------------------------------------------------------
@@ -510,10 +639,7 @@ $('#entry-players').addEventListener('click', async (e) => {
     if (!state.scores[pid]) state.scores[pid] = {};
     state.scores[pid][currentHole] = { ...entry, gross };
     renderEntry();
-    try {
-      const r = await api('PUT', `/api/scores/${pid}/${currentHole}`, { gross });
-      state.version = r.version;
-    } catch (err) { toast(err.message, true); refresh(true); }
+    sendScore(pid, currentHole, { gross });
   }
 
   if (animalBtn && !animalBtn.disabled) {
@@ -525,11 +651,143 @@ $('#entry-players').addEventListener('click', async (e) => {
     if (!state.scores[pid]) state.scores[pid] = {};
     state.scores[pid][currentHole] = { ...entry, animals };
     renderEntry();
-    try {
-      const r = await api('PUT', `/api/scores/${pid}/${currentHole}`, { animals: { [key]: animals[key] } });
-      state.version = r.version;
-    } catch (err) { toast(err.message, true); refresh(true); }
+    sendScore(pid, currentHole, { animals: { [key]: animals[key] } });
   }
+});
+
+// Scorekarte: aktuelle Runde (Tipp auf Zeile in der Rangliste)
+$('#lb-main').addEventListener('click', (e) => {
+  const tr = e.target.closest('tr[data-pid]');
+  if (!tr) return;
+  const p = state.players.find((x) => x.id === tr.dataset.pid);
+  if (p) showScorecard(p.name, p.hcp, state.scores[p.id]);
+});
+
+// Modal schliessen
+$('#modal').addEventListener('click', (e) => {
+  if (e.target.id === 'modal' || e.target.closest('#modal-close')) $('#modal').hidden = true;
+});
+
+// Preisverleihung
+let ceremonySteps = [], ceremonyIdx = 0;
+
+function showCeremonyStep() {
+  const s = ceremonySteps[ceremonyIdx];
+  const c = $('#ceremony');
+  c.innerHTML = `
+    <div class="c-emoji">${s.emoji}</div>
+    <div class="c-title">${s.title}</div>
+    <div class="c-name">${esc(s.name)}</div>
+    <div class="c-sub">${esc(s.sub || '')}</div>
+    <div class="c-hint">Tippen für weiter</div>`;
+  if (s.confetti) {
+    const colors = ['#f5c542', '#e74c3c', '#3498db', '#2ecc71', '#e67e22', '#ffffff'];
+    for (let i = 0; i < 90; i++) {
+      const sp = document.createElement('span');
+      sp.className = 'confetti';
+      sp.style.left = Math.random() * 100 + '%';
+      sp.style.background = colors[i % colors.length];
+      sp.style.animationDuration = (2.5 + Math.random() * 2.5) + 's';
+      sp.style.animationDelay = (Math.random() * 1.5) + 's';
+      c.appendChild(sp);
+    }
+  }
+}
+
+$('#ceremony-btn').addEventListener('click', () => {
+  const rows = standings();
+  if (!rows.length) return toast('Noch keine Spieler erfasst', true);
+  const byAnimals = [...rows].sort((a, b) => b.totalAnimals - a.totalAnimals || b.pos - a.pos);
+  const pts = (r) => `${r.points > 0 ? '+' : ''}${r.points} Punkte · Brutto ${r.gross}`;
+
+  ceremonySteps = [
+    { emoji: '🎬', title: 'Preisverleihung', name: 'Fore the Animals!', sub: '9-Hole Golf Safari' },
+  ];
+  if (rows[2]) ceremonySteps.push({ emoji: '🥉', title: '3. Platz', name: rows[2].p.name, sub: pts(rows[2]) });
+  if (rows[1]) ceremonySteps.push({ emoji: '🥈', title: '2. Platz', name: rows[1].p.name, sub: pts(rows[1]) });
+  if (byAnimals[0] && byAnimals[0].totalAnimals > 0) {
+    ceremonySteps.push({ emoji: '🐾', title: 'Zweiter Preis – meiste Tiere', name: byAnimals[0].p.name, sub: `${byAnimals[0].totalAnimals} Tiere gesammelt` });
+  }
+  ceremonySteps.push({ emoji: '🏆', title: 'Und der Sieg geht an…', name: rows[0].p.name, sub: pts(rows[0]), confetti: true });
+  ceremonySteps.push({ emoji: '👏', title: 'Applaus!', name: 'Danke fürs Mitspielen', sub: 'Tippen zum Schliessen' });
+
+  ceremonyIdx = 0;
+  showCeremonyStep();
+  $('#ceremony').hidden = false;
+});
+
+$('#ceremony').addEventListener('click', () => {
+  ceremonyIdx += 1;
+  if (ceremonyIdx >= ceremonySteps.length) $('#ceremony').hidden = true;
+  else showCeremonyStep();
+});
+
+// Rangliste als Bild teilen / herunterladen
+$('#share-btn').addEventListener('click', () => {
+  const rows = standings();
+  if (!rows.length) return toast('Noch keine Spieler erfasst', true);
+  const byAnimals = [...rows].sort((a, b) => b.totalAnimals - a.totalAnimals || b.pos - a.pos);
+
+  const W = 1000, headH = 190, rowH = 62, footH = 120;
+  const H = headH + 70 + rows.length * rowH + footH;
+  const cv = document.createElement('canvas');
+  cv.width = W; cv.height = H;
+  const ctx = cv.getContext('2d');
+
+  ctx.fillStyle = '#f4f9f6'; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = '#1d5c3f'; ctx.fillRect(0, 0, W, headH);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 50px sans-serif';
+  ctx.fillText('🦓 FORE THE ANIMALS!', 40, 78);
+  ctx.font = '26px sans-serif'; ctx.globalAlpha = 0.9;
+  ctx.fillText('9-Hole Golf Safari · Rigi Holzhäusern', 40, 122);
+  ctx.fillText(new Date().toLocaleDateString('de-CH', { day: '2-digit', month: '2-digit', year: 'numeric' }), 40, 158);
+  ctx.globalAlpha = 1;
+
+  let y = headH + 42;
+  ctx.fillStyle = '#1d5c3f'; ctx.font = 'bold 24px sans-serif';
+  ctx.fillText('Rang', 40, y); ctx.fillText('Spieler', 150, y);
+  ctx.fillText('Brutto', 560, y); ctx.fillText('Tiere', 700, y); ctx.fillText('Punkte', 850, y);
+  y += 14;
+
+  rows.forEach((r, i) => {
+    const ry = y + i * rowH;
+    ctx.fillStyle = i === 0 ? '#fdf6dd' : (i % 2 === 0 ? '#e8f2ec' : '#ffffff');
+    ctx.fillRect(24, ry, W - 48, rowH - 4);
+    ctx.fillStyle = '#21302a'; ctx.font = 'bold 28px sans-serif';
+    ctx.fillText(i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`, 40, ry + 40);
+    ctx.fillText(r.p.name.slice(0, 20), 150, ry + 40);
+    ctx.font = '28px sans-serif';
+    ctx.fillText(String(r.played ? r.gross : '–'), 560, ry + 40);
+    ctx.fillText(`+${r.pos} / −${r.neg}`, 700, ry + 40);
+    ctx.font = 'bold 30px sans-serif';
+    ctx.fillStyle = r.points < 0 ? '#b23a48' : '#1d5c3f';
+    ctx.fillText(`${r.points > 0 ? '+' : ''}${r.points}`, 850, ry + 40);
+  });
+
+  const fy = y + rows.length * rowH + 52;
+  ctx.fillStyle = '#21302a'; ctx.font = '26px sans-serif';
+  if (byAnimals[0] && byAnimals[0].totalAnimals > 0) {
+    ctx.fillText(`🐾 Meiste Tiere: ${byAnimals[0].p.name} (${byAnimals[0].totalAnimals})`, 40, fy);
+  }
+
+  cv.toBlob(async (blob) => {
+    const file = new File([blob], 'fore-the-animals-rangliste.png', { type: 'image/png' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: 'Fore the Animals! – Rangliste' });
+        return;
+      } catch (err) {
+        if (err.name === 'AbortError') return; // Nutzer hat abgebrochen
+      }
+    }
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'fore-the-animals-rangliste.png';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    toast('Bild heruntergeladen 📸');
+  }, 'image/png');
 });
 
 // Runde abschliessen & speichern
@@ -544,8 +802,17 @@ $('#save-round-btn').addEventListener('click', async () => {
   } catch (err) { toast(err.message, true); }
 });
 
-// Gespeicherte Runde löschen
+// Gespeicherte Runde: Scorekarte anzeigen oder Runde löschen
 $('#archive-list').addEventListener('click', async (e) => {
+  const tr = e.target.closest('tr[data-round]');
+  if (tr && tr.dataset.rpid) {
+    const round = (state.archive || []).find((r) => r.id === tr.dataset.round);
+    const player = round && (round.players || []).find((p) => p.id === tr.dataset.rpid);
+    if (round && player) {
+      showScorecard(player.name, player.hcp, (round.scores || {})[player.id]);
+      return;
+    }
+  }
   const btn = e.target.closest('[data-del-round]');
   if (!btn) return;
   const round = (state.archive || []).find((r) => r.id === btn.dataset.delRound);
@@ -601,8 +868,17 @@ $('#reset-btn').addEventListener('click', async () => {
 // ---------------------------------------------------------------------------
 // Start & Live-Aktualisierung
 // ---------------------------------------------------------------------------
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+
+saveQueue();  // Banner-Zustand herstellen (evtl. Reste aus letzter Sitzung)
+flushQueue(); // liegengebliebene Einträge sofort nachsenden
+window.addEventListener('online', flushQueue);
+setInterval(flushQueue, 4000);
+
 refresh(true);
 setInterval(() => refresh(false), 5000);
 document.addEventListener('visibilitychange', () => {
-  if (!document.hidden) refresh(false);
+  if (!document.hidden) { flushQueue(); refresh(false); }
 });

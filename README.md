@@ -62,6 +62,20 @@ gleichen WLAN (`node server.js` starten und die lokale IP teilen, z.B.
    gleichzeitig eintragen.
 3. **🏆 Rangliste** – live: Hauptwertung (Punkte) und zweiter Preis (meiste
    Tiere). Für noch nicht gespielte Löcher wird Par angenommen (Prognose).
+   Ein Tipp auf einen Spieler zeigt seine Scorekarte Loch für Loch.
+
+### Weitere Funktionen
+
+- **🎉 Preisverleihung** – Vollbild-Show mit Platz 3 → 2 → Tierpreis → Sieger
+  (mit Konfetti), ideal für den Apéro.
+- **📸 Als Bild teilen** – erzeugt die Rangliste als Bild für die
+  WhatsApp-Gruppe (Teilen-Dialog oder Download).
+- **📶 Offline-tolerant** – bei Funklöchern auf dem Platz werden Einträge lokal
+  gepuffert und automatisch nachgesendet, sobald wieder Netz da ist.
+- **💾 Runden-Archiv** – Runden abschliessen und speichern, inkl. ewiger
+  Bestenliste über alle Runden sowie Backup-Download/-Restore.
+- **📱 PWA** – «Zum Home-Bildschirm hinzufügen» installiert die App mit eigenem
+  Icon und ohne Browser-Leiste.
 
 ## Technik
 

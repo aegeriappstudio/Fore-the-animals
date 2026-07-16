@@ -212,6 +212,60 @@ input:focus, select:focus { outline: 2px solid var(--green); border-color: var(-
 .backup-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
 .backup-row .btn { text-align: center; }
 
+#modal[hidden], #ceremony[hidden], #offline-banner[hidden] { display: none; }
+
+/* ---------- Offline-Banner ---------- */
+#offline-banner {
+  position: sticky; top: 47px; z-index: 19;
+  background: #b8860b; color: #fff; text-align: center;
+  padding: 8px 12px; font-size: 0.85rem; font-weight: 600;
+}
+
+/* ---------- Rangliste: Aktionen ---------- */
+.lb-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.lb-table tr[data-pid], .lb-table tr[data-rpid] { cursor: pointer; }
+
+/* ---------- Scorekarten-Modal ---------- */
+#modal {
+  position: fixed; inset: 0; z-index: 90;
+  background: rgba(15, 46, 31, 0.6);
+  display: flex; align-items: center; justify-content: center; padding: 14px;
+}
+.modal-box {
+  background: #fff; border-radius: var(--radius); box-shadow: var(--shadow);
+  padding: 16px; width: 100%; max-width: 560px; max-height: 85vh; overflow-y: auto;
+}
+.modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.modal-head h3 { color: var(--green-dark); }
+.sc-table { font-size: 0.82rem; }
+.sc-table td:first-child, .sc-table th:first-child { text-align: left; font-weight: 600; }
+.sc-under { background: #d9efe2; color: var(--green-dark); font-weight: 800; border-radius: 4px; }
+.sc-par { font-weight: 700; }
+.sc-over { background: #fdf1e3; color: #b8860b; font-weight: 700; }
+.sc-dbl { background: var(--red-light); color: var(--red); font-weight: 700; }
+.sc-animals { font-size: 0.9rem; letter-spacing: -2px; }
+
+/* ---------- Preisverleihung ---------- */
+#ceremony {
+  position: fixed; inset: 0; z-index: 100; overflow: hidden;
+  background: linear-gradient(160deg, #2e7d54, #0f2e1f);
+  color: #fff; cursor: pointer; user-select: none;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; padding: 24px;
+}
+#ceremony .c-emoji { font-size: 5rem; animation: pop 0.5s ease; }
+#ceremony .c-title { font-size: 1rem; opacity: 0.8; text-transform: uppercase; letter-spacing: 3px; margin-top: 14px; }
+#ceremony .c-name { font-size: clamp(1.8rem, 8vw, 3rem); font-weight: 800; margin-top: 8px; animation: pop 0.6s ease; }
+#ceremony .c-sub { margin-top: 10px; opacity: 0.85; font-size: 1.05rem; }
+#ceremony .c-hint { position: absolute; bottom: 26px; left: 0; right: 0; opacity: 0.5; font-size: 0.85rem; }
+@keyframes pop { from { transform: scale(0.3); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.confetti {
+  position: absolute; top: -24px; width: 10px; height: 16px;
+  border-radius: 2px; opacity: 0.9;
+  animation: fall linear forwards;
+}
+@keyframes fall { to { transform: translateY(110vh) rotate(720deg); } }
+
 /* ---------- Sonstiges ---------- */
 .danger-zone { border-color: #ecc8cd; }
 footer { text-align: center; padding: 20px; color: var(--muted); font-size: 0.85rem; }

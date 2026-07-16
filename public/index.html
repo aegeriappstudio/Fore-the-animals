@@ -6,6 +6,13 @@
   <title>Fore the Animals! – 9-Hole Golf Safari</title>
   <link rel="stylesheet" href="style.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦓</text></svg>">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#1d5c3f">
+  <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Fore Animals">
 </head>
 <body>
 
@@ -23,6 +30,8 @@
     <button data-tab="entry">⛳ Eintragen</button>
     <button data-tab="leaderboard">🏆 Rangliste</button>
   </nav>
+
+  <div id="offline-banner" hidden>📶 Kein Empfang – <span id="queue-count">0</span> Einträge warten und werden automatisch nachgesendet</div>
 
   <main>
 
@@ -115,7 +124,11 @@
         <div class="table-scroll">
           <table class="lb-table" id="lb-main"></table>
         </div>
-        <p class="hint">Punkte = Ziel − Brutto + Tiere. Für noch nicht gespielte Löcher wird Par angenommen (Live-Prognose). Aktualisiert sich automatisch alle 5 Sekunden.</p>
+        <p class="hint">Punkte = Ziel − Brutto + Tiere. Für noch nicht gespielte Löcher wird Par angenommen (Live-Prognose). Aktualisiert sich automatisch alle 5 Sekunden. Tipp auf einen Spieler zeigt seine Scorekarte.</p>
+        <div class="lb-actions">
+          <button type="button" class="btn primary" id="ceremony-btn">🎉 Preisverleihung</button>
+          <button type="button" class="btn" id="share-btn">📸 Als Bild teilen</button>
+        </div>
       </div>
       <div class="card">
         <h2>🥈 Zweiter Preis – Meiste Tiere</h2>
@@ -143,6 +156,14 @@
            wenn der Gratis-Server neu aufgesetzt wird.</p>
       </div>
 
+      <div class="card" id="alltime-card" hidden>
+        <h2>🏅 Ewige Bestenliste</h2>
+        <div class="table-scroll">
+          <table class="lb-table" id="lb-alltime"></table>
+        </div>
+        <p class="hint">Über alle gespeicherten Runden. Sortiert nach Siegen, dann bestem Einzelresultat.</p>
+      </div>
+
       <div class="card danger-zone">
         <h2>⚠️ Turnier zurücksetzen</h2>
         <p>Löscht alle eingetragenen Scores (Spieler, Flights und gespeicherte Runden bleiben erhalten).</p>
@@ -155,6 +176,9 @@
   <footer>
     <p>🦓 🦒 🐇 🦂 🐊 🐍 &nbsp;Fore the Animals! – Golf Safari</p>
   </footer>
+
+  <div id="modal" hidden><div class="modal-box" id="modal-content"></div></div>
+  <div id="ceremony" hidden></div>
 
   <div id="toast"></div>
   <script src="app.js"></script>

@@ -85,7 +85,7 @@ function computeResults() {
     }
     const target = 36 + Math.ceil(Number(p.hcp) / 2);
     return {
-      name: p.name, hcp: p.hcp, target, gross, played, pos, neg, counts,
+      id: p.id, name: p.name, hcp: p.hcp, target, gross, played, pos, neg, counts,
       points: target - gross + pos - neg,
       totalAnimals: pos + neg,
     };
