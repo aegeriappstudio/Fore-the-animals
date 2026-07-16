@@ -151,6 +151,24 @@ async function handleApi(req, res, url) {
     return json(res, 200, flight);
   }
 
+  // POST /api/flights/randomize {size} – lost alle Spieler zufällig auf Flights aus
+  if (req.method === 'POST' && url.pathname === '/api/flights/randomize') {
+    const body = await readBody(req);
+    let size = parseInt(body.size, 10);
+    if (!(size >= 2 && size <= 4)) size = 3;
+    if (!state.players.length) return json(res, 400, { error: 'Keine Spieler erfasst' });
+    const ids = state.players.map((p) => p.id);
+    for (let i = ids.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [ids[i], ids[j]] = [ids[j], ids[i]];
+    }
+    const count = Math.max(1, Math.ceil(ids.length / size));
+    state.flights = Array.from({ length: count }, (_, i) => ({ id: id(), name: `Flight ${i + 1}`, playerIds: [] }));
+    ids.forEach((pid, i) => state.flights[i % count].playerIds.push(pid));
+    persist();
+    return json(res, 200, state.flights);
+  }
+
   // PUT/DELETE /api/flights/:id
   if (parts[1] === 'flights' && parts[2]) {
     const flight = state.flights.find((f) => f.id === parts[2]);

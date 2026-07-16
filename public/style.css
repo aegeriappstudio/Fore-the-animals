@@ -104,6 +104,8 @@ input:focus, select:focus { outline: 2px solid var(--green); border-color: var(-
 .btn.primary { background: var(--green); color: #fff; }
 .btn.danger { background: var(--red); color: #fff; }
 .btn.small { padding: 6px 10px; font-size: 0.8rem; }
+.btn.full { display: block; width: 100%; margin-top: 4px; }
+.btn.next-hole { display: block; width: 100%; padding: 14px; font-size: 1.05rem; margin: 4px 0 20px; box-shadow: var(--shadow); }
 
 /* ---------- Spieler-Liste ---------- */
 .player-row {
@@ -132,7 +134,8 @@ input:focus, select:focus { outline: 2px solid var(--green); border-color: var(-
 
 /* ---------- Score-Eintrag ---------- */
 .entry-selectors { display: flex; flex-direction: column; gap: 10px; }
-.entry-selectors label { font-weight: 700; color: var(--green-dark); display: flex; flex-direction: column; gap: 6px; }
+.entry-selectors label,
+.entry-selectors .picker-group { font-weight: 700; color: var(--green-dark); display: flex; flex-direction: column; gap: 6px; }
 .entry-selectors select { width: 100%; }
 
 .hole-picker { display: flex; gap: 4px; flex-wrap: wrap; }

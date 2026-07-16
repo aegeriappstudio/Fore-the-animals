@@ -86,6 +86,7 @@
           <input type="text" id="flight-name" placeholder="Flight-Name (z.B. Flight 1)" maxlength="40">
           <button type="submit" class="btn primary">Flight erstellen</button>
         </form>
+        <button type="button" class="btn full" id="randomize-btn">🎲 Spieler zufällig auf Flights verteilen</button>
         <div id="flight-list"></div>
       </div>
     </section>
@@ -97,9 +98,10 @@
           <label>Flight
             <select id="entry-flight"></select>
           </label>
-          <label>Loch
+          <div class="picker-group">
+            <span class="picker-title">Loch</span>
             <div class="hole-picker" id="hole-picker"></div>
-          </label>
+          </div>
         </div>
         <div id="hole-info" class="hole-info"></div>
       </div>

@@ -140,8 +140,8 @@ function renderPlayers() {
       <span class="p-name">${esc(p.name)}</span>
       <span class="p-meta">HCP ${p.hcp}</span>
       <span class="badge">Ziel ${targetFor(p.hcp)}</span>
-      <button class="btn small" data-edit-player="${p.id}">✏️</button>
-      <button class="btn small" data-del-player="${p.id}">🗑️</button>
+      <button type="button" class="btn small" data-edit-player="${p.id}">✏️</button>
+      <button type="button" class="btn small" data-del-player="${p.id}">🗑️</button>
     </div>`).join('');
 }
 
@@ -164,7 +164,7 @@ function renderFlights() {
       <div class="flight-card">
         <div class="flight-head">
           <h3>⛳ ${esc(f.name)} <small style="font-weight:400;color:var(--muted)">(${f.playerIds.length} Spieler)</small></h3>
-          <button class="btn small" data-del-flight="${f.id}">🗑️</button>
+          <button type="button" class="btn small" data-del-flight="${f.id}">🗑️</button>
         </div>
         <div class="flight-members">${chips || '<span class="empty-note">Keine verfügbaren Spieler</span>'}</div>
       </div>`;
@@ -191,7 +191,7 @@ function renderEntry() {
       const e = (state.scores[pid] || {})[h.hole];
       return e && e.gross != null;
     });
-    return `<button data-hole="${h.hole}" class="${h.hole === currentHole ? 'active' : ''} ${done ? 'done' : ''}">${h.hole}</button>`;
+    return `<button type="button" data-hole="${h.hole}" class="${h.hole === currentHole ? 'active' : ''} ${done ? 'done' : ''}">${h.hole}</button>`;
   }).join('');
 
   const hInfo = COURSE[currentHole - 1];
@@ -206,6 +206,11 @@ function renderEntry() {
     return;
   }
 
+  const nextLabel = currentHole < 9
+    ? `✅ Loch ${currentHole} fertig – weiter zu Loch ${currentHole + 1}`
+    : '✅ Loch 9 fertig – zur Rangliste 🏆';
+  const nextBtn = `<button type="button" class="btn primary next-hole" id="next-hole-btn">${nextLabel}</button>`;
+
   wrap.innerHTML = flight.playerIds.map((pid) => {
     const p = state.players.find((x) => x.id === pid);
     if (!p) return '';
@@ -217,7 +222,7 @@ function renderEntry() {
     const animalBtns = ANIMALS.map((a) => {
       const on = !!(entry.animals && entry.animals[a.key]);
       const disabled = a.key === 'zebra' && hInfo.par === 3;
-      return `<button class="animal-btn ${a.type} ${on ? 'on' : ''}" ${disabled ? 'disabled' : ''}
+      return `<button type="button" class="animal-btn ${a.type} ${on ? 'on' : ''}" ${disabled ? 'disabled' : ''}
         data-animal="${a.key}" data-player="${pid}">
         <span class="a-pts">${a.type === 'pos' ? '+1' : '−1'}</span>
         <span class="emoji">${a.emoji}</span>
@@ -233,15 +238,15 @@ function renderEntry() {
         <div class="gross-row">
           <span class="gross-label">Brutto:</span>
           <div class="stepper">
-            <button data-gross="-1" data-player="${pid}">−</button>
+            <button type="button" data-gross="-1" data-player="${pid}">−</button>
             ${grossDisplay}
-            <button data-gross="1" data-player="${pid}">+</button>
+            <button type="button" data-gross="1" data-player="${pid}">+</button>
           </div>
           <span class="hint">Par ${hInfo.par}</span>
         </div>
         <div class="animal-btns">${animalBtns}</div>
       </div>`;
-  }).join('');
+  }).join('') + nextBtn;
 }
 
 // --- Rangliste ---
@@ -305,12 +310,15 @@ function renderLeaderboard() {
 // ---------------------------------------------------------------------------
 
 // Tabs
+function switchTab(name) {
+  $$('.tabs button').forEach((b) => b.classList.toggle('active', b.dataset.tab === name));
+  $$('.tab').forEach((t) => t.classList.toggle('active', t.id === 'tab-' + name));
+  window.scrollTo({ top: 0 });
+}
 $('#tabs').addEventListener('click', (e) => {
   const btn = e.target.closest('button[data-tab]');
   if (!btn) return;
-  $$('.tabs button').forEach((b) => b.classList.toggle('active', b === btn));
-  $$('.tab').forEach((t) => t.classList.toggle('active', t.id === 'tab-' + btn.dataset.tab));
-  window.scrollTo({ top: 0 });
+  switchTab(btn.dataset.tab);
 });
 
 // Spieler hinzufügen
@@ -404,10 +412,48 @@ $('#hole-picker').addEventListener('click', (e) => {
   renderEntry();
 });
 
-// Brutto & Tiere eintragen
+// Zufällige Flight-Zuteilung
+$('#randomize-btn').addEventListener('click', async () => {
+  if (state.players.length < 2) return toast('Zuerst Spieler erfassen', true);
+  const answer = prompt('Maximale Anzahl Spieler pro Flight (2–4):', '3');
+  if (answer === null) return;
+  const size = parseInt(answer, 10);
+  if (!(size >= 2 && size <= 4)) return toast('Bitte 2, 3 oder 4 eingeben', true);
+  if (state.flights.length && !confirm('Bestehende Flights werden ersetzt. Weiter?')) return;
+  try {
+    await api('POST', '/api/flights/randomize', { size });
+    toast('Flights zufällig ausgelost 🎲');
+    refresh(true);
+  } catch (err) { toast(err.message, true); }
+});
+
+// Brutto & Tiere eintragen + Weiter-Knopf
 $('#entry-players').addEventListener('click', async (e) => {
   const grossBtn = e.target.closest('button[data-gross]');
   const animalBtn = e.target.closest('button[data-animal]');
+  const nextBtn = e.target.closest('#next-hole-btn');
+
+  if (nextBtn) {
+    const flight = state.flights.find((f) => f.id === currentFlightId);
+    const missing = flight ? flight.playerIds.filter((pid) => {
+      const entry = (state.scores[pid] || {})[currentHole];
+      return !entry || entry.gross == null;
+    }) : [];
+    if (missing.length) {
+      const names = missing.map((pid) => (state.players.find((p) => p.id === pid) || {}).name).filter(Boolean).join(', ');
+      if (!confirm(`Noch kein Brutto-Score für: ${names}.\nTrotzdem weiter?`)) return;
+    }
+    if (currentHole < 9) {
+      currentHole += 1;
+      localStorage.setItem('fta-hole', String(currentHole));
+      renderEntry();
+      window.scrollTo({ top: 0 });
+      toast(`Loch ${currentHole} – gutes Gelingen! ⛳`);
+    } else {
+      switchTab('leaderboard');
+    }
+    return;
+  }
 
   if (grossBtn) {
     const pid = grossBtn.dataset.player;
