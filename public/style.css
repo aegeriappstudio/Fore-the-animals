@@ -170,13 +170,26 @@ input:focus, select:focus { outline: 2px solid var(--green); border-color: var(-
 
 .animal-btns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
 .animal-btn {
+  position: relative;
   border: 1px solid var(--border); border-radius: 10px; background: #fff;
   padding: 8px 4px; font-size: 0.78rem; font-weight: 600; cursor: pointer;
   display: flex; flex-direction: column; align-items: center; gap: 2px; color: var(--text);
 }
 .animal-btn .emoji { font-size: 1.3rem; }
+.animal-btn .a-desc {
+  font-size: 0.62rem; font-weight: 500; color: var(--muted);
+  line-height: 1.15; text-align: center;
+}
+.animal-btn .a-pts {
+  position: absolute; top: 4px; right: 5px;
+  font-size: 0.62rem; font-weight: 800; border-radius: 8px; padding: 0 4px;
+}
+.animal-btn.pos .a-pts { color: var(--green-dark); background: var(--green-light); }
+.animal-btn.neg .a-pts { color: var(--red); background: var(--red-light); }
 .animal-btn.pos.on { background: var(--green); border-color: var(--green); color: #fff; }
 .animal-btn.neg.on { background: var(--red); border-color: var(--red); color: #fff; }
+.animal-btn.on .a-desc { color: rgba(255, 255, 255, 0.85); }
+.animal-btn.on .a-pts { background: rgba(255, 255, 255, 0.25); color: #fff; }
 .animal-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 
 .empty-note { color: var(--muted); text-align: center; padding: 20px 0; }

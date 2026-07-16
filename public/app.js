@@ -21,9 +21,9 @@ const ANIMALS = [
   { key: 'zebra',     emoji: '🦓', name: 'Zebra',     type: 'pos', desc: 'Fairway getroffen' },
   { key: 'giraffe',   emoji: '🦒', name: 'Giraffe',   type: 'pos', desc: 'Grün in Regulation' },
   { key: 'rabbit',    emoji: '🐇', name: 'Rabbit',    type: 'pos', desc: 'Ein Putt / Chip-in' },
-  { key: 'scorpion',  emoji: '🦂', name: 'Scorpion',  type: 'neg', desc: 'Bunker' },
+  { key: 'scorpion',  emoji: '🦂', name: 'Scorpion',  type: 'neg', desc: 'Ball im Bunker' },
   { key: 'crocodile', emoji: '🐊', name: 'Crocodile', type: 'neg', desc: 'Wasser / Penalty' },
-  { key: 'snake',     emoji: '🐍', name: 'Snake',     type: 'neg', desc: '3+ Putts' },
+  { key: 'snake',     emoji: '🐍', name: 'Snake',     type: 'neg', desc: '3 Putts oder mehr' },
 ];
 
 // ---------------------------------------------------------------------------
@@ -218,8 +218,11 @@ function renderEntry() {
       const on = !!(entry.animals && entry.animals[a.key]);
       const disabled = a.key === 'zebra' && hInfo.par === 3;
       return `<button class="animal-btn ${a.type} ${on ? 'on' : ''}" ${disabled ? 'disabled' : ''}
-        data-animal="${a.key}" data-player="${pid}" title="${a.desc}">
-        <span class="emoji">${a.emoji}</span>${a.name}</button>`;
+        data-animal="${a.key}" data-player="${pid}">
+        <span class="a-pts">${a.type === 'pos' ? '+1' : '−1'}</span>
+        <span class="emoji">${a.emoji}</span>
+        <span class="a-name">${a.name}</span>
+        <span class="a-desc">${a.desc}</span></button>`;
     }).join('');
     return `
       <div class="entry-player">
