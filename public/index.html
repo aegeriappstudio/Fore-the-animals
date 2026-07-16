@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Fore the Animals! – 9-Hole Golf Safari</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦓</text></svg>">
+</head>
+<body>
+
+  <header class="hero">
+    <img src="img/hero.jpg" alt="Fore the Animals – Golf Safari">
+    <div class="hero-overlay">
+      <h1>FORE THE ANIMALS!</h1>
+      <p>9-Hole Golf Safari · Rigi Holzhäusern · Tee 27 · Par 36 · 2'682 m</p>
+    </div>
+  </header>
+
+  <nav class="tabs" id="tabs">
+    <button data-tab="rules" class="active">📖 Regeln</button>
+    <button data-tab="players">👥 Spieler</button>
+    <button data-tab="entry">⛳ Eintragen</button>
+    <button data-tab="leaderboard">🏆 Rangliste</button>
+  </nav>
+
+  <main>
+
+    <!-- ================= REGELN ================= -->
+    <section id="tab-rules" class="tab active">
+      <div class="card">
+        <h2>So wird gespielt</h2>
+        <p>Wir spielen <strong>Beat Your Target</strong> als Einzelwettbewerb.</p>
+        <p class="target-formula">🎯 Dein Ziel: <strong>Par 36 + halbes Handicap</strong>, immer aufgerundet.</p>
+        <p>Beispiel: HCP 15 → Ziel = 36 + 8 = <strong>44</strong></p>
+      </div>
+
+      <div class="card">
+        <h2>Die Tiere</h2>
+        <p class="animals-sub">Positiv (+1 Punkt):</p>
+        <ul class="animal-list">
+          <li class="pos">🦓 <strong>Zebra</strong> – Fairway getroffen (nur Par 4 / Par 5)</li>
+          <li class="pos">🦒 <strong>Giraffe</strong> – Grün in Regulation</li>
+          <li class="pos">🐇 <strong>Rabbit</strong> – Ein Putt oder eingechippt</li>
+        </ul>
+        <p class="animals-sub">Negativ (−1 Punkt):</p>
+        <ul class="animal-list">
+          <li class="neg">🦂 <strong>Scorpion</strong> – Ball im Bunker</li>
+          <li class="neg">🐊 <strong>Crocodile</strong> – Ball im Wasser / Penalty Area</li>
+          <li class="neg">🐍 <strong>Snake</strong> – Drei Putts oder mehr</li>
+        </ul>
+        <p>Auf demselben Loch können mehrere Tiere gesammelt werden. Jedes Tier zählt pro Loch nur einmal.</p>
+      </div>
+
+      <div class="card">
+        <h2>Schlussresultat</h2>
+        <p><strong>Punkte = Ziel − Brutto + positive Tiere − negative Tiere.</strong></p>
+        <p>Die höchste Punktzahl gewinnt. 🥇</p>
+        <p>Zweiter Preis: 🥈 die meisten gesammelten Tiere insgesamt.</p>
+      </div>
+
+      <div class="card">
+        <h2>Der Platz – Tee 27</h2>
+        <div class="table-scroll">
+          <table class="course-table" id="course-table"></table>
+        </div>
+        <p class="hint">Distanz in Meter bis Mitte Grün.</p>
+      </div>
+    </section>
+
+    <!-- ================= SPIELER ================= -->
+    <section id="tab-players" class="tab">
+      <div class="card">
+        <h2>Spieler erfassen</h2>
+        <form id="player-form" class="row-form">
+          <input type="text" id="player-name" placeholder="Name" maxlength="40" required>
+          <input type="number" id="player-hcp" placeholder="HCP" step="0.1" min="-10" max="54" required>
+          <button type="submit" class="btn primary">Hinzufügen</button>
+        </form>
+        <div id="player-list"></div>
+      </div>
+
+      <div class="card">
+        <h2>Flights</h2>
+        <form id="flight-form" class="row-form">
+          <input type="text" id="flight-name" placeholder="Flight-Name (z.B. Flight 1)" maxlength="40">
+          <button type="submit" class="btn primary">Flight erstellen</button>
+        </form>
+        <div id="flight-list"></div>
+      </div>
+    </section>
+
+    <!-- ================= EINTRAGEN ================= -->
+    <section id="tab-entry" class="tab">
+      <div class="card">
+        <div class="entry-selectors">
+          <label>Flight
+            <select id="entry-flight"></select>
+          </label>
+          <label>Loch
+            <div class="hole-picker" id="hole-picker"></div>
+          </label>
+        </div>
+        <div id="hole-info" class="hole-info"></div>
+      </div>
+      <div id="entry-players"></div>
+    </section>
+
+    <!-- ================= RANGLISTE ================= -->
+    <section id="tab-leaderboard" class="tab">
+      <div class="card">
+        <h2>🥇 Rangliste – Beat Your Target</h2>
+        <div class="table-scroll">
+          <table class="lb-table" id="lb-main"></table>
+        </div>
+        <p class="hint">Punkte = Ziel − Brutto + Tiere. Für noch nicht gespielte Löcher wird Par angenommen (Live-Prognose). Aktualisiert sich automatisch alle 5 Sekunden.</p>
+      </div>
+      <div class="card">
+        <h2>🥈 Zweiter Preis – Meiste Tiere</h2>
+        <div class="table-scroll">
+          <table class="lb-table" id="lb-animals"></table>
+        </div>
+      </div>
+      <div class="card danger-zone">
+        <h2>⚠️ Turnier zurücksetzen</h2>
+        <p>Löscht alle eingetragenen Scores (Spieler und Flights bleiben erhalten).</p>
+        <button class="btn danger" id="reset-btn">Alle Scores löschen</button>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    <p>🦓 🦒 🐇 🦂 🐊 🐍 &nbsp;Fore the Animals! – Golf Safari</p>
+  </footer>
+
+  <div id="toast"></div>
+  <script src="app.js"></script>
+</body>
+</html>

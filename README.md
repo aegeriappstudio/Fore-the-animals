@@ -1,1 +1,77 @@
-# Fore-the-animals
+# 🦓 Fore the Animals!
+
+**9-Hole Golf Safari · Rigi Holzhäusern · Tee 27 · Par 36 · 2'682 m**
+
+Turnier-Webseite für das Spassturnier «Beat Your Target» mit Tier-Bonuspunkten.
+Mehrere Flights können gleichzeitig von ihren Handys aus Scores eintragen –
+die Rangliste aktualisiert sich live.
+
+## Spielregeln
+
+Wir spielen **Beat Your Target** als Einzelwettbewerb.
+
+**🎯 Ziel:** Par 36 + halbes Handicap, immer aufgerundet.
+
+### Tiere
+
+| Tier | Bedeutung | Punkte |
+|---|---|---|
+| 🦓 Zebra | Fairway getroffen (Par 4/5) | +1 |
+| 🦒 Giraffe | Grün in Regulation | +1 |
+| 🐇 Rabbit | Ein Putt oder Chip-in | +1 |
+| 🦂 Scorpion | Ball im Bunker | −1 |
+| 🐊 Crocodile | Ball im Wasser / Penalty Area | −1 |
+| 🐍 Snake | Drei Putts oder mehr | −1 |
+
+Auf demselben Loch können mehrere Tiere gesammelt werden, jedes Tier zählt pro Loch nur einmal.
+
+**Schlussresultat:** Ziel − Brutto + positive Tiere − negative Tiere. Höchste Punktzahl gewinnt.
+**Zweiter Preis:** die meisten gesammelten Tiere insgesamt.
+
+## Starten
+
+Es wird nur Node.js (≥ 18) benötigt, keine weiteren Abhängigkeiten:
+
+```bash
+node server.js
+```
+
+Danach im Browser öffnen: <http://localhost:3000>
+
+Der Port kann mit der Umgebungsvariable `PORT` geändert werden.
+Alle Turnierdaten werden in `data.json` gespeichert (wird automatisch erstellt).
+
+## Am Turniertag (mehrere Flights gleichzeitig)
+
+Damit alle Spieler auf dem Platz vom Handy aus eintragen können, muss die App
+im Internet erreichbar sein. Am einfachsten:
+
+1. **Render.com (gratis):** Neues «Web Service» → dieses GitHub-Repo verbinden →
+   Build Command leer lassen, Start Command `node server.js`. Fertig – die URL
+   an alle Spieler schicken.
+2. **Railway.app / Fly.io:** funktioniert genauso (Start: `node server.js`).
+3. **Eigener Server / Laptop im gleichen WLAN:** `node server.js` starten und die
+   lokale IP-Adresse teilen, z.B. `http://192.168.1.20:3000`.
+
+> Hinweis: Bei Gratis-Hosting mit ephemerem Dateisystem (z.B. Render Free) geht
+> `data.json` bei einem Neustart des Dienstes verloren. Für ein Tagesturnier ist
+> das in der Praxis kein Problem; wer sichergehen will, hängt ein persistentes
+> Volume ein und setzt `DATA_DIR` auf dessen Pfad.
+
+## Bedienung
+
+1. **👥 Spieler** – alle Spieler mit Name und Handicap erfassen; das Ziel
+   (36 + HCP/2, aufgerundet) wird automatisch berechnet. Flights erstellen und
+   Spieler per Tipp auf den Namen zuteilen.
+2. **⛳ Eintragen** – jeder Flight wählt sich selbst aus, wählt das Loch und
+   trägt pro Spieler Bruttoschläge und Tiere ein. Mehrere Flights können
+   gleichzeitig eintragen.
+3. **🏆 Rangliste** – live: Hauptwertung (Punkte) und zweiter Preis (meiste
+   Tiere). Für noch nicht gespielte Löcher wird Par angenommen (Prognose).
+
+## Technik
+
+- `server.js` – kleiner HTTP-Server (nur Node-Standardbibliothek) mit JSON-API
+  und Datei-Persistenz (`data.json`).
+- `public/` – Mobile-first Single-Page-Frontend (Vanilla HTML/CSS/JS), das den
+  Server alle 5 Sekunden abfragt.

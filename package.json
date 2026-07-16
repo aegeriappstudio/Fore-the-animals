@@ -1,0 +1,13 @@
+{
+  "name": "fore-the-animals",
+  "version": "1.0.0",
+  "description": "Fore the Animals! – 9-Hole Golf Safari Turnier-App (Rigi Holzhäusern)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
+}
