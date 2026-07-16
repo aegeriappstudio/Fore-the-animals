@@ -739,8 +739,13 @@ function showScorecard(name, hcp, scores) {
 
 // Tabs
 function switchTab(name) {
+  const prev = document.querySelector('.tabs button.active');
+  const changed = !prev || prev.dataset.tab !== name;
   $$('.tabs button').forEach((b) => b.classList.toggle('active', b.dataset.tab === name));
   $$('.tab').forEach((t) => t.classList.toggle('active', t.id === 'tab-' + name));
+  // Beim Wechsel alles aus dem aktuellen Stand neu aufbauen – sonst zeigt z.B.
+  // die Rangliste eigene, gerade eingetragene Scores erst nach einem Reload
+  if (changed) renderAll();
   window.scrollTo({ top: 0 });
 }
 $('#tabs').addEventListener('click', (e) => {
