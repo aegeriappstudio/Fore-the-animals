@@ -26,6 +26,7 @@
 
   <nav class="tabs" id="tabs">
     <button data-tab="rules" class="active" data-i18n="tab_rules">📖 Regeln</button>
+    <button data-tab="dates" data-i18n="tab_dates">📅 Termine</button>
     <button data-tab="players" data-i18n="tab_players">👥 Spieler</button>
     <button data-tab="entry" data-i18n="tab_entry">⛳ Eintragen</button>
     <button data-tab="leaderboard" data-i18n="tab_leaderboard">🏆 Rangliste</button>
@@ -78,10 +79,42 @@
       </div>
     </section>
 
+    <!-- ================= TERMINE ================= -->
+    <section id="tab-dates" class="tab">
+      <div class="card">
+        <h2 data-i18n="d_title">Termine &amp; Turniere</h2>
+        <p class="hint" data-i18n="d_intro">Die nächsten fixen und geplanten Turnier-Termine der Golf Safari.</p>
+      </div>
+
+      <div class="card event event-confirmed">
+        <div class="event-head">
+          <h2 data-i18n="d_e1_name">Fore the Animals #1</h2>
+          <span class="event-badge confirmed" data-i18n="d_badge_confirmed">✅ Bestätigt</span>
+        </div>
+        <ul class="event-facts">
+          <li><span class="ef-icon">📅</span><span class="ef-label" data-i18n="d_lbl_date">Datum</span><span class="ef-val" data-i18n="d_e1_date">Donnerstag, 6. August 2026</span></li>
+          <li><span class="ef-icon">⛳</span><span class="ef-label" data-i18n="d_lbl_flights">Flights</span><span class="ef-val" data-i18n="d_e1_flights">18:30 &amp; 18:40 Uhr</span></li>
+          <li><span class="ef-icon">🍽️</span><span class="ef-label" data-i18n="d_lbl_dinner">Dinner</span><span class="ef-val" data-i18n="d_e1_dinner">Albergo</span></li>
+        </ul>
+      </div>
+
+      <div class="card event event-tentative">
+        <div class="event-head">
+          <h2 data-i18n="d_e2_name">Fore the Animals #2</h2>
+          <span class="event-badge tentative" data-i18n="d_badge_tentative">⏳ Vorläufig</span>
+        </div>
+        <ul class="event-facts">
+          <li><span class="ef-icon">📅</span><span class="ef-label" data-i18n="d_lbl_date">Datum</span><span class="ef-val" data-i18n="d_e2_date">Mittwoch, 26. August 2026</span></li>
+        </ul>
+        <p class="hint" data-i18n="d_e2_note">Wird in Kürze bestätigt.</p>
+      </div>
+    </section>
+
     <!-- ================= SPIELER ================= -->
     <section id="tab-players" class="tab">
       <div class="card">
         <h2 data-i18n="p_title">Spieler erfassen</h2>
+        <p class="hint" data-i18n="p_persist_hint">Spieler nur einmal erfassen – sie bleiben über alle Runden gespeichert. Vor jeder Runde einfach das Handicap direkt im Feld anpassen, das Ziel rechnet sich automatisch neu.</p>
         <form id="player-form" class="row-form">
           <input type="text" id="player-name" placeholder="Name" maxlength="40" required data-i18n-ph="ph_name">
           <input type="number" id="player-hcp" placeholder="HCP" step="0.1" min="-10" max="54" required data-i18n-ph="ph_hcp">
