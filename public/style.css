@@ -142,8 +142,16 @@ input:focus, select:focus { outline: 2px solid var(--green); border-color: var(-
   border-bottom: 1px solid var(--border);
 }
 .player-row:last-child { border-bottom: none; }
-.player-row .p-name { flex: 1; font-weight: 600; }
+.player-row .p-name { flex: 1; min-width: 0; font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
 .player-row .p-meta { color: var(--muted); font-size: 0.85rem; }
+.player-row .p-hcp {
+  display: inline-flex; align-items: center; gap: 5px; flex: 0 0 auto;
+  color: var(--muted); font-size: 0.78rem; font-weight: 600;
+}
+.player-row .p-hcp-input {
+  width: 62px; padding: 5px 6px; font-size: 0.95rem; font-weight: 700;
+  text-align: center; color: var(--text);
+}
 .badge {
   display: inline-block; background: var(--green-light); color: var(--green-dark);
   border-radius: 20px; padding: 2px 10px; font-size: 0.78rem; font-weight: 700;

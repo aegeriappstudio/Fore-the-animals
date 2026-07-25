@@ -99,6 +99,15 @@ const STRINGS = {
   ph_name: { de: 'Name', en: 'Name' },
   ph_hcp: { de: 'HCP', en: 'HCP' },
   p_add: { de: 'Hinzufügen', en: 'Add' },
+  p_persist_hint: {
+    de: 'Spieler nur einmal erfassen – sie bleiben über alle Runden gespeichert. Vor jeder Runde einfach das Handicap direkt im Feld anpassen, das Ziel rechnet sich automatisch neu.',
+    en: 'Add each player only once – they stay saved across all rounds. Before each round just adjust the handicap right in the field, the target updates automatically.',
+  },
+  p_rename: { de: 'Name ändern', en: 'Rename' },
+  p_hcp_saved: {
+    de: 'HCP von {name} aktualisiert → {hcp}',
+    en: 'HCP for {name} updated → {hcp}',
+  },
   p_flights: { de: 'Flights', en: 'Flights' },
   ph_flight: { de: 'Flight-Name (z.B. Flight 1)', en: 'Flight name (e.g. Flight 1)' },
   p_create_flight: { de: 'Flight erstellen', en: 'Create flight' },
@@ -465,12 +474,18 @@ function renderPlayers() {
     list.innerHTML = `<p class="empty-note">${t('p_none')}</p>`;
     return;
   }
+  // Nicht neu aufbauen, während ein HCP-Feld gerade bearbeitet wird – sonst
+  // überschreibt der 5-Sekunden-Poll die Eingabe und der Fokus geht verloren.
+  if (list.contains(document.activeElement) && document.activeElement.classList.contains('p-hcp-input')) return;
   list.innerHTML = state.players.map((p) => `
     <div class="player-row">
       <span class="p-name">${esc(p.name)}</span>
-      <span class="p-meta">HCP ${p.hcp}</span>
-      <span class="badge">${t('p_target')} ${targetFor(p.hcp)}</span>
-      <button type="button" class="btn small" data-edit-player="${p.id}">✏️</button>
+      <label class="p-hcp">${t('ph_hcp')}
+        <input type="number" class="p-hcp-input" data-hcp-player="${p.id}" value="${esc(p.hcp)}"
+               step="0.1" min="-10" max="54" inputmode="decimal" aria-label="${t('ph_hcp')} ${esc(p.name)}">
+      </label>
+      <span class="badge" data-target-for="${p.id}">${t('p_target')} ${targetFor(p.hcp)}</span>
+      <button type="button" class="btn small" data-edit-player="${p.id}" title="${t('p_rename')}">✏️</button>
       <button type="button" class="btn small" data-del-player="${p.id}">🗑️</button>
     </div>`).join('');
 }
@@ -804,11 +819,9 @@ $('#player-list').addEventListener('click', async (e) => {
   if (editBtn) {
     const p = state.players.find((x) => x.id === editBtn.dataset.editPlayer);
     const name = prompt(t('p_prompt_name'), p.name);
-    if (name === null) return;
-    const hcp = prompt(t('p_prompt_hcp'), p.hcp);
-    if (hcp === null) return;
+    if (name === null || !name.trim()) return;
     try {
-      await api('PUT', `/api/players/${p.id}`, { name, hcp });
+      await api('PUT', `/api/players/${p.id}`, { name });
       refresh(true);
     } catch (err) { toast(err.message, true); }
   }
@@ -819,6 +832,32 @@ $('#player-list').addEventListener('click', async (e) => {
       await api('DELETE', `/api/players/${p.id}`);
       refresh(true);
     } catch (err) { toast(err.message, true); }
+  }
+});
+
+// Handicap inline anpassen – Ziel rechnet live nach, gespeichert wird beim Verlassen des Feldes
+$('#player-list').addEventListener('input', (e) => {
+  const inp = e.target.closest('.p-hcp-input');
+  if (!inp || inp.value === '') return;
+  const badge = $(`[data-target-for="${inp.dataset.hcpPlayer}"]`);
+  if (badge) badge.textContent = `${t('p_target')} ${targetFor(inp.value)}`;
+});
+$('#player-list').addEventListener('change', async (e) => {
+  const inp = e.target.closest('.p-hcp-input');
+  if (!inp) return;
+  const p = state.players.find((x) => x.id === inp.dataset.hcpPlayer);
+  if (!p) return;
+  if (inp.value === '') { inp.value = p.hcp; return; } // leer = keine Änderung
+  try {
+    const updated = await api('PUT', `/api/players/${p.id}`, { hcp: inp.value });
+    p.hcp = updated.hcp;
+    inp.value = updated.hcp;
+    const badge = $(`[data-target-for="${p.id}"]`);
+    if (badge) badge.textContent = `${t('p_target')} ${targetFor(updated.hcp)}`;
+    toast(t('p_hcp_saved', { name: p.name, hcp: updated.hcp }));
+  } catch (err) {
+    toast(err.message, true);
+    inp.value = p.hcp; // bei Fehler zurücksetzen
   }
 });
 
