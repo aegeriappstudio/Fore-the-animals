@@ -9,9 +9,28 @@ let lang = localStorage.getItem('fta-lang') || 'de';
 const STRINGS = {
   // Tabs
   tab_rules: { de: '📖 Regeln', en: '📖 Rules' },
+  tab_dates: { de: '📅 Termine', en: '📅 Dates' },
   tab_players: { de: '👥 Spieler', en: '👥 Players' },
   tab_entry: { de: '⛳ Eintragen', en: '⛳ Score entry' },
   tab_leaderboard: { de: '🏆 Rangliste', en: '🏆 Leaderboard' },
+  // Termine
+  d_title: { de: 'Termine & Turniere', en: 'Dates & tournaments' },
+  d_intro: {
+    de: 'Die nächsten fixen und geplanten Turnier-Termine der Golf Safari.',
+    en: 'The next confirmed and planned tournament dates of the Golf Safari.',
+  },
+  d_lbl_date: { de: 'Datum', en: 'Date' },
+  d_lbl_flights: { de: 'Flights', en: 'Tee times' },
+  d_lbl_dinner: { de: 'Dinner', en: 'Dinner' },
+  d_badge_confirmed: { de: '✅ Bestätigt', en: '✅ Confirmed' },
+  d_badge_tentative: { de: '⏳ Vorläufig', en: '⏳ Tentative' },
+  d_e1_name: { de: 'Fore the Animals #1', en: 'Fore the Animals #1' },
+  d_e1_date: { de: 'Donnerstag, 6. August 2026', en: 'Thursday, 6 August 2026' },
+  d_e1_flights: { de: '18:30 & 18:40 Uhr', en: '18:30 & 18:40' },
+  d_e1_dinner: { de: 'Albergo', en: 'Albergo' },
+  d_e2_name: { de: 'Fore the Animals #2', en: 'Fore the Animals #2' },
+  d_e2_date: { de: 'Mittwoch, 26. August 2026', en: 'Wednesday, 26 August 2026' },
+  d_e2_note: { de: 'Wird in Kürze bestätigt.', en: 'To be confirmed shortly.' },
   // Regeln
   r_how_title: { de: 'So wird gespielt', en: 'How to play' },
   r_how_p1: {
