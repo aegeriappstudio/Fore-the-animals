@@ -3,7 +3,17 @@ services:
   - type: web
     name: fore-the-animals
     runtime: node
-    plan: free
+    plan: starter
     buildCommand: ""
     startCommand: node server.js
     healthCheckPath: /
+    # Persistente Disk: Nur so überlebt data.json Deploys und Neustarts.
+    # Bei einem manuell erstellten Dienst muss die Disk im Dashboard angehängt
+    # werden (siehe HOSTING.md) – dieser Block wirkt nur bei Blueprint-Diensten.
+    disk:
+      name: fta-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: DATA_DIR
+        value: /var/data
