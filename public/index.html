@@ -28,6 +28,7 @@
     <button data-tab="rules" class="active" data-i18n="tab_rules">📖 Regeln</button>
     <button data-tab="dates" data-i18n="tab_dates">📅 Termine</button>
     <button data-tab="players" data-i18n="tab_players">👥 Spieler</button>
+    <button data-tab="flights" data-i18n="tab_flights">🏌️ Flights</button>
     <button data-tab="entry" data-i18n="tab_entry">⛳ Eintragen</button>
     <button data-tab="leaderboard" data-i18n="tab_leaderboard">🏆 Rangliste</button>
     <button id="lang-toggle" type="button">EN</button>
@@ -83,7 +84,7 @@
     <section id="tab-dates" class="tab">
       <div class="card">
         <h2 data-i18n="d_title">Termine &amp; Turniere</h2>
-        <p class="hint" data-i18n="d_intro">Die nächsten fixen und geplanten Turnier-Termine der Golf Safari.</p>
+        <p class="hint" data-i18n="d_intro">Die nächsten fixen und geplanten Turnier-Termine der Golf Safari. Tippe bei einem Termin auf deinen Namen, um dich an- oder abzumelden.</p>
       </div>
 
       <div id="event-list"></div>
@@ -125,9 +126,13 @@
         </form>
         <div id="player-list"></div>
       </div>
+    </section>
 
+    <!-- ================= FLIGHTS ================= -->
+    <section id="tab-flights" class="tab">
       <div class="card">
         <h2 data-i18n="p_flights">Flights</h2>
+        <p class="hint" data-i18n="f_hint">Flights aus den anwesenden Spielern zusammenstellen – von Hand oder per Zufalls-Auslosung.</p>
         <form id="flight-form" class="row-form">
           <input type="text" id="flight-name" placeholder="Flight-Name (z.B. Flight 1)" maxlength="40" data-i18n-ph="ph_flight">
           <label class="tee-field">🕐 <span data-i18n="f_tee">Abschlag</span>

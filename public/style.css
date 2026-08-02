@@ -268,8 +268,12 @@ input:focus, select:focus { outline: 2px solid var(--green); border-color: var(-
 .player-row.absent .badge { opacity: 0.45; }
 .player-row.absent .p-name { text-decoration: line-through; }
 
-/* ---------- Termine: Bearbeitung ---------- */
-.event-actions { display: flex; gap: 8px; margin-top: 10px; }
+/* ---------- Termine: Anmeldungen & Bearbeitung ---------- */
+.event-signups { margin-top: 10px; }
+.event-signups .es-title {
+  font-size: 0.85rem; font-weight: 700; color: var(--green-dark); margin-bottom: 6px;
+}
+.event-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
 .ev-date-label {
   display: flex; align-items: center; gap: 6px;
   font-size: 0.9rem; color: var(--muted); flex: 1 1 160px;

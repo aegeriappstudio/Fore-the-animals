@@ -30,9 +30,9 @@ function emptyState() {
     flights: [],   // {id, name, playerIds: [], teeTime}
     scores: {},    // scores[playerId][hole] = {gross, animals:{zebra,giraffe,rabbit,scorpion,crocodile,snake}}
     archive: [],   // abgeschlossene Runden: {id, name, date, results, players, scores}
-    events: [      // Termine: {id, name, date (YYYY-MM-DD), flights, dinner, note, confirmed}
-      { id: 'ev-seed-1', name: 'Fore the Animals #1', date: '2026-08-06', flights: '18:30 & 18:40 Uhr', dinner: 'Albergo', note: '', confirmed: true },
-      { id: 'ev-seed-2', name: 'Fore the Animals #2', date: '2026-08-26', flights: '', dinner: '', note: 'Wird in Kürze bestätigt.', confirmed: false },
+    events: [      // Termine: {id, name, date (YYYY-MM-DD), flights, dinner, note, confirmed, playerIds (Anmeldungen)}
+      { id: 'ev-seed-1', name: 'Fore the Animals #1', date: '2026-08-06', flights: '18:30 & 18:40 Uhr', dinner: 'Albergo', note: '', confirmed: true, playerIds: [] },
+      { id: 'ev-seed-2', name: 'Fore the Animals #2', date: '2026-08-26', flights: '', dinner: '', note: 'Wird in Kürze bestätigt.', confirmed: false, playerIds: [] },
     ],
     version: 0,
     updatedAt: null,
@@ -220,6 +220,9 @@ async function handleApi(req, res, url) {
       state.flights.forEach((f) => {
         f.playerIds = f.playerIds.filter((pid) => pid !== player.id);
       });
+      (state.events || []).forEach((ev) => {
+        if (Array.isArray(ev.playerIds)) ev.playerIds = ev.playerIds.filter((pid) => pid !== player.id);
+      });
       persist();
       return json(res, 200, { ok: true });
     }
@@ -381,17 +384,48 @@ async function handleApi(req, res, url) {
       dinner: String(body.dinner || '').trim().slice(0, 80),
       note: String(body.note || '').trim().slice(0, 200),
       confirmed: !!body.confirmed,
+      playerIds: [],
     };
     state.events.push(ev);
     persist();
     return json(res, 200, ev);
   }
 
-  // PUT/DELETE /api/events/:id – Termin ändern oder löschen (nur mit PIN)
+  // /api/events/:id – Anmeldung (ohne PIN), Rest nur mit PIN
   if (parts[1] === 'events' && parts[2]) {
-    if (!pinOk(req)) return json(res, 403, { error: 'PIN erforderlich' });
     const ev = (state.events || []).find((x) => x.id === parts[2]);
     if (!ev) return json(res, 404, { error: 'Termin nicht gefunden' });
+    if (!Array.isArray(ev.playerIds)) ev.playerIds = []; // Altbestand ohne Feld
+
+    // POST /api/events/:id/signup {playerId, attending} – An-/Abmelden, für alle offen
+    if (req.method === 'POST' && parts[3] === 'signup') {
+      const body = await readBody(req);
+      const player = state.players.find((p) => p.id === body.playerId);
+      if (!player) return json(res, 404, { error: 'Spieler nicht gefunden' });
+      const attending = !!body.attending;
+      ev.playerIds = ev.playerIds.filter((pid) => pid !== player.id);
+      if (attending) ev.playerIds.push(player.id);
+      persist();
+      return json(res, 200, { ok: true, playerIds: ev.playerIds });
+    }
+
+    if (!pinOk(req)) return json(res, 403, { error: 'PIN erforderlich' });
+
+    // POST /api/events/:id/apply-attendance – Anwesenheit gemäss Anmeldungen setzen
+    if (req.method === 'POST' && parts[3] === 'apply-attendance') {
+      const signedUp = new Set(ev.playerIds);
+      let present = 0;
+      state.players.forEach((p) => {
+        p.present = signedUp.has(p.id);
+        if (p.present) present += 1;
+        else state.flights.forEach((f) => {
+          f.playerIds = f.playerIds.filter((pid) => pid !== p.id);
+        });
+      });
+      persist();
+      return json(res, 200, { ok: true, present });
+    }
+
     if (req.method === 'PUT') {
       const body = await readBody(req);
       if (body.name !== undefined) {
