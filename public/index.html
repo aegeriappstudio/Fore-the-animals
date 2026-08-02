@@ -86,27 +86,30 @@
         <p class="hint" data-i18n="d_intro">Die nächsten fixen und geplanten Turnier-Termine der Golf Safari.</p>
       </div>
 
-      <div class="card event event-confirmed">
-        <div class="event-head">
-          <h2 data-i18n="d_e1_name">Fore the Animals #1</h2>
-          <span class="event-badge confirmed" data-i18n="d_badge_confirmed">✅ Bestätigt</span>
-        </div>
-        <ul class="event-facts">
-          <li><span class="ef-icon">📅</span><span class="ef-label" data-i18n="d_lbl_date">Datum</span><span class="ef-val" data-i18n="d_e1_date">Donnerstag, 6. August 2026</span></li>
-          <li><span class="ef-icon">⛳</span><span class="ef-label" data-i18n="d_lbl_flights">Flights</span><span class="ef-val" data-i18n="d_e1_flights">18:30 &amp; 18:40 Uhr</span></li>
-          <li><span class="ef-icon">🍽️</span><span class="ef-label" data-i18n="d_lbl_dinner">Dinner</span><span class="ef-val" data-i18n="d_e1_dinner">Albergo</span></li>
-        </ul>
-      </div>
+      <div id="event-list"></div>
 
-      <div class="card event event-tentative">
-        <div class="event-head">
-          <h2 data-i18n="d_e2_name">Fore the Animals #2</h2>
-          <span class="event-badge tentative" data-i18n="d_badge_tentative">⏳ Vorläufig</span>
-        </div>
-        <ul class="event-facts">
-          <li><span class="ef-icon">📅</span><span class="ef-label" data-i18n="d_lbl_date">Datum</span><span class="ef-val" data-i18n="d_e2_date">Mittwoch, 26. August 2026</span></li>
-        </ul>
-        <p class="hint" data-i18n="d_e2_note">Wird in Kürze bestätigt.</p>
+      <div class="card">
+        <h2 data-i18n="ev_admin_title">✏️ Termin erfassen / bearbeiten</h2>
+        <form id="event-form">
+          <input type="hidden" id="ev-id">
+          <div class="row-form">
+            <input type="text" id="ev-name" maxlength="60" placeholder="Name (z.B. Fore the Animals #3)" data-i18n-ph="ev_ph_name" required>
+            <label class="ev-date-label">📅 <input type="date" id="ev-date" required></label>
+          </div>
+          <div class="row-form">
+            <input type="text" id="ev-flights" maxlength="80" placeholder="Flights (z.B. 18:30 & 18:40 Uhr)" data-i18n-ph="ev_ph_flights">
+            <input type="text" id="ev-dinner" maxlength="80" placeholder="Dinner (z.B. Albergo)" data-i18n-ph="ev_ph_dinner">
+          </div>
+          <div class="row-form">
+            <input type="text" id="ev-note" maxlength="200" placeholder="Notiz (optional)" data-i18n-ph="ev_ph_note">
+          </div>
+          <label class="ev-confirmed"><input type="checkbox" id="ev-confirmed"> <span data-i18n="ev_confirmed">✅ Termin ist bestätigt</span></label>
+          <div class="lb-actions">
+            <button type="submit" class="btn primary" data-i18n="ev_save">💾 Termin speichern</button>
+            <button type="button" class="btn" id="ev-cancel" data-i18n="ev_cancel" hidden>Abbrechen</button>
+          </div>
+        </form>
+        <p class="hint" data-i18n="ev_pin_hint">Zum Speichern oder Löschen von Terminen wird die PIN benötigt.</p>
       </div>
     </section>
 
@@ -114,7 +117,7 @@
     <section id="tab-players" class="tab">
       <div class="card">
         <h2 data-i18n="p_title">Spieler erfassen</h2>
-        <p class="hint" data-i18n="p_persist_hint">Spieler nur einmal erfassen – sie bleiben über alle Runden gespeichert. Vor jeder Runde einfach das Handicap direkt im Feld anpassen, das Ziel rechnet sich automatisch neu.</p>
+        <p class="hint" data-i18n="p_persist_hint">Spieler nur einmal erfassen – sie bleiben über alle Runden gespeichert. Vor jeder Runde das Handicap anpassen und mit ✅/💤 markieren, wer heute mitspielt: Abwesende erscheinen weder in den Flights noch in der Rangliste.</p>
         <form id="player-form" class="row-form">
           <input type="text" id="player-name" placeholder="Name" maxlength="40" required data-i18n-ph="ph_name">
           <input type="number" id="player-hcp" placeholder="HCP" step="0.1" min="-10" max="54" required data-i18n-ph="ph_hcp">
@@ -127,6 +130,9 @@
         <h2 data-i18n="p_flights">Flights</h2>
         <form id="flight-form" class="row-form">
           <input type="text" id="flight-name" placeholder="Flight-Name (z.B. Flight 1)" maxlength="40" data-i18n-ph="ph_flight">
+          <label class="tee-field">🕐 <span data-i18n="f_tee">Abschlag</span>
+            <input type="datetime-local" id="flight-tee">
+          </label>
           <button type="submit" class="btn primary" data-i18n="p_create_flight">Flight erstellen</button>
         </form>
         <button type="button" class="btn" id="randomize-btn" data-i18n="p_randomize">🎲 Flights zufällig auslosen</button>

@@ -26,10 +26,14 @@ const PUBLIC_DIR = path.join(__dirname, 'public');
 
 function emptyState() {
   return {
-    players: [],   // {id, name, hcp}
-    flights: [],   // {id, name, playerIds: []}
+    players: [],   // {id, name, hcp, present} – present: macht bei der aktuellen Runde mit
+    flights: [],   // {id, name, playerIds: [], teeTime}
     scores: {},    // scores[playerId][hole] = {gross, animals:{zebra,giraffe,rabbit,scorpion,crocodile,snake}}
     archive: [],   // abgeschlossene Runden: {id, name, date, results, players, scores}
+    events: [      // Termine: {id, name, date (YYYY-MM-DD), flights, dinner, note, confirmed}
+      { id: 'ev-seed-1', name: 'Fore the Animals #1', date: '2026-08-06', flights: '18:30 & 18:40 Uhr', dinner: 'Albergo', note: '', confirmed: true },
+      { id: 'ev-seed-2', name: 'Fore the Animals #2', date: '2026-08-26', flights: '', dinner: '', note: 'Wird in Kürze bestätigt.', confirmed: false },
+    ],
     version: 0,
     updatedAt: null,
   };
@@ -55,10 +59,29 @@ function persist() {
     fs.writeFile(tmp, JSON.stringify(state, null, 2), (err) => {
       if (err) return console.error('Speichern fehlgeschlagen:', err.message);
       fs.rename(tmp, DATA_FILE, (err2) => {
-        if (err2) console.error('Speichern fehlgeschlagen:', err2.message);
+        if (err2) return console.error('Speichern fehlgeschlagen:', err2.message);
+        dailyBackup();
       });
     });
   }, 150);
+}
+
+// Einmal pro Tag eine datierte Kopie der data.json ablegen (die letzten 14
+// bleiben erhalten) – Schutz vor versehentlichem Löschen in der App.
+const BACKUP_DIR = path.join(DATA_DIR, 'backups');
+const KEEP_BACKUPS = 14;
+function dailyBackup() {
+  try {
+    const stamp = new Date().toISOString().slice(0, 10);
+    const file = path.join(BACKUP_DIR, `data-${stamp}.json`);
+    if (fs.existsSync(file)) return;
+    fs.mkdirSync(BACKUP_DIR, { recursive: true });
+    fs.copyFileSync(DATA_FILE, file);
+    const old = fs.readdirSync(BACKUP_DIR).filter((f) => /^data-\d{4}-\d{2}-\d{2}\.json$/.test(f)).sort();
+    while (old.length > KEEP_BACKUPS) fs.unlinkSync(path.join(BACKUP_DIR, old.shift()));
+  } catch (err) {
+    console.error('Tages-Backup fehlgeschlagen:', err.message);
+  }
 }
 
 const id = () => crypto.randomBytes(6).toString('hex');
@@ -68,9 +91,15 @@ const NEG_ANIMALS = ['scorpion', 'crocodile', 'snake'];
 const ANIMALS = [...POS_ANIMALS, ...NEG_ANIMALS];
 const PARS = [4, 4, 4, 3, 4, 4, 4, 5, 4];
 
-// Endresultate der aktuellen Runde (für das Archiv), sortiert nach Punkten
+// Anwesende Spieler (Altbestand ohne das Feld gilt als anwesend)
+function presentPlayers() {
+  return state.players.filter((p) => p.present !== false);
+}
+
+// Endresultate der aktuellen Runde (für das Archiv), sortiert nach Punkten –
+// abwesende Spieler zählen nicht mit
 function computeResults() {
-  return state.players.map((p) => {
+  return presentPlayers().map((p) => {
     const sc = state.scores[p.id] || {};
     let gross = 0, played = 0, pos = 0, neg = 0;
     const counts = {};
@@ -123,6 +152,18 @@ function readBody(req) {
   });
 }
 
+// Heikle Aktionen (löschen, zurücksetzen, Termine pflegen) verlangen die PIN
+// im Header – der Client schickt sie nach dem Entsperren automatisch mit.
+function pinOk(req) {
+  return req.headers['x-fta-pin'] === PIN;
+}
+
+// Abschlagszeit im Format des <input type="datetime-local">, z.B. 2026-08-06T18:30
+function sanitizeTeeTime(v) {
+  const s = String(v || '').trim();
+  return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(s) ? s : null;
+}
+
 function sanitizeHcp(v) {
   const n = Number(v);
   if (!isFinite(n)) return 0;
@@ -142,7 +183,7 @@ async function handleApi(req, res, url) {
     const body = await readBody(req);
     const name = String(body.name || '').trim().slice(0, 40);
     if (!name) return json(res, 400, { error: 'Name fehlt' });
-    const player = { id: id(), name, hcp: sanitizeHcp(body.hcp) };
+    const player = { id: id(), name, hcp: sanitizeHcp(body.hcp), present: true };
     state.players.push(player);
     state.scores[player.id] = {};
     persist();
@@ -160,10 +201,20 @@ async function handleApi(req, res, url) {
         if (name) player.name = name;
       }
       if (body.hcp !== undefined) player.hcp = sanitizeHcp(body.hcp);
+      if (body.present !== undefined) {
+        player.present = !!body.present;
+        // Abwesende fliegen aus allen Flights (Scores bleiben erhalten)
+        if (!player.present) {
+          state.flights.forEach((f) => {
+            f.playerIds = f.playerIds.filter((pid) => pid !== player.id);
+          });
+        }
+      }
       persist();
       return json(res, 200, player);
     }
     if (req.method === 'DELETE') {
+      if (!pinOk(req)) return json(res, 403, { error: 'PIN erforderlich' });
       state.players = state.players.filter((p) => p.id !== player.id);
       delete state.scores[player.id];
       state.flights.forEach((f) => {
@@ -178,7 +229,7 @@ async function handleApi(req, res, url) {
   if (req.method === 'POST' && url.pathname === '/api/flights') {
     const body = await readBody(req);
     const name = String(body.name || '').trim().slice(0, 40) || `Flight ${state.flights.length + 1}`;
-    const flight = { id: id(), name, playerIds: [] };
+    const flight = { id: id(), name, playerIds: [], teeTime: sanitizeTeeTime(body.teeTime) };
     state.flights.push(flight);
     persist();
     return json(res, 200, flight);
@@ -189,14 +240,15 @@ async function handleApi(req, res, url) {
     const body = await readBody(req);
     let size = parseInt(body.size, 10);
     if (!(size >= 2 && size <= 4)) size = 3;
-    if (!state.players.length) return json(res, 400, { error: 'Keine Spieler erfasst' });
-    const ids = state.players.map((p) => p.id);
+    const present = presentPlayers();
+    if (!present.length) return json(res, 400, { error: 'Keine anwesenden Spieler' });
+    const ids = present.map((p) => p.id);
     for (let i = ids.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [ids[i], ids[j]] = [ids[j], ids[i]];
     }
     const count = Math.max(1, Math.ceil(ids.length / size));
-    state.flights = Array.from({ length: count }, (_, i) => ({ id: id(), name: `Flight ${i + 1}`, playerIds: [] }));
+    state.flights = Array.from({ length: count }, (_, i) => ({ id: id(), name: `Flight ${i + 1}`, playerIds: [], teeTime: null }));
     ids.forEach((pid, i) => state.flights[i % count].playerIds.push(pid));
     persist();
     return json(res, 200, state.flights);
@@ -212,8 +264,9 @@ async function handleApi(req, res, url) {
         const name = String(body.name).trim().slice(0, 40);
         if (name) flight.name = name;
       }
+      if (body.teeTime !== undefined) flight.teeTime = sanitizeTeeTime(body.teeTime);
       if (Array.isArray(body.playerIds)) {
-        const valid = new Set(state.players.map((p) => p.id));
+        const valid = new Set(presentPlayers().map((p) => p.id));
         flight.playerIds = body.playerIds.filter((pid) => valid.has(pid));
       }
       persist();
@@ -261,6 +314,7 @@ async function handleApi(req, res, url) {
 
   // POST /api/rounds {name?} – aktuelle Runde abschliessen und im Archiv speichern
   if (req.method === 'POST' && url.pathname === '/api/rounds') {
+    if (!pinOk(req)) return json(res, 403, { error: 'PIN erforderlich' });
     const body = await readBody(req);
     const hasScores = Object.values(state.scores).some((byHole) =>
       Object.values(byHole || {}).some((e) => e && (e.gross != null || Object.values(e.animals || {}).some(Boolean))));
@@ -283,6 +337,7 @@ async function handleApi(req, res, url) {
 
   // DELETE /api/rounds/:id – gespeicherte Runde löschen
   if (req.method === 'DELETE' && parts[1] === 'rounds' && parts[2]) {
+    if (!pinOk(req)) return json(res, 403, { error: 'PIN erforderlich' });
     const before = state.archive.length;
     state.archive = state.archive.filter((r) => r.id !== parts[2]);
     if (state.archive.length === before) return json(res, 404, { error: 'Runde nicht gefunden' });
@@ -292,6 +347,7 @@ async function handleApi(req, res, url) {
 
   // POST /api/restore – kompletten Zustand aus einem Backup wiederherstellen
   if (req.method === 'POST' && url.pathname === '/api/restore') {
+    if (!pinOk(req)) return json(res, 403, { error: 'PIN erforderlich' });
     const body = await readBody(req);
     if (!body || !Array.isArray(body.players)) {
       return json(res, 400, { error: 'Ungültiges Backup: players fehlt' });
@@ -301,10 +357,63 @@ async function handleApi(req, res, url) {
     restored.flights = Array.isArray(body.flights) ? body.flights : [];
     restored.scores = (body.scores && typeof body.scores === 'object') ? body.scores : {};
     restored.archive = Array.isArray(body.archive) ? body.archive : [];
+    // ältere Backups kennen noch keine Termine – dann die aktuellen behalten
+    restored.events = Array.isArray(body.events) ? body.events : state.events;
     restored.version = state.version;
     state = restored;
     persist();
     return json(res, 200, { ok: true, players: state.players.length, rounds: state.archive.length });
+  }
+
+  // POST /api/events {name, date, ...} – Termin erfassen (nur mit PIN)
+  if (req.method === 'POST' && url.pathname === '/api/events') {
+    if (!pinOk(req)) return json(res, 403, { error: 'PIN erforderlich' });
+    const body = await readBody(req);
+    const name = String(body.name || '').trim().slice(0, 60);
+    const date = String(body.date || '').trim();
+    if (!name) return json(res, 400, { error: 'Name fehlt' });
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return json(res, 400, { error: 'Datum fehlt oder ungültig' });
+    const ev = {
+      id: id(),
+      name,
+      date,
+      flights: String(body.flights || '').trim().slice(0, 80),
+      dinner: String(body.dinner || '').trim().slice(0, 80),
+      note: String(body.note || '').trim().slice(0, 200),
+      confirmed: !!body.confirmed,
+    };
+    state.events.push(ev);
+    persist();
+    return json(res, 200, ev);
+  }
+
+  // PUT/DELETE /api/events/:id – Termin ändern oder löschen (nur mit PIN)
+  if (parts[1] === 'events' && parts[2]) {
+    if (!pinOk(req)) return json(res, 403, { error: 'PIN erforderlich' });
+    const ev = (state.events || []).find((x) => x.id === parts[2]);
+    if (!ev) return json(res, 404, { error: 'Termin nicht gefunden' });
+    if (req.method === 'PUT') {
+      const body = await readBody(req);
+      if (body.name !== undefined) {
+        const name = String(body.name).trim().slice(0, 60);
+        if (name) ev.name = name;
+      }
+      if (body.date !== undefined) {
+        const date = String(body.date).trim();
+        if (/^\d{4}-\d{2}-\d{2}$/.test(date)) ev.date = date;
+      }
+      if (body.flights !== undefined) ev.flights = String(body.flights).trim().slice(0, 80);
+      if (body.dinner !== undefined) ev.dinner = String(body.dinner).trim().slice(0, 80);
+      if (body.note !== undefined) ev.note = String(body.note).trim().slice(0, 200);
+      if (body.confirmed !== undefined) ev.confirmed = !!body.confirmed;
+      persist();
+      return json(res, 200, ev);
+    }
+    if (req.method === 'DELETE') {
+      state.events = state.events.filter((x) => x.id !== ev.id);
+      persist();
+      return json(res, 200, { ok: true });
+    }
   }
 
   // POST /api/unlock {pin} – Rangliste/Preisverleihung freischalten
@@ -319,6 +428,7 @@ async function handleApi(req, res, url) {
 
   // POST /api/reset {confirm:"RESET"} – löscht alle Scores (Spieler/Flights bleiben)
   if (req.method === 'POST' && url.pathname === '/api/reset') {
+    if (!pinOk(req)) return json(res, 403, { error: 'PIN erforderlich' });
     const body = await readBody(req);
     if (body.confirm !== 'RESET') return json(res, 400, { error: 'Bestätigung fehlt' });
     for (const pid of Object.keys(state.scores)) state.scores[pid] = {};

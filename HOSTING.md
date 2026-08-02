@@ -37,19 +37,38 @@ gemacht werden.
 
 Bei jedem Push auf GitHub aktualisiert Render die Seite automatisch neu.
 
-## Wichtig zu wissen (Gratis-Plan)
+## Wichtig zu wissen: Daten dauerhaft speichern (Persistent Disk)
 
-- **Aufwachzeit:** Nach ca. 15 Minuten ohne Zugriffe legt sich der Dienst
-  schlafen. Der erste Aufruf danach dauert dann ~30–60 Sekunden. 
-  **Tipp für den Turniertag:** 10 Minuten vor Start einmal die Seite öffnen –
-  solange regelmässig eingetragen wird, bleibt sie wach.
-- **Daten:** Die Scores liegen in einer Datei auf dem Server. Sie überleben
-  das «Einschlafen», gehen aber verloren, wenn Render den Dienst neu aufsetzt
-  (z.B. bei einem neuen Deploy während des Turniers). Deshalb: **am
-  Turniertag nichts auf GitHub pushen.** Für ein Tagesturnier reicht das
-  völlig; wer es dauerhaft sicher will, nimmt den bezahlten Plan mit
-  persistentem Volume und setzt die Umgebungsvariable `DATA_DIR` auf dessen
-  Pfad.
+**Ohne extra Disk verliert Render die Daten – auch auf dem bezahlten
+Starter-Plan!** Das Dateisystem des Dienstes ist flüchtig: Bei jedem Deploy
+(jeder Push auf den verbundenen Branch), bei jedem Neustart und auf dem
+Free-Plan zusätzlich bei jedem Aufwachen aus dem Standby startet ein frischer
+Container – die `data.json` mit allen Spielern und Scores ist dann weg.
+
+So werden die Daten dauerhaft (einmalig, braucht Starter-Plan oder höher):
+
+1. Im Render-Dashboard den Dienst öffnen → Menüpunkt **«Disks»** →
+   **«Add Disk»**.
+2. Einstellungen: Name z.B. `fta-data`, **Mount Path:** `/var/data`,
+   **Size:** 1 GB (kleinste Grösse, kostet ca. $0.25/Monat).
+3. Unter **«Environment» → «Add Environment Variable»** die Variable
+   `DATA_DIR` mit dem Wert `/var/data` anlegen und speichern.
+4. Render startet den Dienst neu – ab jetzt liegt die `data.json` auf der
+   Disk und überlebt Deploys und Neustarts. ✅
+
+Danach einmal kontrollieren: Spieler erfassen, im Dashboard **«Manual Deploy»**
+auslösen – die Spieler müssen nach dem Deploy noch da sein.
+
+Weitere Hinweise:
+
+- **Free-Plan:** Legt sich nach ca. 15 Minuten ohne Zugriffe schlafen
+  (erster Aufruf danach dauert ~30–60 Sekunden) und unterstützt keine Disks.
+  Der Starter-Plan läuft dauerhaft.
+- **Sicherheitsnetz:** Im Rangliste-Tab gibt es «Backup herunterladen» /
+  «Backup wiederherstellen» – nach jedem Turnier ein Backup ziehen schadet nie.
+  Zusätzlich legt der Server einmal pro Tag automatisch eine datierte Kopie
+  der `data.json` im Ordner `backups/` auf der Disk ab (die letzten 14 bleiben
+  erhalten), und Render erstellt alle 24 h einen Disk-Snapshot.
 - **Zugriff:** Die URL ist öffentlich, aber nicht auffindbar – nur wer den
   Link hat, findet die Seite.
 
@@ -64,6 +83,11 @@ anschliessend ist die Rangliste sichtbar.
   **Environment → Add Environment Variable** die Variable `LEADERBOARD_PIN`
   mit dem gewünschten Wert anlegen und speichern (Render startet den Dienst
   danach automatisch neu).
+
+Die gleiche PIN schützt auch die heiklen Aktionen: Spieler oder gespeicherte
+Runden löschen, Turnier zurücksetzen, Backup einspielen, Runde abschliessen
+und Termine bearbeiten. Nach dem Abschliessen einer Runde sperrt sich die
+Rangliste automatisch wieder – bereit für die nächste Runde.
 
 Die Sperre ist ein einfacher Schutz gegen neugierige Blicke während der Runde –
 kein Hochsicherheits-Login. Für ein Spassturnier reicht das.

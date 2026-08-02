@@ -55,8 +55,10 @@ gleichen WLAN (`node server.js` starten und die lokale IP teilen, z.B.
 ## Bedienung
 
 1. **👥 Spieler** – alle Spieler mit Name und Handicap erfassen; das Ziel
-   (36 + HCP/2, aufgerundet) wird automatisch berechnet. Flights erstellen und
-   Spieler per Tipp auf den Namen zuteilen.
+   (36 + HCP/2, aufgerundet) wird automatisch berechnet. Mit ✅/💤 markieren,
+   wer heute mitspielt – Abwesende bleiben gespeichert, erscheinen aber weder
+   in den Flights noch in der Rangliste. Flights erstellen und Spieler per
+   Tipp auf den Namen zuteilen.
 2. **⛳ Eintragen** – jeder Flight wählt sich selbst aus, wählt das Loch und
    trägt pro Spieler Bruttoschläge und Tiere ein. Mehrere Flights können
    gleichzeitig eintragen.
@@ -68,6 +70,15 @@ gleichen WLAN (`node server.js` starten und die lokale IP teilen, z.B.
    `LEADERBOARD_PIN` geändert werden.
 
 ### Weitere Funktionen
+
+- **🔐 PIN-geschützte Admin-Aktionen** – Spieler/Runden löschen, Turnier
+  zurücksetzen, Backup einspielen, Runde abschliessen und Termine pflegen
+  verlangen die PIN (`LEADERBOARD_PIN`, Standard `1234`). Nach dem Speichern
+  einer Runde sperrt sich die Rangliste automatisch wieder.
+- **📅 Termine-Verwaltung** – Turnier-Termine (Datum, Flights, Dinner, Notiz,
+  Status) direkt in der App erfassen und bearbeiten, ohne Deploy.
+- **🗄️ Tages-Backups** – der Server legt automatisch einmal pro Tag eine
+  datierte Kopie der `data.json` unter `backups/` ab (die letzten 14 bleiben).
 
 - **🎉 Preisverleihung** – Vollbild-Show mit Platz 3 → 2 → Tierpreis → Sieger
   (mit Konfetti), ideal für den Apéro.

@@ -24,13 +24,25 @@ const STRINGS = {
   d_lbl_dinner: { de: 'Dinner', en: 'Dinner' },
   d_badge_confirmed: { de: '✅ Bestätigt', en: '✅ Confirmed' },
   d_badge_tentative: { de: '⏳ Vorläufig', en: '⏳ Tentative' },
-  d_e1_name: { de: 'Fore the Animals #1', en: 'Fore the Animals #1' },
-  d_e1_date: { de: 'Donnerstag, 6. August 2026', en: 'Thursday, 6 August 2026' },
-  d_e1_flights: { de: '18:30 & 18:40 Uhr', en: '18:30 & 18:40' },
-  d_e1_dinner: { de: 'Albergo', en: 'Albergo' },
-  d_e2_name: { de: 'Fore the Animals #2', en: 'Fore the Animals #2' },
-  d_e2_date: { de: 'Mittwoch, 26. August 2026', en: 'Wednesday, 26 August 2026' },
-  d_e2_note: { de: 'Wird in Kürze bestätigt.', en: 'To be confirmed shortly.' },
+  ev_none: { de: 'Noch keine Termine erfasst.', en: 'No dates yet.' },
+  ev_admin_title: { de: '✏️ Termin erfassen / bearbeiten', en: '✏️ Add / edit date' },
+  ev_ph_name: { de: 'Name (z.B. Fore the Animals #3)', en: 'Name (e.g. Fore the Animals #3)' },
+  ev_ph_flights: { de: 'Flights (z.B. 18:30 & 18:40 Uhr)', en: 'Tee times (e.g. 18:30 & 18:40)' },
+  ev_ph_dinner: { de: 'Dinner (z.B. Albergo)', en: 'Dinner (e.g. Albergo)' },
+  ev_ph_note: { de: 'Notiz (optional)', en: 'Note (optional)' },
+  ev_confirmed: { de: '✅ Termin ist bestätigt', en: '✅ Date is confirmed' },
+  ev_save: { de: '💾 Termin speichern', en: '💾 Save date' },
+  ev_cancel: { de: 'Abbrechen', en: 'Cancel' },
+  ev_saved: { de: 'Termin «{name}» gespeichert 📅', en: 'Date “{name}” saved 📅' },
+  ev_deleted: { de: 'Termin gelöscht', en: 'Date deleted' },
+  ev_confirm_del: { de: 'Termin «{name}» löschen?', en: 'Delete date “{name}”?' },
+  ev_missing: { de: 'Name und Datum angeben', en: 'Enter name and date' },
+  ev_pin_hint: {
+    de: 'Zum Speichern oder Löschen von Terminen wird die PIN benötigt.',
+    en: 'The PIN is required to save or delete dates.',
+  },
+  pin_prompt: { de: 'PIN eingeben:', en: 'Enter PIN:' },
+  pin_denied: { de: 'PIN erforderlich – bitte erneut versuchen', en: 'PIN required – please try again' },
   // Regeln
   r_how_title: { de: 'So wird gespielt', en: 'How to play' },
   r_how_p1: {
@@ -100,10 +112,15 @@ const STRINGS = {
   ph_hcp: { de: 'HCP', en: 'HCP' },
   p_add: { de: 'Hinzufügen', en: 'Add' },
   p_persist_hint: {
-    de: 'Spieler nur einmal erfassen – sie bleiben über alle Runden gespeichert. Vor jeder Runde einfach das Handicap direkt im Feld anpassen, das Ziel rechnet sich automatisch neu.',
-    en: 'Add each player only once – they stay saved across all rounds. Before each round just adjust the handicap right in the field, the target updates automatically.',
+    de: 'Spieler nur einmal erfassen – sie bleiben über alle Runden gespeichert. Vor jeder Runde das Handicap anpassen und mit ✅/💤 markieren, wer heute mitspielt: Abwesende erscheinen weder in den Flights noch in der Rangliste.',
+    en: 'Add each player only once – they stay saved across all rounds. Before each round adjust the handicap and use ✅/💤 to mark who is playing today: absent players appear neither in the flights nor on the leaderboard.',
   },
   p_rename: { de: 'Name ändern', en: 'Rename' },
+  p_toggle: { de: 'Anwesenheit umschalten', en: 'Toggle attendance' },
+  p_now_present: { de: '{name} ist dabei ✅', en: '{name} is in ✅' },
+  p_now_absent: { de: '{name} ist heute abwesend 💤', en: '{name} is out today 💤' },
+  p_present_count: { de: '{n} von {m} Spielern dabei', en: '{n} of {m} players in' },
+  fr_need_present: { de: 'Mindestens 2 anwesende Spieler nötig', en: 'At least 2 players marked as in required' },
   p_hcp_saved: {
     de: 'HCP von {name} aktualisiert → {hcp}',
     en: 'HCP for {name} updated → {hcp}',
@@ -111,6 +128,8 @@ const STRINGS = {
   p_flights: { de: 'Flights', en: 'Flights' },
   ph_flight: { de: 'Flight-Name (z.B. Flight 1)', en: 'Flight name (e.g. Flight 1)' },
   p_create_flight: { de: 'Flight erstellen', en: 'Create flight' },
+  f_tee: { de: 'Abschlag', en: 'Tee time' },
+  f_tee_saved: { de: 'Abschlagszeit von «{name}» gespeichert 🕐', en: 'Tee time for “{name}” saved 🕐' },
   p_none: { de: 'Noch keine Spieler erfasst.', en: 'No players yet.' },
   f_none: { de: 'Noch keine Flights erstellt.', en: 'No flights yet.' },
   p_target: { de: 'Ziel', en: 'Target' },
@@ -330,6 +349,12 @@ function targetFor(hcp) {
   return PAR_TOTAL + Math.ceil(Number(hcp) / 2);
 }
 
+// Anwesende Spieler – wer abwesend ist, taucht in Flights, Rangliste und
+// Preisverleihung nicht auf (Altbestand ohne das Feld gilt als anwesend)
+function presentPlayers() {
+  return state.players.filter((p) => p.present !== false);
+}
+
 function esc(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
@@ -348,13 +373,21 @@ function toast(msg, isError) {
 async function api(method, url, body) {
   pendingWrites += method !== 'GET' ? 1 : 0;
   try {
+    const headers = {};
+    if (body) headers['Content-Type'] = 'application/json';
+    // Nach dem Entsperren wird die PIN bei Schreibzugriffen mitgeschickt –
+    // der Server verlangt sie für heikle Aktionen (löschen, zurücksetzen …)
+    const pin = sessionStorage.getItem('fta-pin');
+    if (pin && method !== 'GET') headers['x-fta-pin'] = pin;
     const res = await fetch(url, {
       method,
-      headers: body ? { 'Content-Type': 'application/json' } : undefined,
+      headers: Object.keys(headers).length ? headers : undefined,
       body: body ? JSON.stringify(body) : undefined,
     });
     const data = await res.json();
     if (!res.ok) {
+      // 403 heisst: PIN fehlt, ist falsch oder wurde auf dem Server geändert
+      if (res.status === 403 && url !== '/api/unlock') sessionStorage.removeItem('fta-pin');
       const err = new Error(data.error || 'Fehler');
       err.status = res.status; // HTTP-Fehler (Server erreichbar) vs. Netzwerkfehler (kein status)
       throw err;
@@ -362,6 +395,22 @@ async function api(method, url, body) {
     return data;
   } finally {
     if (method !== 'GET') pendingWrites = Math.max(0, pendingWrites - 1);
+  }
+}
+
+// Stellt sicher, dass eine gültige PIN vorliegt – fragt bei Bedarf nach und
+// prüft sie am Server. Gibt false zurück, wenn abgebrochen oder falsch.
+async function ensurePin() {
+  if (sessionStorage.getItem('fta-pin')) return true;
+  const pin = prompt(t('pin_prompt'));
+  if (!pin) return false;
+  try {
+    await api('POST', '/api/unlock', { pin });
+    sessionStorage.setItem('fta-pin', pin);
+    return true;
+  } catch (err) {
+    toast(err.status === 403 ? t('lk_wrong') : err.message, true);
+    return false;
   }
 }
 
@@ -464,12 +513,47 @@ function playerStats(p) {
 // ---------------------------------------------------------------------------
 function renderAll() {
   renderCourseTable();
+  renderDates();
   renderPlayers();
   renderFlights();
   renderEntry();
   renderLeaderboard();
   renderArchive();
   renderAllTime();
+}
+
+// --- Termine ---
+function renderDates() {
+  const wrap = $('#event-list');
+  const events = [...(state.events || [])].sort((a, b) => String(a.date).localeCompare(String(b.date)));
+  if (!events.length) {
+    wrap.innerHTML = `<div class="card"><p class="empty-note">${t('ev_none')}</p></div>`;
+    return;
+  }
+  wrap.innerHTML = events.map((ev) => {
+    // T12:00 verhindert, dass die Zeitzone das Datum um einen Tag verschiebt
+    const d = ev.date ? new Date(ev.date + 'T12:00') : null;
+    const dateStr = d && !isNaN(d)
+      ? d.toLocaleDateString(dateLocale(), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+      : '';
+    const facts = [];
+    if (dateStr) facts.push(`<li><span class="ef-icon">📅</span><span class="ef-label">${t('d_lbl_date')}</span><span class="ef-val">${esc(dateStr)}</span></li>`);
+    if (ev.flights) facts.push(`<li><span class="ef-icon">⛳</span><span class="ef-label">${t('d_lbl_flights')}</span><span class="ef-val">${esc(ev.flights)}</span></li>`);
+    if (ev.dinner) facts.push(`<li><span class="ef-icon">🍽️</span><span class="ef-label">${t('d_lbl_dinner')}</span><span class="ef-val">${esc(ev.dinner)}</span></li>`);
+    return `
+      <div class="card event ${ev.confirmed ? 'event-confirmed' : 'event-tentative'}">
+        <div class="event-head">
+          <h2>${esc(ev.name)}</h2>
+          <span class="event-badge ${ev.confirmed ? 'confirmed' : 'tentative'}">${t(ev.confirmed ? 'd_badge_confirmed' : 'd_badge_tentative')}</span>
+        </div>
+        <ul class="event-facts">${facts.join('')}</ul>
+        ${ev.note ? `<p class="hint">${esc(ev.note)}</p>` : ''}
+        <div class="event-actions">
+          <button type="button" class="btn small" data-edit-event="${ev.id}">✏️</button>
+          <button type="button" class="btn small" data-del-event="${ev.id}">🗑️</button>
+        </div>
+      </div>`;
+  }).join('');
 }
 
 // --- Regeln: Platztabelle ---
@@ -491,8 +575,12 @@ function renderPlayers() {
   // Nicht neu aufbauen, während ein HCP-Feld gerade bearbeitet wird – sonst
   // überschreibt der 5-Sekunden-Poll die Eingabe und der Fokus geht verloren.
   if (list.contains(document.activeElement) && document.activeElement.classList.contains('p-hcp-input')) return;
-  list.innerHTML = state.players.map((p) => `
-    <div class="player-row">
+  const nPresent = presentPlayers().length;
+  list.innerHTML = `<p class="hint">${t('p_present_count', { n: nPresent, m: state.players.length })}</p>` +
+  state.players.map((p) => `
+    <div class="player-row ${p.present === false ? 'absent' : ''}">
+      <button type="button" class="btn small presence" data-presence="${p.id}"
+              title="${t('p_toggle')}" aria-label="${t('p_toggle')} ${esc(p.name)}">${p.present === false ? '💤' : '✅'}</button>
       <span class="p-name">${esc(p.name)}</span>
       <label class="p-hcp">${t('ph_hcp')}
         <input type="number" class="p-hcp-input" data-hcp-player="${p.id}" value="${esc(p.hcp)}"
@@ -505,14 +593,36 @@ function renderPlayers() {
 }
 
 // --- Flights ---
+// "2026-08-06T18:30" → "Do. 06.08.2026, 18:30" (bzw. englisches Format)
+function formatTee(teeTime, timeOnly) {
+  if (!teeTime) return '';
+  const d = new Date(teeTime);
+  if (isNaN(d)) return '';
+  const time = d.toLocaleTimeString(dateLocale(), { hour: '2-digit', minute: '2-digit' });
+  if (timeOnly) return time;
+  return d.toLocaleDateString(dateLocale(), { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' }) + ', ' + time;
+}
+
+// Flights mit Abschlagszeit zuerst (chronologisch), danach die ohne Zeit
+function flightsSorted() {
+  return [...state.flights].sort((a, b) => {
+    if (!!a.teeTime !== !!b.teeTime) return a.teeTime ? -1 : 1;
+    if (a.teeTime !== b.teeTime) return String(a.teeTime).localeCompare(String(b.teeTime));
+    return a.name.localeCompare(b.name);
+  });
+}
+
 function renderFlights() {
   const list = $('#flight-list');
   if (!state.flights.length) {
     list.innerHTML = `<p class="empty-note">${t('f_none')}</p>`;
     return;
   }
-  list.innerHTML = state.flights.map((f) => {
-    const chips = state.players.map((p) => {
+  // Nicht neu aufbauen, während gerade eine Abschlagszeit gewählt wird –
+  // sonst schliesst der 5-Sekunden-Poll den Datums-Picker
+  if (list.contains(document.activeElement) && document.activeElement.classList.contains('tee-input')) return;
+  list.innerHTML = flightsSorted().map((f) => {
+    const chips = presentPlayers().map((p) => {
       const inFlight = f.playerIds.includes(p.id);
       const elsewhere = !inFlight && state.flights.some((o) => o.id !== f.id && o.playerIds.includes(p.id));
       if (elsewhere) return '';
@@ -525,6 +635,10 @@ function renderFlights() {
           <h3>⛳ ${esc(f.name)} <small style="font-weight:400;color:var(--muted)">${t('f_count', { n: f.playerIds.length })}</small></h3>
           <button type="button" class="btn small" data-del-flight="${f.id}">🗑️</button>
         </div>
+        <label class="flight-tee">🕐 ${t('f_tee')}
+          <input type="datetime-local" class="tee-input" data-tee-flight="${f.id}" value="${esc(f.teeTime || '')}">
+          ${f.teeTime ? `<span class="tee-pretty">${formatTee(f.teeTime)}</span>` : ''}
+        </label>
         <div class="flight-members">${chips || `<span class="empty-note">${t('f_no_avail')}</span>`}</div>
       </div>`;
   }).join('');
@@ -534,7 +648,10 @@ function renderFlights() {
 function renderEntry() {
   const sel = $('#entry-flight');
   sel.innerHTML = state.flights.length
-    ? state.flights.map((f) => `<option value="${f.id}" ${f.id === currentFlightId ? 'selected' : ''}>${esc(f.name)}</option>`).join('')
+    ? flightsSorted().map((f) => {
+        const tee = f.teeTime ? ` · ${formatTee(f.teeTime, true)}` : '';
+        return `<option value="${f.id}" ${f.id === currentFlightId ? 'selected' : ''}>${esc(f.name)}${tee}</option>`;
+      }).join('')
     : `<option value="">${t('e_select_first')}</option>`;
   if (!state.flights.find((f) => f.id === currentFlightId)) {
     currentFlightId = state.flights[0] ? state.flights[0].id : '';
@@ -556,7 +673,8 @@ function renderEntry() {
   const hInfo = COURSE[currentHole - 1];
   $('#hole-info').textContent =
     t('e_hole_info', { h: hInfo.hole, p: hInfo.par, d: hInfo.dist, i: hInfo.index }) +
-    (hInfo.par === 3 ? t('e_no_zebra') : '');
+    (hInfo.par === 3 ? t('e_no_zebra') : '') +
+    (flight && flight.teeTime ? ` · 🕐 ${formatTee(flight.teeTime, true)}` : '');
 
   // Spielerkarten
   const wrap = $('#entry-players');
@@ -613,9 +731,9 @@ function medal(rank) {
   return rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank + '.';
 }
 
-// Aktuelle Rangliste, sortiert wie in der Hauptwertung
+// Aktuelle Rangliste (nur anwesende Spieler), sortiert wie in der Hauptwertung
 function standings() {
-  return state.players
+  return presentPlayers()
     .map((p) => ({ p, ...playerStats(p) }))
     .sort((a, b) => b.points - a.points || b.totalAnimals - a.totalAnimals || a.gross - b.gross);
 }
@@ -629,12 +747,12 @@ function renderLeaderboard() {
   const main = $('#lb-main');
   const second = $('#lb-animals');
   if (!unlocked) { main.innerHTML = second.innerHTML = ''; return; }
-  if (!state.players.length) {
+  if (!presentPlayers().length) {
     main.innerHTML = second.innerHTML = `<tr><td class="empty-note">${t('lb_no_players')}</td></tr>`;
     return;
   }
 
-  const rows = state.players.map((p) => ({ p, ...playerStats(p) }));
+  const rows = presentPlayers().map((p) => ({ p, ...playerStats(p) }));
 
   // Hauptwertung: Punkte, dann meiste Tiere, dann tieferes Brutto
   const sorted = [...rows].sort((a, b) =>
@@ -819,6 +937,65 @@ $('#lang-toggle').addEventListener('click', () => {
   saveQueue(); // Banner-Text in neuer Sprache
 });
 
+// Termine: Formular füllen/leeren, speichern, bearbeiten, löschen
+function fillEventForm(ev) {
+  $('#ev-id').value = ev ? ev.id : '';
+  $('#ev-name').value = ev ? ev.name : '';
+  $('#ev-date').value = ev ? ev.date : '';
+  $('#ev-flights').value = ev ? ev.flights || '' : '';
+  $('#ev-dinner').value = ev ? ev.dinner || '' : '';
+  $('#ev-note').value = ev ? ev.note || '' : '';
+  $('#ev-confirmed').checked = ev ? !!ev.confirmed : false;
+  $('#ev-cancel').hidden = !ev;
+}
+
+$('#event-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const name = $('#ev-name').value.trim();
+  const date = $('#ev-date').value;
+  if (!name || !date) return toast(t('ev_missing'), true);
+  if (!(await ensurePin())) return;
+  const body = {
+    name, date,
+    flights: $('#ev-flights').value,
+    dinner: $('#ev-dinner').value,
+    note: $('#ev-note').value,
+    confirmed: $('#ev-confirmed').checked,
+  };
+  const evId = $('#ev-id').value;
+  try {
+    await api(evId ? 'PUT' : 'POST', evId ? `/api/events/${evId}` : '/api/events', body);
+    fillEventForm(null);
+    toast(t('ev_saved', { name }));
+    refresh(true);
+  } catch (err) { toast(err.status === 403 ? t('pin_denied') : err.message, true); }
+});
+
+$('#ev-cancel').addEventListener('click', () => fillEventForm(null));
+
+$('#event-list').addEventListener('click', async (e) => {
+  const editBtn = e.target.closest('[data-edit-event]');
+  const delBtn = e.target.closest('[data-del-event]');
+  if (editBtn) {
+    const ev = (state.events || []).find((x) => x.id === editBtn.dataset.editEvent);
+    if (!ev) return;
+    fillEventForm(ev);
+    $('#event-form').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+  if (delBtn) {
+    const ev = (state.events || []).find((x) => x.id === delBtn.dataset.delEvent);
+    if (!ev) return;
+    if (!(await ensurePin())) return;
+    if (!confirm(t('ev_confirm_del', { name: ev.name }))) return;
+    try {
+      await api('DELETE', `/api/events/${ev.id}`);
+      if ($('#ev-id').value === ev.id) fillEventForm(null);
+      toast(t('ev_deleted'));
+      refresh(true);
+    } catch (err) { toast(err.status === 403 ? t('pin_denied') : err.message, true); }
+  }
+});
+
 // Spieler hinzufügen
 $('#player-form').addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -834,10 +1011,22 @@ $('#player-form').addEventListener('submit', async (e) => {
   } catch (err) { toast(err.message, true); }
 });
 
-// Spieler bearbeiten / löschen
+// Spieler bearbeiten / löschen / Anwesenheit umschalten
 $('#player-list').addEventListener('click', async (e) => {
   const editBtn = e.target.closest('[data-edit-player]');
   const delBtn = e.target.closest('[data-del-player]');
+  const presBtn = e.target.closest('[data-presence]');
+  if (presBtn) {
+    const p = state.players.find((x) => x.id === presBtn.dataset.presence);
+    if (!p) return;
+    const present = p.present === false; // umschalten
+    try {
+      await api('PUT', `/api/players/${p.id}`, { present });
+      toast(t(present ? 'p_now_present' : 'p_now_absent', { name: p.name }));
+      refresh(true);
+    } catch (err) { toast(err.message, true); }
+    return;
+  }
   if (editBtn) {
     const p = state.players.find((x) => x.id === editBtn.dataset.editPlayer);
     const name = prompt(t('p_prompt_name'), p.name);
@@ -849,11 +1038,12 @@ $('#player-list').addEventListener('click', async (e) => {
   }
   if (delBtn) {
     const p = state.players.find((x) => x.id === delBtn.dataset.delPlayer);
+    if (!(await ensurePin())) return;
     if (!confirm(t('p_confirm_del', { name: p.name }))) return;
     try {
       await api('DELETE', `/api/players/${p.id}`);
       refresh(true);
-    } catch (err) { toast(err.message, true); }
+    } catch (err) { toast(err.status === 403 ? t('pin_denied') : err.message, true); }
   }
 });
 
@@ -887,10 +1077,31 @@ $('#player-list').addEventListener('change', async (e) => {
 $('#flight-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   try {
-    await api('POST', '/api/flights', { name: $('#flight-name').value });
+    await api('POST', '/api/flights', { name: $('#flight-name').value, teeTime: $('#flight-tee').value || null });
     $('#flight-name').value = '';
+    $('#flight-tee').value = '';
     refresh(true);
   } catch (err) { toast(err.message, true); }
+});
+
+// Abschlagszeit eines Flights ändern (Datums-Picker auf der Flight-Karte)
+$('#flight-list').addEventListener('change', async (e) => {
+  const inp = e.target.closest('.tee-input');
+  if (!inp) return;
+  const f = state.flights.find((x) => x.id === inp.dataset.teeFlight);
+  if (!f) return;
+  try {
+    const updated = await api('PUT', `/api/flights/${f.id}`, { teeTime: inp.value || null });
+    f.teeTime = updated.teeTime;
+    toast(t('f_tee_saved', { name: f.name }));
+    // Anzeige direkt nachführen – renderFlights überspringt, solange das Feld fokussiert ist
+    const pretty = inp.parentElement.querySelector('.tee-pretty');
+    if (pretty) pretty.textContent = formatTee(f.teeTime);
+    renderEntry(); // Flight-Auswahl zeigt die Zeit ebenfalls
+  } catch (err) {
+    toast(err.message, true);
+    inp.value = f.teeTime || '';
+  }
 });
 
 // Flight: Mitglieder zuteilen / Flight löschen
@@ -934,9 +1145,10 @@ $('#hole-picker').addEventListener('click', (e) => {
   renderEntry();
 });
 
-// Zufällige Flight-Zuteilung
+// Zufällige Flight-Zuteilung (nur anwesende Spieler)
 $('#randomize-btn').addEventListener('click', async () => {
-  if (state.players.length < 2) return toast(t('fr_first'), true);
+  if (!state.players.length) return toast(t('fr_first'), true);
+  if (presentPlayers().length < 2) return toast(t('fr_need_present'), true);
   const answer = prompt(t('fr_prompt'), '3');
   if (answer === null) return;
   const size = parseInt(answer, 10);
@@ -1079,6 +1291,7 @@ $('#unlock-form').addEventListener('submit', async (e) => {
     await api('POST', '/api/unlock', { pin });
     unlocked = true;
     sessionStorage.setItem('fta-unlocked', '1');
+    sessionStorage.setItem('fta-pin', pin); // für geschützte Aktionen mitschicken
     $('#pin-input').value = '';
     updateLockUI();
     renderAll();
@@ -1088,10 +1301,12 @@ $('#unlock-form').addEventListener('submit', async (e) => {
   }
 });
 
-// Wieder sperren (z.B. bevor das Handy weitergereicht wird)
+// Wieder sperren (z.B. bevor das Handy weitergereicht wird) – vergisst auch
+// die PIN, damit auf diesem Gerät keine geschützten Aktionen mehr möglich sind
 $('#relock-btn').addEventListener('click', () => {
   unlocked = false;
   sessionStorage.removeItem('fta-unlocked');
+  sessionStorage.removeItem('fta-pin');
   updateLockUI();
   renderAll(); // leert die gesperrten Tabellen
   toast(t('lk_locked'));
@@ -1171,16 +1386,21 @@ $('#share-btn').addEventListener('click', () => {
   }, 'image/png');
 });
 
-// Runde abschliessen & speichern
+// Runde abschliessen & speichern – danach sperrt sich die Rangliste wieder,
+// damit die nächste Runde spannend bleibt (die PIN bleibt auf dem Gerät)
 $('#save-round-btn').addEventListener('click', async () => {
+  if (!(await ensurePin())) return;
   const name = prompt(t('sr_prompt'), t('sr_default', { date: new Date().toLocaleDateString(dateLocale()) }));
   if (name === null) return;
   if (!confirm(t('sr_confirm'))) return;
   try {
     const r = await api('POST', '/api/rounds', { name });
     toast(t('sr_saved', { name: r.name }));
+    unlocked = false;
+    sessionStorage.removeItem('fta-unlocked');
+    updateLockUI();
     refresh(true);
-  } catch (err) { toast(err.message, true); }
+  } catch (err) { toast(err.status === 403 ? t('pin_denied') : err.message, true); }
 });
 
 // Gespeicherte Runde: Scorekarte anzeigen oder Runde löschen
@@ -1197,11 +1417,13 @@ $('#archive-list').addEventListener('click', async (e) => {
   const btn = e.target.closest('[data-del-round]');
   if (!btn) return;
   const round = (state.archive || []).find((r) => r.id === btn.dataset.delRound);
-  if (!round || !confirm(t('ar_confirm_del', { name: round.name }))) return;
+  if (!round) return;
+  if (!(await ensurePin())) return;
+  if (!confirm(t('ar_confirm_del', { name: round.name }))) return;
   try {
     await api('DELETE', `/api/rounds/${round.id}`);
     refresh(true);
-  } catch (err) { toast(err.message, true); }
+  } catch (err) { toast(err.status === 403 ? t('pin_denied') : err.message, true); }
 });
 
 // Backup herunterladen
@@ -1227,23 +1449,25 @@ $('#restore-file').addEventListener('change', async (e) => {
   } catch {
     return toast(t('bk_invalid'), true);
   }
+  if (!(await ensurePin())) return;
   if (!confirm(t('bk_confirm'))) return;
   try {
     const r = await api('POST', '/api/restore', data);
     toast(t('bk_restored', { p: r.players, r: r.rounds }));
     refresh(true);
-  } catch (err) { toast(err.message, true); }
+  } catch (err) { toast(err.status === 403 ? t('pin_denied') : err.message, true); }
 });
 
 // Turnier zurücksetzen
 $('#reset-btn').addEventListener('click', async () => {
+  if (!(await ensurePin())) return;
   const answer = prompt(t('dz_prompt'));
   if (answer !== 'RESET') return;
   try {
     await api('POST', '/api/reset', { confirm: 'RESET' });
     toast(t('dz_done'));
     refresh(true);
-  } catch (err) { toast(err.message, true); }
+  } catch (err) { toast(err.status === 403 ? t('pin_denied') : err.message, true); }
 });
 
 // ---------------------------------------------------------------------------
