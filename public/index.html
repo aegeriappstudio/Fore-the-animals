@@ -152,6 +152,20 @@
 
     <!-- ================= RANGLISTE ================= -->
     <section id="tab-leaderboard" class="tab">
+
+      <div class="card lock-card" id="lb-lock">
+        <div class="lock-emoji">🔒</div>
+        <h2 data-i18n="lk_title">Rangliste gesperrt</h2>
+        <p data-i18n="lk_p">Die Rangliste bleibt während der Runde geheim. Mit der PIN startet die
+           Preisverleihung – danach wird die Rangliste angezeigt.</p>
+        <form id="unlock-form" class="row-form lock-form">
+          <input type="password" id="pin-input" inputmode="numeric" autocomplete="off"
+                 maxlength="20" placeholder="PIN" data-i18n-ph="lk_ph" required>
+          <button type="submit" class="btn primary" data-i18n="lk_btn">🎉 Preisverleihung starten</button>
+        </form>
+      </div>
+
+      <div id="lb-content" hidden>
       <div class="card">
         <h2 data-i18n="lb_title">🥇 Rangliste – Beat Your Target</h2>
         <div class="table-scroll">
@@ -161,6 +175,7 @@
         <div class="lb-actions">
           <button type="button" class="btn primary" id="ceremony-btn" data-i18n="lb_ceremony">🎉 Preisverleihung</button>
           <button type="button" class="btn" id="share-btn" data-i18n="lb_share">📸 Als Bild teilen</button>
+          <button type="button" class="btn" id="relock-btn" data-i18n="lk_relock">🔒 Wieder sperren</button>
         </div>
       </div>
       <div class="card">
@@ -203,6 +218,7 @@
         <p data-i18n="dz_p">Löscht alle eingetragenen Scores (Spieler, Flights und gespeicherte Runden bleiben erhalten).</p>
         <button class="btn danger" id="reset-btn" data-i18n="dz_btn">Alle Scores löschen</button>
       </div>
+      </div><!-- /lb-content -->
     </section>
 
   </main>

@@ -53,6 +53,21 @@ Bei jedem Push auf GitHub aktualisiert Render die Seite automatisch neu.
 - **Zugriff:** Die URL ist öffentlich, aber nicht auffindbar – nur wer den
   Link hat, findet die Seite.
 
+## Rangliste & Preisverleihung: PIN
+
+Die Rangliste ist während der Runde gesperrt – sie wird erst enthüllt, wenn
+jemand die PIN eingibt. Danach startet automatisch die Preisverleihung, und
+anschliessend ist die Rangliste sichtbar.
+
+- **Standard-PIN:** `1234`
+- **Eigene PIN setzen:** Im Render-Dashboard beim Dienst unter
+  **Environment → Add Environment Variable** die Variable `LEADERBOARD_PIN`
+  mit dem gewünschten Wert anlegen und speichern (Render startet den Dienst
+  danach automatisch neu).
+
+Die Sperre ist ein einfacher Schutz gegen neugierige Blicke während der Runde –
+kein Hochsicherheits-Login. Für ein Spassturnier reicht das.
+
 ## Zum Handy-Startbildschirm hinzufügen (optional)
 
 Fühlt sich wie eine App an:

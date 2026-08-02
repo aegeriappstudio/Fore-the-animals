@@ -13,6 +13,9 @@ const path = require('path');
 const crypto = require('crypto');
 
 const PORT = process.env.PORT || 3000;
+// PIN zum Freischalten der Rangliste/Preisverleihung (auf Render unter
+// Environment → LEADERBOARD_PIN setzen, sonst gilt der Standardwert)
+const PIN = process.env.LEADERBOARD_PIN || '1234';
 const DATA_DIR = process.env.DATA_DIR || __dirname;
 const DATA_FILE = path.join(DATA_DIR, 'data.json');
 const PUBLIC_DIR = path.join(__dirname, 'public');
@@ -302,6 +305,16 @@ async function handleApi(req, res, url) {
     state = restored;
     persist();
     return json(res, 200, { ok: true, players: state.players.length, rounds: state.archive.length });
+  }
+
+  // POST /api/unlock {pin} – Rangliste/Preisverleihung freischalten
+  if (req.method === 'POST' && url.pathname === '/api/unlock') {
+    const body = await readBody(req);
+    if (String(body.pin || '') !== PIN) {
+      await new Promise((r) => setTimeout(r, 500)); // bremst Durchprobieren
+      return json(res, 403, { error: 'Falsche PIN' });
+    }
+    return json(res, 200, { ok: true });
   }
 
   // POST /api/reset {confirm:"RESET"} – löscht alle Scores (Spieler/Flights bleiben)
