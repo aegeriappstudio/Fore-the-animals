@@ -55,8 +55,10 @@ gleichen WLAN (`node server.js` starten und die lokale IP teilen, z.B.
 ## Bedienung
 
 1. **👥 Spieler** – alle Spieler mit Name und Handicap erfassen; das Ziel
-   (36 + HCP/2, aufgerundet) wird automatisch berechnet. Flights erstellen und
-   Spieler per Tipp auf den Namen zuteilen.
+   (36 + HCP/2, aufgerundet) wird automatisch berechnet. Mit ✅/💤 markieren,
+   wer heute mitspielt – Abwesende bleiben gespeichert, erscheinen aber weder
+   in den Flights noch in der Rangliste. Flights erstellen und Spieler per
+   Tipp auf den Namen zuteilen.
 2. **⛳ Eintragen** – jeder Flight wählt sich selbst aus, wählt das Loch und
    trägt pro Spieler Bruttoschläge und Tiere ein. Mehrere Flights können
    gleichzeitig eintragen.

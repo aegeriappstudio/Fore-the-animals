@@ -258,6 +258,13 @@ input:focus, select:focus { outline: 2px solid var(--green); border-color: var(-
   padding: 8px 12px; font-size: 0.85rem; font-weight: 600;
 }
 
+/* ---------- Spieler: Anwesenheit ---------- */
+.presence { min-width: 42px; }
+.player-row.absent .p-name,
+.player-row.absent .p-hcp,
+.player-row.absent .badge { opacity: 0.45; }
+.player-row.absent .p-name { text-decoration: line-through; }
+
 /* ---------- Termine: Bearbeitung ---------- */
 .event-actions { display: flex; gap: 8px; margin-top: 10px; }
 .ev-date-label {

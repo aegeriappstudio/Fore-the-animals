@@ -112,10 +112,15 @@ const STRINGS = {
   ph_hcp: { de: 'HCP', en: 'HCP' },
   p_add: { de: 'Hinzufügen', en: 'Add' },
   p_persist_hint: {
-    de: 'Spieler nur einmal erfassen – sie bleiben über alle Runden gespeichert. Vor jeder Runde einfach das Handicap direkt im Feld anpassen, das Ziel rechnet sich automatisch neu.',
-    en: 'Add each player only once – they stay saved across all rounds. Before each round just adjust the handicap right in the field, the target updates automatically.',
+    de: 'Spieler nur einmal erfassen – sie bleiben über alle Runden gespeichert. Vor jeder Runde das Handicap anpassen und mit ✅/💤 markieren, wer heute mitspielt: Abwesende erscheinen weder in den Flights noch in der Rangliste.',
+    en: 'Add each player only once – they stay saved across all rounds. Before each round adjust the handicap and use ✅/💤 to mark who is playing today: absent players appear neither in the flights nor on the leaderboard.',
   },
   p_rename: { de: 'Name ändern', en: 'Rename' },
+  p_toggle: { de: 'Anwesenheit umschalten', en: 'Toggle attendance' },
+  p_now_present: { de: '{name} ist dabei ✅', en: '{name} is in ✅' },
+  p_now_absent: { de: '{name} ist heute abwesend 💤', en: '{name} is out today 💤' },
+  p_present_count: { de: '{n} von {m} Spielern dabei', en: '{n} of {m} players in' },
+  fr_need_present: { de: 'Mindestens 2 anwesende Spieler nötig', en: 'At least 2 players marked as in required' },
   p_hcp_saved: {
     de: 'HCP von {name} aktualisiert → {hcp}',
     en: 'HCP for {name} updated → {hcp}',
@@ -344,6 +349,12 @@ function targetFor(hcp) {
   return PAR_TOTAL + Math.ceil(Number(hcp) / 2);
 }
 
+// Anwesende Spieler – wer abwesend ist, taucht in Flights, Rangliste und
+// Preisverleihung nicht auf (Altbestand ohne das Feld gilt als anwesend)
+function presentPlayers() {
+  return state.players.filter((p) => p.present !== false);
+}
+
 function esc(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
@@ -564,8 +575,12 @@ function renderPlayers() {
   // Nicht neu aufbauen, während ein HCP-Feld gerade bearbeitet wird – sonst
   // überschreibt der 5-Sekunden-Poll die Eingabe und der Fokus geht verloren.
   if (list.contains(document.activeElement) && document.activeElement.classList.contains('p-hcp-input')) return;
-  list.innerHTML = state.players.map((p) => `
-    <div class="player-row">
+  const nPresent = presentPlayers().length;
+  list.innerHTML = `<p class="hint">${t('p_present_count', { n: nPresent, m: state.players.length })}</p>` +
+  state.players.map((p) => `
+    <div class="player-row ${p.present === false ? 'absent' : ''}">
+      <button type="button" class="btn small presence" data-presence="${p.id}"
+              title="${t('p_toggle')}" aria-label="${t('p_toggle')} ${esc(p.name)}">${p.present === false ? '💤' : '✅'}</button>
       <span class="p-name">${esc(p.name)}</span>
       <label class="p-hcp">${t('ph_hcp')}
         <input type="number" class="p-hcp-input" data-hcp-player="${p.id}" value="${esc(p.hcp)}"
@@ -607,7 +622,7 @@ function renderFlights() {
   // sonst schliesst der 5-Sekunden-Poll den Datums-Picker
   if (list.contains(document.activeElement) && document.activeElement.classList.contains('tee-input')) return;
   list.innerHTML = flightsSorted().map((f) => {
-    const chips = state.players.map((p) => {
+    const chips = presentPlayers().map((p) => {
       const inFlight = f.playerIds.includes(p.id);
       const elsewhere = !inFlight && state.flights.some((o) => o.id !== f.id && o.playerIds.includes(p.id));
       if (elsewhere) return '';
@@ -716,9 +731,9 @@ function medal(rank) {
   return rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank + '.';
 }
 
-// Aktuelle Rangliste, sortiert wie in der Hauptwertung
+// Aktuelle Rangliste (nur anwesende Spieler), sortiert wie in der Hauptwertung
 function standings() {
-  return state.players
+  return presentPlayers()
     .map((p) => ({ p, ...playerStats(p) }))
     .sort((a, b) => b.points - a.points || b.totalAnimals - a.totalAnimals || a.gross - b.gross);
 }
@@ -732,12 +747,12 @@ function renderLeaderboard() {
   const main = $('#lb-main');
   const second = $('#lb-animals');
   if (!unlocked) { main.innerHTML = second.innerHTML = ''; return; }
-  if (!state.players.length) {
+  if (!presentPlayers().length) {
     main.innerHTML = second.innerHTML = `<tr><td class="empty-note">${t('lb_no_players')}</td></tr>`;
     return;
   }
 
-  const rows = state.players.map((p) => ({ p, ...playerStats(p) }));
+  const rows = presentPlayers().map((p) => ({ p, ...playerStats(p) }));
 
   // Hauptwertung: Punkte, dann meiste Tiere, dann tieferes Brutto
   const sorted = [...rows].sort((a, b) =>
@@ -996,10 +1011,22 @@ $('#player-form').addEventListener('submit', async (e) => {
   } catch (err) { toast(err.message, true); }
 });
 
-// Spieler bearbeiten / löschen
+// Spieler bearbeiten / löschen / Anwesenheit umschalten
 $('#player-list').addEventListener('click', async (e) => {
   const editBtn = e.target.closest('[data-edit-player]');
   const delBtn = e.target.closest('[data-del-player]');
+  const presBtn = e.target.closest('[data-presence]');
+  if (presBtn) {
+    const p = state.players.find((x) => x.id === presBtn.dataset.presence);
+    if (!p) return;
+    const present = p.present === false; // umschalten
+    try {
+      await api('PUT', `/api/players/${p.id}`, { present });
+      toast(t(present ? 'p_now_present' : 'p_now_absent', { name: p.name }));
+      refresh(true);
+    } catch (err) { toast(err.message, true); }
+    return;
+  }
   if (editBtn) {
     const p = state.players.find((x) => x.id === editBtn.dataset.editPlayer);
     const name = prompt(t('p_prompt_name'), p.name);
@@ -1118,9 +1145,10 @@ $('#hole-picker').addEventListener('click', (e) => {
   renderEntry();
 });
 
-// Zufällige Flight-Zuteilung
+// Zufällige Flight-Zuteilung (nur anwesende Spieler)
 $('#randomize-btn').addEventListener('click', async () => {
-  if (state.players.length < 2) return toast(t('fr_first'), true);
+  if (!state.players.length) return toast(t('fr_first'), true);
+  if (presentPlayers().length < 2) return toast(t('fr_need_present'), true);
   const answer = prompt(t('fr_prompt'), '3');
   if (answer === null) return;
   const size = parseInt(answer, 10);

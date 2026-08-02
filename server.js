@@ -26,7 +26,7 @@ const PUBLIC_DIR = path.join(__dirname, 'public');
 
 function emptyState() {
   return {
-    players: [],   // {id, name, hcp}
+    players: [],   // {id, name, hcp, present} – present: macht bei der aktuellen Runde mit
     flights: [],   // {id, name, playerIds: [], teeTime}
     scores: {},    // scores[playerId][hole] = {gross, animals:{zebra,giraffe,rabbit,scorpion,crocodile,snake}}
     archive: [],   // abgeschlossene Runden: {id, name, date, results, players, scores}
@@ -91,9 +91,15 @@ const NEG_ANIMALS = ['scorpion', 'crocodile', 'snake'];
 const ANIMALS = [...POS_ANIMALS, ...NEG_ANIMALS];
 const PARS = [4, 4, 4, 3, 4, 4, 4, 5, 4];
 
-// Endresultate der aktuellen Runde (für das Archiv), sortiert nach Punkten
+// Anwesende Spieler (Altbestand ohne das Feld gilt als anwesend)
+function presentPlayers() {
+  return state.players.filter((p) => p.present !== false);
+}
+
+// Endresultate der aktuellen Runde (für das Archiv), sortiert nach Punkten –
+// abwesende Spieler zählen nicht mit
 function computeResults() {
-  return state.players.map((p) => {
+  return presentPlayers().map((p) => {
     const sc = state.scores[p.id] || {};
     let gross = 0, played = 0, pos = 0, neg = 0;
     const counts = {};
@@ -177,7 +183,7 @@ async function handleApi(req, res, url) {
     const body = await readBody(req);
     const name = String(body.name || '').trim().slice(0, 40);
     if (!name) return json(res, 400, { error: 'Name fehlt' });
-    const player = { id: id(), name, hcp: sanitizeHcp(body.hcp) };
+    const player = { id: id(), name, hcp: sanitizeHcp(body.hcp), present: true };
     state.players.push(player);
     state.scores[player.id] = {};
     persist();
@@ -195,6 +201,15 @@ async function handleApi(req, res, url) {
         if (name) player.name = name;
       }
       if (body.hcp !== undefined) player.hcp = sanitizeHcp(body.hcp);
+      if (body.present !== undefined) {
+        player.present = !!body.present;
+        // Abwesende fliegen aus allen Flights (Scores bleiben erhalten)
+        if (!player.present) {
+          state.flights.forEach((f) => {
+            f.playerIds = f.playerIds.filter((pid) => pid !== player.id);
+          });
+        }
+      }
       persist();
       return json(res, 200, player);
     }
@@ -225,8 +240,9 @@ async function handleApi(req, res, url) {
     const body = await readBody(req);
     let size = parseInt(body.size, 10);
     if (!(size >= 2 && size <= 4)) size = 3;
-    if (!state.players.length) return json(res, 400, { error: 'Keine Spieler erfasst' });
-    const ids = state.players.map((p) => p.id);
+    const present = presentPlayers();
+    if (!present.length) return json(res, 400, { error: 'Keine anwesenden Spieler' });
+    const ids = present.map((p) => p.id);
     for (let i = ids.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [ids[i], ids[j]] = [ids[j], ids[i]];
@@ -250,7 +266,7 @@ async function handleApi(req, res, url) {
       }
       if (body.teeTime !== undefined) flight.teeTime = sanitizeTeeTime(body.teeTime);
       if (Array.isArray(body.playerIds)) {
-        const valid = new Set(state.players.map((p) => p.id));
+        const valid = new Set(presentPlayers().map((p) => p.id));
         flight.playerIds = body.playerIds.filter((pid) => valid.has(pid));
       }
       persist();
