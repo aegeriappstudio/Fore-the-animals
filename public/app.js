@@ -218,6 +218,7 @@ const STRINGS = {
     en: 'Finish and save the round now?\nScores will be cleared for a new round afterwards.',
   },
   sr_saved: { de: '«{name}» gespeichert 💾', en: '“{name}” saved 💾' },
+  sr_auto_saved: { de: 'Runde «{name}» automatisch gespeichert 💾', en: 'Round “{name}” saved automatically 💾' },
   ar_title: { de: '🗂️ Gespeicherte Runden', en: '🗂️ Saved rounds' },
   ar_none: { de: 'Noch keine gespeicherten Runden.', en: 'No saved rounds yet.' },
   ar_winner: { de: 'Sieger', en: 'Winner' },
@@ -731,11 +732,48 @@ function medal(rank) {
   return rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank + '.';
 }
 
-// Aktuelle Rangliste (nur anwesende Spieler), sortiert wie in der Hauptwertung
-function standings() {
-  return presentPlayers()
-    .map((p) => ({ p, ...playerStats(p) }))
-    .sort((a, b) => b.points - a.points || b.totalAnimals - a.totalAnimals || a.gross - b.gross);
+// Sortierung der Hauptwertung: Punkte, dann meiste Tiere, dann tieferes Brutto
+function mainSort(a, b) {
+  return b.points - a.points || b.totalAnimals - a.totalAnimals || a.gross - b.gross;
+}
+
+// Gibt es in der laufenden Runde schon Einträge?
+function hasCurrentScores() {
+  return Object.values(state.scores).some((byHole) =>
+    Object.values(byHole || {}).some((e) => e && (e.gross != null || Object.values(e.animals || {}).some(Boolean))));
+}
+
+// Daten für Rangliste/Preisverleihung: die laufende Runde – oder, wenn sie
+// bereits gespeichert (und damit geleert) wurde, die zuletzt archivierte Runde
+function displayRows() {
+  const archive = state.archive || [];
+  if (hasCurrentScores() || !archive.length) {
+    const rows = presentPlayers().map((p) => {
+      const counts = {};
+      const sc = state.scores[p.id] || {};
+      for (const a of ANIMALS) counts[a.key] = 0;
+      for (const h of COURSE) {
+        const e = sc[h.hole];
+        if (e && e.animals) for (const a of ANIMALS) if (e.animals[a.key]) counts[a.key]++;
+      }
+      return { p, counts, ...playerStats(p) };
+    });
+    return { live: true, rows, roundName: null, round: null };
+  }
+  const round = archive[0];
+  const rows = (round.results || []).map((x) => ({
+    p: { id: x.id, name: x.name, hcp: x.hcp },
+    target: x.target,
+    gross: x.gross,
+    played: x.played != null ? x.played : 9,
+    pos: x.pos,
+    neg: x.neg,
+    points: x.points,
+    totalAnimals: x.totalAnimals != null ? x.totalAnimals : x.pos + x.neg,
+    counts: x.counts || {},
+    finished: true,
+  }));
+  return { live: false, rows, roundName: round.name, round };
 }
 
 function updateLockUI() {
@@ -747,17 +785,17 @@ function renderLeaderboard() {
   const main = $('#lb-main');
   const second = $('#lb-animals');
   if (!unlocked) { main.innerHTML = second.innerHTML = ''; return; }
-  if (!presentPlayers().length) {
+  const disp = displayRows();
+  if (!disp.rows.length) {
     main.innerHTML = second.innerHTML = `<tr><td class="empty-note">${t('lb_no_players')}</td></tr>`;
     return;
   }
+  // Nach dem Speichern zeigt die Rangliste die archivierte Runde – mit Titelzeile
+  const caption = disp.live ? '' :
+    `<tr><td class="lb-round-caption" colspan="9">🏁 ${esc(disp.roundName)}</td></tr>`;
 
-  const rows = presentPlayers().map((p) => ({ p, ...playerStats(p) }));
-
-  // Hauptwertung: Punkte, dann meiste Tiere, dann tieferes Brutto
-  const sorted = [...rows].sort((a, b) =>
-    b.points - a.points || b.totalAnimals - a.totalAnimals || a.gross - b.gross);
-  main.innerHTML = `
+  const sorted = [...disp.rows].sort(mainSort);
+  main.innerHTML = caption + `
     <tr><th>${t('h_rank')}</th><th style="text-align:left">${t('h_player')}</th><th>HCP</th><th>${t('h_target')}</th><th>${t('h_thru')}</th><th>${t('h_gross')}</th><th>${t('h_pos')}</th><th>${t('h_neg')}</th><th>${t('h_points')}</th></tr>` +
     sorted.map((r, i) => `
       <tr class="rank-${i + 1}" data-pid="${r.p.id}">
@@ -773,26 +811,17 @@ function renderLeaderboard() {
       </tr>`).join('');
 
   // Zweiter Preis: meiste Tiere insgesamt
-  const byAnimals = [...rows].sort((a, b) =>
+  const byAnimals = [...disp.rows].sort((a, b) =>
     b.totalAnimals - a.totalAnimals || b.pos - a.pos || b.points - a.points);
-  second.innerHTML = `
+  second.innerHTML = caption + `
     <tr><th>${t('h_rank')}</th><th style="text-align:left">${t('h_player')}</th><th>🦓</th><th>🦒</th><th>🐇</th><th>🦂</th><th>🐊</th><th>🐍</th><th>${t('h_total')}</th></tr>` +
-    byAnimals.map((r, i) => {
-      const counts = {};
-      for (const a of ANIMALS) counts[a.key] = 0;
-      const scores = state.scores[r.p.id] || {};
-      for (const h of COURSE) {
-        const e = scores[h.hole];
-        if (e && e.animals) for (const a of ANIMALS) if (e.animals[a.key]) counts[a.key]++;
-      }
-      return `
+    byAnimals.map((r, i) => `
         <tr class="rank-${i + 1}">
           <td>${medal(i + 1)}</td>
           <td class="name-cell">${esc(r.p.name)}</td>
-          ${ANIMALS.map((a) => `<td>${counts[a.key] || ''}</td>`).join('')}
+          ${ANIMALS.map((a) => `<td>${r.counts[a.key] || ''}</td>`).join('')}
           <td class="pts">${r.totalAnimals}</td>
-        </tr>`;
-    }).join('');
+        </tr>`).join('');
 }
 
 // --- Archiv: gespeicherte Runden ---
@@ -1219,12 +1248,18 @@ $('#entry-players').addEventListener('click', async (e) => {
   }
 });
 
-// Scorekarte: aktuelle Runde (Tipp auf Zeile in der Rangliste)
+// Scorekarte: Tipp auf Zeile in der Rangliste (live oder archivierte Runde)
 $('#lb-main').addEventListener('click', (e) => {
   const tr = e.target.closest('tr[data-pid]');
   if (!tr) return;
-  const p = state.players.find((x) => x.id === tr.dataset.pid);
-  if (p) showScorecard(p.name, p.hcp, state.scores[p.id]);
+  const disp = displayRows();
+  if (disp.live) {
+    const p = state.players.find((x) => x.id === tr.dataset.pid);
+    if (p) showScorecard(p.name, p.hcp, state.scores[p.id]);
+  } else {
+    const player = (disp.round.players || []).find((x) => x.id === tr.dataset.pid);
+    if (player) showScorecard(player.name, player.hcp, (disp.round.scores || {})[player.id]);
+  }
 });
 
 // Modal schliessen
@@ -1259,7 +1294,7 @@ function showCeremonyStep() {
 }
 
 function startCeremony() {
-  const rows = standings();
+  const rows = [...displayRows().rows].sort(mainSort);
   if (!rows.length) return toast(t('cer_no_players'), true);
   const byAnimals = [...rows].sort((a, b) => b.totalAnimals - a.totalAnimals || b.pos - a.pos);
   const pts = (r) => t('cer_pts', { pts: `${r.points > 0 ? '+' : ''}${r.points}`, g: r.gross });
@@ -1293,7 +1328,21 @@ $('#unlock-form').addEventListener('submit', async (e) => {
     sessionStorage.setItem('fta-unlocked', '1');
     sessionStorage.setItem('fta-pin', pin); // für geschützte Aktionen mitschicken
     $('#pin-input').value = '';
+    await refresh(true); // frischen Stand holen, bevor über das Speichern entschieden wird
+    // Ungespeicherte Runde automatisch ins Archiv legen, damit am Turnierabend
+    // nichts vergessen geht. Ist die Runde noch nicht fertig gespielt, zuerst
+    // nachfragen – sonst würde ein neugieriger Blick die Scores leeren.
+    if (hasCurrentScores()) {
+      const allDone = presentPlayers().length > 0 && presentPlayers().every((p) => playerStats(p).finished);
+      if (allDone || confirm(t('sr_confirm'))) {
+        try {
+          const r = await api('POST', '/api/rounds', {});
+          toast(t('sr_auto_saved', { name: r.name }));
+        } catch (err) { toast(err.status === 403 ? t('pin_denied') : err.message, true); }
+      }
+    }
     updateLockUI();
+    await refresh(true);
     renderAll();
     startCeremony();
   } catch (err) {
@@ -1320,7 +1369,7 @@ $('#ceremony').addEventListener('click', () => {
 
 // Rangliste als Bild teilen / herunterladen
 $('#share-btn').addEventListener('click', () => {
-  const rows = standings();
+  const rows = [...displayRows().rows].sort(mainSort);
   if (!rows.length) return toast(t('cer_no_players'), true);
   const byAnimals = [...rows].sort((a, b) => b.totalAnimals - a.totalAnimals || b.pos - a.pos);
 
