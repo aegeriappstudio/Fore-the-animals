@@ -258,6 +258,19 @@ input:focus, select:focus { outline: 2px solid var(--green); border-color: var(-
   padding: 8px 12px; font-size: 0.85rem; font-weight: 600;
 }
 
+/* ---------- Termine: Bearbeitung ---------- */
+.event-actions { display: flex; gap: 8px; margin-top: 10px; }
+.ev-date-label {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 0.9rem; color: var(--muted); flex: 1 1 160px;
+}
+.ev-date-label input { flex: 1; }
+.ev-confirmed {
+  display: flex; align-items: center; gap: 8px;
+  margin: 6px 0 10px; font-size: 0.95rem;
+}
+.ev-confirmed input { width: 20px; height: 20px; }
+
 /* ---------- Flights: Abschlagszeit ---------- */
 .tee-field {
   display: flex; align-items: center; gap: 6px;

@@ -69,6 +69,15 @@ gleichen WLAN (`node server.js` starten und die lokale IP teilen, z.B.
 
 ### Weitere Funktionen
 
+- **🔐 PIN-geschützte Admin-Aktionen** – Spieler/Runden löschen, Turnier
+  zurücksetzen, Backup einspielen, Runde abschliessen und Termine pflegen
+  verlangen die PIN (`LEADERBOARD_PIN`, Standard `1234`). Nach dem Speichern
+  einer Runde sperrt sich die Rangliste automatisch wieder.
+- **📅 Termine-Verwaltung** – Turnier-Termine (Datum, Flights, Dinner, Notiz,
+  Status) direkt in der App erfassen und bearbeiten, ohne Deploy.
+- **🗄️ Tages-Backups** – der Server legt automatisch einmal pro Tag eine
+  datierte Kopie der `data.json` unter `backups/` ab (die letzten 14 bleiben).
+
 - **🎉 Preisverleihung** – Vollbild-Show mit Platz 3 → 2 → Tierpreis → Sieger
   (mit Konfetti), ideal für den Apéro.
 - **📸 Als Bild teilen** – erzeugt die Rangliste als Bild für die

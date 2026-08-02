@@ -66,6 +66,9 @@ Weitere Hinweise:
   Der Starter-Plan läuft dauerhaft.
 - **Sicherheitsnetz:** Im Rangliste-Tab gibt es «Backup herunterladen» /
   «Backup wiederherstellen» – nach jedem Turnier ein Backup ziehen schadet nie.
+  Zusätzlich legt der Server einmal pro Tag automatisch eine datierte Kopie
+  der `data.json` im Ordner `backups/` auf der Disk ab (die letzten 14 bleiben
+  erhalten), und Render erstellt alle 24 h einen Disk-Snapshot.
 - **Zugriff:** Die URL ist öffentlich, aber nicht auffindbar – nur wer den
   Link hat, findet die Seite.
 
@@ -80,6 +83,11 @@ anschliessend ist die Rangliste sichtbar.
   **Environment → Add Environment Variable** die Variable `LEADERBOARD_PIN`
   mit dem gewünschten Wert anlegen und speichern (Render startet den Dienst
   danach automatisch neu).
+
+Die gleiche PIN schützt auch die heiklen Aktionen: Spieler oder gespeicherte
+Runden löschen, Turnier zurücksetzen, Backup einspielen, Runde abschliessen
+und Termine bearbeiten. Nach dem Abschliessen einer Runde sperrt sich die
+Rangliste automatisch wieder – bereit für die nächste Runde.
 
 Die Sperre ist ein einfacher Schutz gegen neugierige Blicke während der Runde –
 kein Hochsicherheits-Login. Für ein Spassturnier reicht das.
