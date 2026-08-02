@@ -140,9 +140,12 @@ input:focus, select:focus { outline: 2px solid var(--green); border-color: var(-
 .player-row {
   display: flex; align-items: center; gap: 8px; padding: 8px 0;
   border-bottom: 1px solid var(--border);
+  flex-wrap: wrap; /* auf schmalen Screens rutschen HCP/Ziel/Knöpfe in die 2. Zeile */
 }
 .player-row:last-child { border-bottom: none; }
-.player-row .p-name { flex: 1; min-width: 0; font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
+.player-row .p-name {
+  flex: 1 1 40%; min-width: 130px; font-weight: 600; overflow-wrap: anywhere;
+}
 .player-row .p-meta { color: var(--muted); font-size: 0.85rem; }
 .player-row .p-hcp {
   display: inline-flex; align-items: center; gap: 5px; flex: 0 0 auto;
@@ -299,6 +302,10 @@ input:focus, select:focus { outline: 2px solid var(--green); border-color: var(-
 
 /* ---------- Rangliste: Aktionen ---------- */
 .lb-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.lb-round-caption {
+  font-weight: 700; color: var(--green-dark); background: var(--green-light);
+  text-align: left; padding: 8px 10px; border-radius: 6px;
+}
 .lb-table tr[data-pid], .lb-table tr[data-rpid] { cursor: pointer; }
 
 /* ---------- Scorekarten-Modal ---------- */
