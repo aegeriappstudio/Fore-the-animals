@@ -60,9 +60,12 @@ gleichen WLAN (`node server.js` starten und die lokale IP teilen, z.B.
 2. **⛳ Eintragen** – jeder Flight wählt sich selbst aus, wählt das Loch und
    trägt pro Spieler Bruttoschläge und Tiere ein. Mehrere Flights können
    gleichzeitig eintragen.
-3. **🏆 Rangliste** – live: Hauptwertung (Punkte) und zweiter Preis (meiste
-   Tiere). Für noch nicht gespielte Löcher wird Par angenommen (Prognose).
-   Ein Tipp auf einen Spieler zeigt seine Scorekarte Loch für Loch.
+3. **🏆 Rangliste** – während der Runde gesperrt (PIN nötig, Spannung bleibt
+   erhalten!). Nach Eingabe der PIN startet zuerst die Preisverleihung, danach
+   erscheint die Rangliste: Hauptwertung (Punkte) und zweiter Preis (meiste
+   Tiere). Ein Tipp auf einen Spieler zeigt seine Scorekarte Loch für Loch.
+   Die PIN ist standardmässig `1234` und kann über die Umgebungsvariable
+   `LEADERBOARD_PIN` geändert werden.
 
 ### Weitere Funktionen
 

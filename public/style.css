@@ -258,6 +258,13 @@ input:focus, select:focus { outline: 2px solid var(--green); border-color: var(-
   padding: 8px 12px; font-size: 0.85rem; font-weight: 600;
 }
 
+/* ---------- Rangliste: PIN-Sperre ---------- */
+.lock-card { text-align: center; }
+.lock-card .lock-emoji { font-size: 3rem; margin: 6px 0; }
+.lock-card p { color: var(--muted); max-width: 34em; margin: 0 auto 14px; }
+.lock-form { justify-content: center; }
+.lock-form input { flex: 0 1 130px; text-align: center; letter-spacing: 0.2em; }
+
 /* ---------- Rangliste: Aktionen ---------- */
 .lb-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
 .lb-table tr[data-pid], .lb-table tr[data-rpid] { cursor: pointer; }

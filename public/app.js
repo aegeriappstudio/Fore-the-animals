@@ -158,6 +158,17 @@ const STRINGS = {
     en: 'Score = target − gross + animals. Par is assumed for holes not yet played (live projection). Updates automatically every 5 seconds. Tap a player to see their scorecard.',
   },
   lb_ceremony: { de: '🎉 Preisverleihung', en: '🎉 Prize ceremony' },
+  // PIN-Sperre
+  lk_title: { de: 'Rangliste gesperrt', en: 'Leaderboard locked' },
+  lk_p: {
+    de: 'Die Rangliste bleibt während der Runde geheim. Mit der PIN startet die Preisverleihung – danach wird die Rangliste angezeigt.',
+    en: 'The leaderboard stays secret during the round. Enter the PIN to start the prize ceremony – the leaderboard is revealed afterwards.',
+  },
+  lk_ph: { de: 'PIN', en: 'PIN' },
+  lk_btn: { de: '🎉 Preisverleihung starten', en: '🎉 Start prize ceremony' },
+  lk_wrong: { de: 'Falsche PIN', en: 'Wrong PIN' },
+  lk_relock: { de: '🔒 Wieder sperren', en: '🔒 Lock again' },
+  lk_locked: { de: 'Rangliste wieder gesperrt 🔒', en: 'Leaderboard locked again 🔒' },
   lb_share: { de: '📸 Als Bild teilen', en: '📸 Share as image' },
   lb_second_title: { de: '🥈 Zweiter Preis – Meiste Tiere', en: '🥈 Second prize – Most animals' },
   lb_no_players: { de: 'Noch keine Spieler.', en: 'No players yet.' },
@@ -305,6 +316,9 @@ const ANIMALS = [
 // Globaler Zustand
 // ---------------------------------------------------------------------------
 let state = { players: [], flights: [], scores: {}, version: 0 };
+// Rangliste/Preisverleihung sind gesperrt, bis die PIN eingegeben wurde
+// (pro Gerät und Browser-Sitzung gemerkt)
+let unlocked = sessionStorage.getItem('fta-unlocked') === '1';
 let currentFlightId = localStorage.getItem('fta-flight') || '';
 let currentHole = parseInt(localStorage.getItem('fta-hole') || '1', 10);
 let pendingWrites = 0;
@@ -606,9 +620,15 @@ function standings() {
     .sort((a, b) => b.points - a.points || b.totalAnimals - a.totalAnimals || a.gross - b.gross);
 }
 
+function updateLockUI() {
+  $('#lb-lock').hidden = unlocked;
+  $('#lb-content').hidden = !unlocked;
+}
+
 function renderLeaderboard() {
   const main = $('#lb-main');
   const second = $('#lb-animals');
+  if (!unlocked) { main.innerHTML = second.innerHTML = ''; return; }
   if (!state.players.length) {
     main.innerHTML = second.innerHTML = `<tr><td class="empty-note">${t('lb_no_players')}</td></tr>`;
     return;
@@ -660,6 +680,7 @@ function renderLeaderboard() {
 // --- Archiv: gespeicherte Runden ---
 function renderArchive() {
   const wrap = $('#archive-list');
+  if (!unlocked) { wrap.innerHTML = ''; return; }
   const archive = state.archive || [];
   if (!archive.length) {
     wrap.innerHTML = `<p class="empty-note">${t('ar_none')}</p>`;
@@ -701,6 +722,7 @@ function renderArchive() {
 function renderAllTime() {
   const archive = state.archive || [];
   const card = $('#alltime-card');
+  if (!unlocked) { card.hidden = true; $('#lb-alltime').innerHTML = ''; return; }
   card.hidden = !archive.length;
   if (!archive.length) return;
 
@@ -1024,7 +1046,7 @@ function showCeremonyStep() {
   }
 }
 
-$('#ceremony-btn').addEventListener('click', () => {
+function startCeremony() {
   const rows = standings();
   if (!rows.length) return toast(t('cer_no_players'), true);
   const byAnimals = [...rows].sort((a, b) => b.totalAnimals - a.totalAnimals || b.pos - a.pos);
@@ -1044,6 +1066,35 @@ $('#ceremony-btn').addEventListener('click', () => {
   ceremonyIdx = 0;
   showCeremonyStep();
   $('#ceremony').hidden = false;
+}
+
+$('#ceremony-btn').addEventListener('click', startCeremony);
+
+// PIN-Sperre: entsperren (Server prüft die PIN) → Preisverleihung startet
+$('#unlock-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const pin = $('#pin-input').value;
+  if (!pin) return;
+  try {
+    await api('POST', '/api/unlock', { pin });
+    unlocked = true;
+    sessionStorage.setItem('fta-unlocked', '1');
+    $('#pin-input').value = '';
+    updateLockUI();
+    renderAll();
+    startCeremony();
+  } catch (err) {
+    toast(err.status === 403 ? t('lk_wrong') : err.message, true);
+  }
+});
+
+// Wieder sperren (z.B. bevor das Handy weitergereicht wird)
+$('#relock-btn').addEventListener('click', () => {
+  unlocked = false;
+  sessionStorage.removeItem('fta-unlocked');
+  updateLockUI();
+  renderAll(); // leert die gesperrten Tabellen
+  toast(t('lk_locked'));
 });
 
 $('#ceremony').addEventListener('click', () => {
@@ -1203,6 +1254,7 @@ if ('serviceWorker' in navigator) {
 }
 
 applyStatic(); // gespeicherte Sprache anwenden
+updateLockUI(); // Sperr-Zustand der Rangliste herstellen
 
 saveQueue();  // Banner-Zustand herstellen (evtl. Reste aus letzter Sitzung)
 flushQueue(); // liegengebliebene Einträge sofort nachsenden
