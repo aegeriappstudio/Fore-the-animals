@@ -57,12 +57,16 @@ gleichen WLAN (`node server.js` starten und die lokale IP teilen, z.B.
 1. **👥 Spieler** – alle Spieler mit Name und Handicap erfassen; das Ziel
    (36 + HCP/2, aufgerundet) wird automatisch berechnet. Mit ✅/💤 markieren,
    wer heute mitspielt – Abwesende bleiben gespeichert, erscheinen aber weder
-   in den Flights noch in der Rangliste. Flights erstellen und Spieler per
-   Tipp auf den Namen zuteilen.
-2. **⛳ Eintragen** – jeder Flight wählt sich selbst aus, wählt das Loch und
+   in den Flights noch in der Rangliste.
+2. **📅 Termine** – jeder meldet sich per Tipp auf seinen Namen für einen
+   Termin an oder ab. Am Turniertag lassen sich die Anmeldungen mit einem
+   Klick als Anwesenheit übernehmen (PIN nötig).
+3. **🏌️ Flights** – Flights aus den anwesenden Spielern erstellen (optional
+   mit Abschlagszeit) oder zufällig auslosen, Spieler per Tipp zuteilen.
+4. **⛳ Eintragen** – jeder Flight wählt sich selbst aus, wählt das Loch und
    trägt pro Spieler Bruttoschläge und Tiere ein. Mehrere Flights können
    gleichzeitig eintragen.
-3. **🏆 Rangliste** – während der Runde gesperrt (PIN nötig, Spannung bleibt
+5. **🏆 Rangliste** – während der Runde gesperrt (PIN nötig, Spannung bleibt
    erhalten!). Nach Eingabe der PIN startet zuerst die Preisverleihung, danach
    erscheint die Rangliste: Hauptwertung (Punkte) und zweiter Preis (meiste
    Tiere). Ein Tipp auf einen Spieler zeigt seine Scorekarte Loch für Loch.

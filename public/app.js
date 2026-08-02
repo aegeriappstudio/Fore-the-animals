@@ -11,13 +11,14 @@ const STRINGS = {
   tab_rules: { de: '📖 Regeln', en: '📖 Rules' },
   tab_dates: { de: '📅 Termine', en: '📅 Dates' },
   tab_players: { de: '👥 Spieler', en: '👥 Players' },
+  tab_flights: { de: '🏌️ Flights', en: '🏌️ Flights' },
   tab_entry: { de: '⛳ Eintragen', en: '⛳ Score entry' },
   tab_leaderboard: { de: '🏆 Rangliste', en: '🏆 Leaderboard' },
   // Termine
   d_title: { de: 'Termine & Turniere', en: 'Dates & tournaments' },
   d_intro: {
-    de: 'Die nächsten fixen und geplanten Turnier-Termine der Golf Safari.',
-    en: 'The next confirmed and planned tournament dates of the Golf Safari.',
+    de: 'Die nächsten fixen und geplanten Turnier-Termine der Golf Safari. Tippe bei einem Termin auf deinen Namen, um dich an- oder abzumelden.',
+    en: 'The next confirmed and planned tournament dates of the Golf Safari. Tap your name on a date to sign up or off.',
   },
   d_lbl_date: { de: 'Datum', en: 'Date' },
   d_lbl_flights: { de: 'Flights', en: 'Tee times' },
@@ -40,6 +41,23 @@ const STRINGS = {
   ev_pin_hint: {
     de: 'Zum Speichern oder Löschen von Terminen wird die PIN benötigt.',
     en: 'The PIN is required to save or delete dates.',
+  },
+  ev_signups: { de: '✍️ Anmeldungen', en: '✍️ Sign-ups' },
+  ev_no_players_yet: {
+    de: 'Zuerst im Spieler-Tab Spieler erfassen – danach kann sich hier jeder anmelden.',
+    en: 'Add players in the Players tab first – then everyone can sign up here.',
+  },
+  ev_signed_up: { de: '{name} für «{ev}» angemeldet ✅', en: '{name} signed up for “{ev}” ✅' },
+  ev_signed_off: { de: '{name} von «{ev}» abgemeldet', en: '{name} signed off from “{ev}”' },
+  ev_apply: { de: '✅ Als Anwesenheit übernehmen', en: '✅ Apply as attendance' },
+  ev_apply_confirm: {
+    de: 'Anwesenheit gemäss den {n} Anmeldungen von «{name}» setzen?\nAlle anderen werden als abwesend markiert.',
+    en: 'Set attendance from the {n} sign-ups of “{name}”?\nEveryone else will be marked absent.',
+  },
+  ev_applied: { de: 'Anwesenheit übernommen – {n} dabei ✅', en: 'Attendance applied – {n} in ✅' },
+  f_hint: {
+    de: 'Flights aus den anwesenden Spielern zusammenstellen – von Hand oder per Zufalls-Auslosung.',
+    en: 'Build flights from the players marked as in – by hand or with the random draw.',
   },
   pin_prompt: { de: 'PIN eingeben:', en: 'Enter PIN:' },
   pin_denied: { de: 'PIN erforderlich – bitte erneut versuchen', en: 'PIN required – please try again' },
@@ -541,6 +559,16 @@ function renderDates() {
     if (dateStr) facts.push(`<li><span class="ef-icon">📅</span><span class="ef-label">${t('d_lbl_date')}</span><span class="ef-val">${esc(dateStr)}</span></li>`);
     if (ev.flights) facts.push(`<li><span class="ef-icon">⛳</span><span class="ef-label">${t('d_lbl_flights')}</span><span class="ef-val">${esc(ev.flights)}</span></li>`);
     if (ev.dinner) facts.push(`<li><span class="ef-icon">🍽️</span><span class="ef-label">${t('d_lbl_dinner')}</span><span class="ef-val">${esc(ev.dinner)}</span></li>`);
+
+    // Anmeldungen: jeder kann sich per Tipp auf seinen Namen an-/abmelden
+    const signedUp = new Set(ev.playerIds || []);
+    const chips = state.players.length
+      ? state.players.map((p) => `
+          <span class="member-chip ${signedUp.has(p.id) ? 'in' : ''}"
+                data-signup-event="${ev.id}" data-signup-player="${p.id}">
+            ${signedUp.has(p.id) ? '✓ ' : '+ '}${esc(p.name)}</span>`).join('')
+      : `<span class="empty-note">${t('ev_no_players_yet')}</span>`;
+
     return `
       <div class="card event ${ev.confirmed ? 'event-confirmed' : 'event-tentative'}">
         <div class="event-head">
@@ -549,7 +577,12 @@ function renderDates() {
         </div>
         <ul class="event-facts">${facts.join('')}</ul>
         ${ev.note ? `<p class="hint">${esc(ev.note)}</p>` : ''}
+        <div class="event-signups">
+          <p class="es-title">${t('ev_signups')} (${signedUp.size})</p>
+          <div class="flight-members">${chips}</div>
+        </div>
         <div class="event-actions">
+          ${signedUp.size ? `<button type="button" class="btn small" data-apply-event="${ev.id}">${t('ev_apply')}</button>` : ''}
           <button type="button" class="btn small" data-edit-event="${ev.id}">✏️</button>
           <button type="button" class="btn small" data-del-event="${ev.id}">🗑️</button>
         </div>
@@ -1003,8 +1036,36 @@ $('#event-form').addEventListener('submit', async (e) => {
 $('#ev-cancel').addEventListener('click', () => fillEventForm(null));
 
 $('#event-list').addEventListener('click', async (e) => {
+  const chip = e.target.closest('[data-signup-player]');
+  const applyBtn = e.target.closest('[data-apply-event]');
   const editBtn = e.target.closest('[data-edit-event]');
   const delBtn = e.target.closest('[data-del-event]');
+  if (chip) {
+    const ev = (state.events || []).find((x) => x.id === chip.dataset.signupEvent);
+    const p = state.players.find((x) => x.id === chip.dataset.signupPlayer);
+    if (!ev || !p) return;
+    const attending = !(ev.playerIds || []).includes(p.id);
+    try {
+      const r = await api('POST', `/api/events/${ev.id}/signup`, { playerId: p.id, attending });
+      ev.playerIds = r.playerIds;
+      toast(t(attending ? 'ev_signed_up' : 'ev_signed_off', { name: p.name, ev: ev.name }));
+      renderDates();
+      refresh(true);
+    } catch (err) { toast(err.message, true); }
+    return;
+  }
+  if (applyBtn) {
+    const ev = (state.events || []).find((x) => x.id === applyBtn.dataset.applyEvent);
+    if (!ev) return;
+    if (!(await ensurePin())) return;
+    if (!confirm(t('ev_apply_confirm', { name: ev.name, n: (ev.playerIds || []).length }))) return;
+    try {
+      const r = await api('POST', `/api/events/${ev.id}/apply-attendance`, {});
+      toast(t('ev_applied', { n: r.present }));
+      refresh(true);
+    } catch (err) { toast(err.status === 403 ? t('pin_denied') : err.message, true); }
+    return;
+  }
   if (editBtn) {
     const ev = (state.events || []).find((x) => x.id === editBtn.dataset.editEvent);
     if (!ev) return;
