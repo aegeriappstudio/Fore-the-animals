@@ -127,6 +127,9 @@
         <h2 data-i18n="p_flights">Flights</h2>
         <form id="flight-form" class="row-form">
           <input type="text" id="flight-name" placeholder="Flight-Name (z.B. Flight 1)" maxlength="40" data-i18n-ph="ph_flight">
+          <label class="tee-field">🕐 <span data-i18n="f_tee">Abschlag</span>
+            <input type="datetime-local" id="flight-tee">
+          </label>
           <button type="submit" class="btn primary" data-i18n="p_create_flight">Flight erstellen</button>
         </form>
         <button type="button" class="btn" id="randomize-btn" data-i18n="p_randomize">🎲 Flights zufällig auslosen</button>

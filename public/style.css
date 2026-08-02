@@ -258,6 +258,18 @@ input:focus, select:focus { outline: 2px solid var(--green); border-color: var(-
   padding: 8px 12px; font-size: 0.85rem; font-weight: 600;
 }
 
+/* ---------- Flights: Abschlagszeit ---------- */
+.tee-field {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 0.9rem; color: var(--muted); flex: 1 1 100%;
+}
+.flight-tee {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  margin: 4px 0 10px; font-size: 0.9rem; color: var(--muted);
+}
+.tee-input { padding: 6px 8px; font-size: 0.95rem; }
+.tee-pretty { font-weight: 600; color: var(--green-dark); }
+
 /* ---------- Rangliste: PIN-Sperre ---------- */
 .lock-card { text-align: center; }
 .lock-card .lock-emoji { font-size: 3rem; margin: 6px 0; }

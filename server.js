@@ -123,6 +123,12 @@ function readBody(req) {
   });
 }
 
+// Abschlagszeit im Format des <input type="datetime-local">, z.B. 2026-08-06T18:30
+function sanitizeTeeTime(v) {
+  const s = String(v || '').trim();
+  return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(s) ? s : null;
+}
+
 function sanitizeHcp(v) {
   const n = Number(v);
   if (!isFinite(n)) return 0;
@@ -178,7 +184,7 @@ async function handleApi(req, res, url) {
   if (req.method === 'POST' && url.pathname === '/api/flights') {
     const body = await readBody(req);
     const name = String(body.name || '').trim().slice(0, 40) || `Flight ${state.flights.length + 1}`;
-    const flight = { id: id(), name, playerIds: [] };
+    const flight = { id: id(), name, playerIds: [], teeTime: sanitizeTeeTime(body.teeTime) };
     state.flights.push(flight);
     persist();
     return json(res, 200, flight);
@@ -196,7 +202,7 @@ async function handleApi(req, res, url) {
       [ids[i], ids[j]] = [ids[j], ids[i]];
     }
     const count = Math.max(1, Math.ceil(ids.length / size));
-    state.flights = Array.from({ length: count }, (_, i) => ({ id: id(), name: `Flight ${i + 1}`, playerIds: [] }));
+    state.flights = Array.from({ length: count }, (_, i) => ({ id: id(), name: `Flight ${i + 1}`, playerIds: [], teeTime: null }));
     ids.forEach((pid, i) => state.flights[i % count].playerIds.push(pid));
     persist();
     return json(res, 200, state.flights);
@@ -212,6 +218,7 @@ async function handleApi(req, res, url) {
         const name = String(body.name).trim().slice(0, 40);
         if (name) flight.name = name;
       }
+      if (body.teeTime !== undefined) flight.teeTime = sanitizeTeeTime(body.teeTime);
       if (Array.isArray(body.playerIds)) {
         const valid = new Set(state.players.map((p) => p.id));
         flight.playerIds = body.playerIds.filter((pid) => valid.has(pid));

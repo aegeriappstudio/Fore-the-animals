@@ -111,6 +111,8 @@ const STRINGS = {
   p_flights: { de: 'Flights', en: 'Flights' },
   ph_flight: { de: 'Flight-Name (z.B. Flight 1)', en: 'Flight name (e.g. Flight 1)' },
   p_create_flight: { de: 'Flight erstellen', en: 'Create flight' },
+  f_tee: { de: 'Abschlag', en: 'Tee time' },
+  f_tee_saved: { de: 'Abschlagszeit von «{name}» gespeichert 🕐', en: 'Tee time for “{name}” saved 🕐' },
   p_none: { de: 'Noch keine Spieler erfasst.', en: 'No players yet.' },
   f_none: { de: 'Noch keine Flights erstellt.', en: 'No flights yet.' },
   p_target: { de: 'Ziel', en: 'Target' },
@@ -505,12 +507,25 @@ function renderPlayers() {
 }
 
 // --- Flights ---
+// "2026-08-06T18:30" → "Do. 06.08.2026, 18:30" (bzw. englisches Format)
+function formatTee(teeTime, timeOnly) {
+  if (!teeTime) return '';
+  const d = new Date(teeTime);
+  if (isNaN(d)) return '';
+  const time = d.toLocaleTimeString(dateLocale(), { hour: '2-digit', minute: '2-digit' });
+  if (timeOnly) return time;
+  return d.toLocaleDateString(dateLocale(), { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' }) + ', ' + time;
+}
+
 function renderFlights() {
   const list = $('#flight-list');
   if (!state.flights.length) {
     list.innerHTML = `<p class="empty-note">${t('f_none')}</p>`;
     return;
   }
+  // Nicht neu aufbauen, während gerade eine Abschlagszeit gewählt wird –
+  // sonst schliesst der 5-Sekunden-Poll den Datums-Picker
+  if (list.contains(document.activeElement) && document.activeElement.classList.contains('tee-input')) return;
   list.innerHTML = state.flights.map((f) => {
     const chips = state.players.map((p) => {
       const inFlight = f.playerIds.includes(p.id);
@@ -525,6 +540,10 @@ function renderFlights() {
           <h3>⛳ ${esc(f.name)} <small style="font-weight:400;color:var(--muted)">${t('f_count', { n: f.playerIds.length })}</small></h3>
           <button type="button" class="btn small" data-del-flight="${f.id}">🗑️</button>
         </div>
+        <label class="flight-tee">🕐 ${t('f_tee')}
+          <input type="datetime-local" class="tee-input" data-tee-flight="${f.id}" value="${esc(f.teeTime || '')}">
+          ${f.teeTime ? `<span class="tee-pretty">${formatTee(f.teeTime)}</span>` : ''}
+        </label>
         <div class="flight-members">${chips || `<span class="empty-note">${t('f_no_avail')}</span>`}</div>
       </div>`;
   }).join('');
@@ -534,7 +553,10 @@ function renderFlights() {
 function renderEntry() {
   const sel = $('#entry-flight');
   sel.innerHTML = state.flights.length
-    ? state.flights.map((f) => `<option value="${f.id}" ${f.id === currentFlightId ? 'selected' : ''}>${esc(f.name)}</option>`).join('')
+    ? state.flights.map((f) => {
+        const tee = f.teeTime ? ` · ${formatTee(f.teeTime, true)}` : '';
+        return `<option value="${f.id}" ${f.id === currentFlightId ? 'selected' : ''}>${esc(f.name)}${tee}</option>`;
+      }).join('')
     : `<option value="">${t('e_select_first')}</option>`;
   if (!state.flights.find((f) => f.id === currentFlightId)) {
     currentFlightId = state.flights[0] ? state.flights[0].id : '';
@@ -887,10 +909,31 @@ $('#player-list').addEventListener('change', async (e) => {
 $('#flight-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   try {
-    await api('POST', '/api/flights', { name: $('#flight-name').value });
+    await api('POST', '/api/flights', { name: $('#flight-name').value, teeTime: $('#flight-tee').value || null });
     $('#flight-name').value = '';
+    $('#flight-tee').value = '';
     refresh(true);
   } catch (err) { toast(err.message, true); }
+});
+
+// Abschlagszeit eines Flights ändern (Datums-Picker auf der Flight-Karte)
+$('#flight-list').addEventListener('change', async (e) => {
+  const inp = e.target.closest('.tee-input');
+  if (!inp) return;
+  const f = state.flights.find((x) => x.id === inp.dataset.teeFlight);
+  if (!f) return;
+  try {
+    const updated = await api('PUT', `/api/flights/${f.id}`, { teeTime: inp.value || null });
+    f.teeTime = updated.teeTime;
+    toast(t('f_tee_saved', { name: f.name }));
+    // Anzeige direkt nachführen – renderFlights überspringt, solange das Feld fokussiert ist
+    const pretty = inp.parentElement.querySelector('.tee-pretty');
+    if (pretty) pretty.textContent = formatTee(f.teeTime);
+    renderEntry(); // Flight-Auswahl zeigt die Zeit ebenfalls
+  } catch (err) {
+    toast(err.message, true);
+    inp.value = f.teeTime || '';
+  }
 });
 
 // Flight: Mitglieder zuteilen / Flight löschen
