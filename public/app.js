@@ -511,6 +511,39 @@
   function renderInfo() {
     renderDates();
     renderCourseTable();
+    renderCalc();
+  }
+
+  /**
+   * Vorgabe-Rechner in den Regeln: zeigt für ein beliebiges Handicap Ziel,
+   * Spielvorgabe, Vorgabeschläge und Deckel pro Loch. Rechnet mit denselben
+   * Funktionen wie die Wertung – kann also nie von ihr abweichen.
+   * Das Eingabefeld ist statisches HTML und wird hier nie neu aufgebaut,
+   * damit der 5-Sekunden-Takt die Eingabe nicht stört.
+   */
+  function renderCalc() {
+    var input = $('#calc-hcp');
+    if (!input) return;
+    var hcp = input.value === '' ? null : M.normalizeHcp(input.value);
+    if (hcp === null) {
+      $('#calc-summary').textContent = '';
+      $('#calc-table').innerHTML = '';
+      return;
+    }
+    var strokes = M.strokesFor(hcp);
+    var ch = M.courseHandicap(hcp);
+    $('#calc-summary').textContent = t('rc_calc_summary', { target: M.targetFor(hcp), ch: signed(ch) });
+    $('#calc-table').innerHTML =
+      '<tr><th>' + t('c_hole') + '</th>' + M.COURSE.map(function (h) { return '<th>' + h.hole + '</th>'; }).join('') + '<th>' + t('c_total') + '</th></tr>' +
+      '<tr><td>' + t('c_par') + '</td>' + M.COURSE.map(function (h) { return '<td>' + h.par + '</td>'; }).join('') + '<td>' + M.PAR_TOTAL + '</td></tr>' +
+      '<tr><td>' + t('c_index') + '</td>' + M.COURSE.map(function (h) { return '<td>' + h.index + '</td>'; }).join('') + '<td></td></tr>' +
+      '<tr><td>' + t('sc_strokes') + '</td>' + M.COURSE.map(function (h) {
+        var n = strokes[h.hole];
+        return '<td class="sc-strokes">' + (n > 0 ? '•'.repeat(n) : n < 0 ? '−1' : '') + '</td>';
+      }).join('') + '<td>' + signed(ch) + '</td></tr>' +
+      '<tr><td>' + t('rc_row_max') + '</td>' + M.COURSE.map(function (h) {
+        return '<td><strong>' + M.capFor(h.hole, strokes[h.hole]) + '</strong></td>';
+      }).join('') + '<td></td></tr>';
   }
 
   function renderCourseTable() {
@@ -1012,6 +1045,8 @@
     var btn = e.target.closest('button[data-tab]');
     if (btn) switchTab(btn.dataset.tab);
   });
+
+  $('#calc-hcp').addEventListener('input', renderCalc);
 
   $('#lang-toggle').addEventListener('click', function () {
     I.setLang(I.lang === 'de' ? 'en' : 'de');

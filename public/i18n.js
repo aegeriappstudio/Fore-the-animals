@@ -60,13 +60,65 @@ window.I18N = (function () {
       de: 'Wir spielen <strong>Beat Your Target</strong> als Einzelwettbewerb.',
       en: 'We play <strong>Beat Your Target</strong> as an individual competition.',
     },
-    r_how_target: {
-      de: '🎯 Dein Ziel: <strong>Par 36 + halbes Handicap</strong>, kaufmännisch gerundet.',
-      en: '🎯 Your target: <strong>Par 36 + half your handicap</strong>, rounded to the nearest whole number.',
+    r_how_flow: {
+      de: 'Jeder spielt seine eigene Runde gegen sein persönliches Ziel: pro Loch werden die Bruttoschläge und die gesammelten Tiere eingetragen. Am Ende zählt, wie stark du dein Ziel geschlagen hast – dadurch sind alle Handicaps direkt vergleichbar.',
+      en: 'Everyone plays their own round against their personal target: for each hole you enter the gross strokes and the animals collected. What counts in the end is how much you beat your target by – which makes all handicaps directly comparable.',
     },
-    r_how_example: {
-      de: 'Beispiel: HCP 15 → Ziel = 36 + 8 = <strong>44</strong>',
-      en: 'Example: HCP 15 → target = 36 + 8 = <strong>44</strong>',
+    r_how_zero: {
+      de: '🎯 <strong>0 Punkte heisst: genau auf deinem Handicap gespielt.</strong> Plus ist besser, Minus ist schlechter – egal ob HCP 4 oder HCP 36.',
+      en: '🎯 <strong>0 points means: you played exactly to your handicap.</strong> Plus is better, minus is worse – whether you play off 4 or 36.',
+    },
+
+    // ---------------- Berechnungsgrundlagen ----------------
+    rc_target_title: { de: 'Dein Ziel & deine Vorgabeschläge', en: 'Your target & your handicap strokes' },
+    rc_target_p1: {
+      de: '<strong>Ziel = Par 36 + halbes Handicap</strong>, kaufmännisch gerundet (7,4 → 7 · 7,5 → 8). Das Ziel ist die Schlagzahl, mit der du genau auf 0 Punkte kommst.',
+      en: '<strong>Target = par 36 + half your handicap</strong>, rounded to the nearest whole number (7.4 → 7 · 7.5 → 8). The target is the score that puts you at exactly 0 points.',
+    },
+    rc_target_p2: {
+      de: 'Beispiel HCP 15: 15 ÷ 2 = 7,5 → gerundet 8 → Ziel = 36 + 8 = <strong>44</strong>. Die Differenz zum Par – hier 8 – ist deine <strong>Spielvorgabe</strong>.',
+      en: 'Example HCP 15: 15 ÷ 2 = 7.5 → rounded 8 → target = 36 + 8 = <strong>44</strong>. The difference to par – 8 here – is your <strong>playing handicap</strong>.',
+    },
+    rc_strokes_p: {
+      de: 'Die Spielvorgabe wird als <strong>Vorgabeschläge</strong> auf die Löcher verteilt, wie im offiziellen Handicap-System nach Stroke-Index: Schlag 1 aufs schwerste Loch (Index 1), Schlag 2 aufs zweitschwerste … Schlag 10 wieder aufs schwerste. Bei einem Plus-Handicap wird ab dem leichtesten Loch abgezogen.',
+      en: 'The playing handicap is distributed across the holes as <strong>handicap strokes</strong>, like in the official handicap system by stroke index: stroke 1 on the hardest hole (index 1), stroke 2 on the second hardest … stroke 10 on the hardest again. A plus handicap gives strokes back starting at the easiest hole.',
+    },
+    rc_calc_label: { de: 'Rechne es für dein Handicap nach:', en: 'Check it for your handicap:' },
+    rc_calc_summary: { de: 'Ziel {target} · Spielvorgabe {ch}', en: 'Target {target} · playing handicap {ch}' },
+    rc_row_max: { de: 'Max. zählt', en: 'Max counts' },
+    rc_calc_hint: {
+      de: '«Max. zählt» = Netto-Doppelbogey (Par + 2 + Vorgabeschläge): Eintragen kannst du mehr, gewertet wird höchstens diese Zahl.',
+      en: '“Max counts” = net double bogey (par + 2 + handicap strokes): you can enter more, but at most this number is counted.',
+    },
+    rc_points_title: { de: 'So werden die Punkte gerechnet', en: 'How the points are calculated' },
+    rc_formula: {
+      de: '<strong>Punkte = Ziel − gewertetes Brutto + positive Tiere − negative Tiere.</strong> Die höchste Punktzahl gewinnt. 🥇',
+      en: '<strong>Points = target − counted gross + positive animals − negative animals.</strong> Highest score wins. 🥇',
+    },
+    rc_rule_cap: {
+      de: '<strong>1 · Deckel pro Loch:</strong> Gewertet wird höchstens Netto-Doppelbogey (Par + 2 + Vorgabeschläge). Eine 12 an einem Par 4 mit einem Vorgabeschlag zählt als 7 – ein Katastrophen-Loch ruiniert die Runde nicht. Auf der Scorekarte sind gedeckelte Löcher unterstrichen.',
+      en: '<strong>1 · Cap per hole:</strong> At most net double bogey is counted (par + 2 + handicap strokes). A 12 on a par 4 with one stroke counts as 7 – one disaster hole cannot ruin the round. Capped holes are underlined on the scorecard.',
+    },
+    rc_rule_open: {
+      de: '<strong>2 · Offene Löcher:</strong> Ein Loch ohne eingetragenes Brutto zählt als Netto-Par (Par + Vorgabeschläge) – das ist exakt punkteneutral. Abbrechen oder Auslassen bringt weder Vor- noch Nachteil; solche Spieler sind in der Rangliste mit <strong>*</strong> markiert.',
+      en: '<strong>2 · Open holes:</strong> A hole without a gross score counts as net par (par + handicap strokes) – exactly neutral. Skipping or stopping is neither an advantage nor a penalty; those players are marked with <strong>*</strong> on the leaderboard.',
+    },
+    rc_rule_animals: {
+      de: '<strong>3 · Tiere:</strong> Jedes positive Tier +1, jedes negative −1 – unabhängig vom Handicap, jedes Tier pro Loch nur einmal.',
+      en: '<strong>3 · Animals:</strong> Each positive animal +1, each negative one −1 – independent of handicap, each animal only once per hole.',
+    },
+    rc_example_title: { de: 'Rechenbeispiel', en: 'Worked example' },
+    rc_example: {
+      de: 'Anna (HCP 15 → Ziel 44, Spielvorgabe 8) braucht <strong>43 Schläge</strong>, darunter eine 9 an Loch 2 (Par 4 + 1 Vorgabeschlag → Deckel 7). Gewertet werden 43 − 9 + 7 = <strong>41</strong>. Sie sammelt 🦓🦓🐇 (+3) und 🐍 (−1).<br>Punkte = 44 − 41 + 3 − 1 = <strong>+5</strong>',
+      en: 'Anna (HCP 15 → target 44, playing handicap 8) takes <strong>43 strokes</strong>, including a 9 on hole 2 (par 4 + 1 stroke → cap 7). Counted: 43 − 9 + 7 = <strong>41</strong>. She collects 🦓🦓🐇 (+3) and 🐍 (−1).<br>Points = 44 − 41 + 3 − 1 = <strong>+5</strong>',
+    },
+    rc_tiebreak: {
+      de: '<strong>Gleichstand:</strong> Es gewinnt, wer mehr positive Tiere hat; dann, wer weniger negative hat; dann der Countback wie im Golf üblich – das bessere Netto-Resultat auf den letzten 6 Löchern, dann den letzten 3, dann auf Loch 9. Ist auch das gleich, teilen sich beide den Rang.',
+      en: '<strong>Tie-break:</strong> More positive animals wins; then fewer negative ones; then the usual golf countback – the better net result on the last 6 holes, then the last 3, then hole 9. If still equal, the rank is shared.',
+    },
+    rc_second: {
+      de: '<strong>Zweiter Preis:</strong> 🥈 die meisten gesammelten Tiere insgesamt – positive wie negative zählen. Bei Gleichstand gewinnen die positiven.',
+      en: '<strong>Second prize:</strong> 🥈 most animals collected in total – positive and negative both count. Ties go to the positive ones.',
     },
     r_animals_title: { de: 'Die Tiere', en: 'The animals' },
     r_pos: { de: 'Positiv (+1 Punkt):', en: 'Positive (+1 point):' },
@@ -83,25 +135,6 @@ window.I18N = (function () {
     r_once: {
       de: 'Auf demselben Loch können mehrere Tiere gesammelt werden. Jedes Tier zählt pro Loch nur einmal.',
       en: 'Different animals can be collected on the same hole. Each animal counts only once per hole.',
-    },
-    r_final_title: { de: 'Schlussresultat', en: 'Final score' },
-    r_final_p: {
-      de: '<strong>Punkte = Ziel − Brutto + positive Tiere − negative Tiere.</strong>',
-      en: '<strong>Score = target − gross score + positive animals − negative animals.</strong>',
-    },
-    r_final_win: { de: 'Die höchste Punktzahl gewinnt. 🥇', en: 'Highest score wins. 🥇' },
-    r_final_second: { de: 'Zweiter Preis: 🥈 die meisten gesammelten Tiere insgesamt.', en: 'Second prize: 🥈 most animals collected in total.' },
-    r_open_holes: {
-      de: 'Für Löcher ohne eingetragenes Brutto wird <strong>Netto-Par</strong> gerechnet (Par + Vorgabeschläge) – ein offenes Loch bringt weder Vor- noch Nachteil. Solche Spieler sind mit einem <strong>*</strong> markiert.',
-      en: 'Holes without a gross score count as <strong>net par</strong> (par + handicap strokes) – an open hole is neither an advantage nor a penalty. Those players are marked with a <strong>*</strong>.',
-    },
-    r_cap: {
-      de: 'Pro Loch zählt höchstens <strong>Netto-Doppelbogey</strong> (Par + 2 + Vorgabeschläge) – ein Katastrophen-Loch ruiniert die Runde nicht. Die Vorgabeschläge werden nach Stroke-Index verteilt.',
-      en: 'Each hole counts at most <strong>net double bogey</strong> (par + 2 + handicap strokes) – one disaster hole cannot ruin the round. Handicap strokes are allocated by stroke index.',
-    },
-    r_tiebreak: {
-      de: 'Gleichstand: mehr positive Tiere, dann weniger negative Tiere, dann Countback (letzte 6 · letzte 3 · letztes Loch, netto).',
-      en: 'Tie-break: more positive animals, then fewer negative animals, then countback (last 6 · last 3 · last hole, net).',
     },
     r_course_title: { de: 'Der Platz – Tee 27', en: 'The course – Tee 27' },
     r_course_hint: { de: 'Distanz in Meter bis Mitte Grün.', en: 'Distance in metres to the middle of the green.' },
