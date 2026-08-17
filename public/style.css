@@ -323,18 +323,18 @@ select.dlg-input { width: 100%; margin-bottom: 12px; }
   padding: 8px 12px; font-size: 0.85rem; font-weight: 600;
 }
 
-/* ---------- Turnier: Flight-Zuteilung pro Spieler ---------- */
+/* ---------- Turnier: Anwesenheit ---------- */
 .player-row.out .p-name,
 .player-row.out .p-hcp,
 .player-row.out .badge { opacity: 0.5; }
-.p-flights { flex: 1 1 100%; display: flex; gap: 5px; flex-wrap: wrap; }
-.fchip {
-  min-width: 38px; height: 32px; padding: 0 10px;
-  border: 1px solid var(--border); border-radius: 16px; background: #fff;
-  font-size: 0.85rem; font-weight: 700; color: var(--muted); cursor: pointer;
+.player-row.out .p-name { text-decoration: line-through; }
+.presence-chip {
+  flex: 0 0 auto; min-width: 108px; height: 34px; padding: 0 12px;
+  border: 1px solid var(--border); border-radius: 17px; background: #fff;
+  font-size: 0.82rem; font-weight: 700; color: var(--muted); cursor: pointer;
+  text-align: center; white-space: nowrap;
 }
-.fchip.on { background: var(--green); border-color: var(--green); color: #fff; }
-.fchip.new { color: var(--green-dark); border-style: dashed; }
+.presence-chip.on { background: var(--green); border-color: var(--green); color: #fff; }
 .today-summary { font-weight: 700; color: var(--green-dark); font-size: 0.9rem; margin-bottom: 8px; }
 .new-player { margin-top: 12px; }
 .fh-actions { display: flex; gap: 6px; }
@@ -342,7 +342,16 @@ select.dlg-input { width: 100%; margin-bottom: 12px; }
 
 /* ---------- Termine: Bearbeitung ---------- */
 .event-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
-.event-past { opacity: 0.65; }
+.event-past { opacity: 0.75; }
+
+/* Durchgeführte Termine: zugeklappter Archiv-Block zuunterst */
+.event-archive { margin: 14px 0; }
+.event-archive summary {
+  cursor: pointer; font-weight: 700; color: var(--muted);
+  padding: 10px 14px; background: var(--green-light); border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+.event-archive[open] summary { margin-bottom: 10px; color: var(--green-dark); }
 .event-admin summary {
   cursor: pointer; font-weight: 700; color: var(--green-dark); font-size: 1.05rem;
 }

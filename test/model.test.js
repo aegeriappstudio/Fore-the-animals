@@ -229,16 +229,15 @@ test('ewige Bestenliste gruppiert nach Spieler-ID, nicht nach Name', () => {
   assert.equal(beat.name, 'Beat Müller'); // jüngster Name
 });
 
-test('todaysPlayers: Flight-Zuteilung oder vorhandene Scores', () => {
+test('todaysPlayers: anwesend markiert oder vorhandene Scores', () => {
   const players = [
-    { id: 'a', name: 'A', hcp: 10 },
-    { id: 'b', name: 'B', hcp: 10 },
-    { id: 'c', name: 'C', hcp: 10 },
+    { id: 'a', name: 'A', hcp: 10, present: true },
+    { id: 'b', name: 'B', hcp: 10, present: false },
+    { id: 'c', name: 'C', hcp: 10, present: false },
   ];
-  const flights = [{ id: 'f1', name: 'Flight 1', playerIds: ['a'] }];
-  // B hat Scores, steht aber in keinem Flight (z.B. Flight gelöscht) – zählt trotzdem
+  // B hat Scores, ist aber (versehentlich) abgemeldet – zählt trotzdem
   const scores = { b: { 1: { gross: 4, animals: {} } } };
-  const today = M.todaysPlayers(players, flights, scores);
+  const today = M.todaysPlayers(players, scores);
   assert.deepEqual(today.map((p) => p.id), ['a', 'b']);
 });
 

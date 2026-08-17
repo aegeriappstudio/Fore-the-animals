@@ -80,14 +80,16 @@ gleichen WLAN (`node server.js` starten und die lokale IP teilen, z.B.
 
 1. **📖 Info** – Regeln, Platztabelle und die nächsten Turnier-Termine
    (Datum, Abschlagszeiten, Dinner). Termine sind reine Ankündigungen und
-   werden mit der PIN gepflegt.
+   werden mit der PIN gepflegt. Durchgeführte und vergangene Termine wandern
+   zuunterst in einen zugeklappten Block «🗂️ Vergangene Termine».
 2. **🏌️ Turnier** – die eine Ansicht für den Turniertag: Spieler erfassen
-   (Name/HCP, das Ziel wird automatisch berechnet) und per Tipp auf einen
-   Flight-Chip zuteilen. **Wer in einem Flight steht, spielt heute mit** –
-   ein separates An-/Abmelden gibt es nicht. «–» heisst: spielt heute nicht.
-   ＋ erstellt direkt einen neuen Flight. «🎲 Auslosen» mischt die heute
-   zugeteilten Spieler neu (oder alle, wenn noch niemand zugeteilt ist).
-   Jeder Flight zeigt seinen Fortschritt (bei welchem Loch, wie viele fertig).
+   (Name/HCP, das Ziel wird automatisch berechnet) und mit ✅/💤 markieren,
+   wer heute dabei ist (neue Spieler sind automatisch dabei). Die Flights
+   entstehen per **«🎲 Auslosen»** aus den Anwesenden – danach lassen sich
+   einzelne Spieler per Tipp in den Flight-Karten verschieben (✕ nimmt raus,
+   «+ Name» holt rein). Wer sich abmeldet, fliegt automatisch aus seinem
+   Flight; bereits eingetragene Scores bleiben. Jeder Flight zeigt seinen
+   Fortschritt (bei welchem Loch, wie viele fertig).
 3. **⛳ Eintragen** – jeder Flight wählt sich selbst aus, wählt das Loch und
    tippt pro Spieler direkt die Schlagzahl an (Par ist hervorgehoben, ＋ für
    mehr, ✕ löscht) plus die Tiere. Die 🧾 Flight-Karte zeigt jederzeit alle

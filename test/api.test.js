@@ -237,6 +237,39 @@ test('flightId auf einem Spieler setzt und entfernt die Zuteilung', async (t) =>
   assert.equal(bad.status, 404);
 });
 
+test('Anwesenheit: abmelden wirft aus dem Flight, Auslosung nimmt nur Anwesende', async (t) => {
+  const srv = await startServer();
+  t.after(() => srv.close());
+  const anna = await addPlayer(srv, 'Anna', 15);
+  const beat = await addPlayer(srv, 'Beat', 20);
+  const chris = await addPlayer(srv, 'Chris', 8);
+
+  // Chris meldet sich ab
+  await srv.call('PUT', `/api/players/${chris.id}`, { present: false });
+
+  const drawn = await srv.call('POST', '/api/flights/randomize', { size: 3 });
+  assert.equal(drawn.status, 200);
+  const ids = drawn.body.flights.flatMap((f) => f.playerIds).sort();
+  assert.deepEqual(ids, [anna.id, beat.id].sort()); // ohne Chris
+
+  // Abmelden mitten in der Runde: fliegt aus dem Flight, Scores bleiben
+  await srv.call('PUT', '/api/scores', { entries: [{ playerId: anna.id, hole: 1, gross: 4 }] });
+  await srv.call('PUT', `/api/players/${anna.id}`, { present: false });
+  const state = await srv.call('GET', '/api/state');
+  assert.ok(state.body.flights.every((f) => !f.playerIds.includes(anna.id)));
+  assert.equal(state.body.scores[anna.id]['1'].gross, 4);
+
+  // Abwesende lassen sich keinem Flight zuteilen
+  const f1 = state.body.flights[0];
+  await srv.call('PUT', `/api/flights/${f1.id}`, { playerIds: [chris.id, beat.id] });
+  const after = await srv.call('GET', '/api/state');
+  assert.deepEqual(after.body.flights.find((f) => f.id === f1.id).playerIds, [beat.id]);
+
+  // Auslosung mit nur 1 Anwesendem wird abgelehnt
+  await srv.call('PUT', `/api/players/${beat.id}`, { present: false });
+  assert.equal((await srv.call('POST', '/api/flights/randomize', { size: 3 })).status, 400);
+});
+
 test('Backup und Wiederherstellung', async (t) => {
   const srv = await startServer();
   t.after(() => srv.close());
