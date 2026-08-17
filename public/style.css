@@ -85,7 +85,7 @@ main { max-width: 860px; margin: 0 auto; padding: 14px 12px 40px; }
 .tee-selects .lb-round-picker { flex: 1 1 180px; margin-bottom: 0; }
 .gender-btn { min-width: 44px; font-size: 1.05rem; }
 .player-row .gender { min-width: 38px; }
-#calc-tee { padding: 7px 8px; font-size: 0.9rem; }
+#calc-tee, #calc-course { padding: 7px 8px; font-size: 0.9rem; max-width: 100%; }
 
 /* ---------- Regeln: Vorgabe-Rechner & Rechenbeispiel ---------- */
 .calc-box {

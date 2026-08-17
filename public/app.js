@@ -203,7 +203,6 @@
 
   var ui = {
     tab: 'info',
-    tee: localStorage.getItem('fta-tee') || '',
     flightId: localStorage.getItem('fta-flight') || '',
     hole: parseInt(localStorage.getItem('fta-hole') || '1', 10) || 1,
     unlocked: sessionStorage.getItem('fta-unlocked') === '1',
@@ -289,10 +288,11 @@
     return out;
   }
 
-  // Gewählter Abschlag (Tee) für Distanz-Anzeigen – pro Gerät gespeichert
-  function currentTee() {
-    var c = M.course;
-    return c.tees.indexOf(ui.tee) !== -1 ? ui.tee : c.defaultTee;
+  // Gewählter Abschlag (Tee) für Distanz-Anzeigen – pro Gerät und Platz
+  function displayTee(course) {
+    var c = course || M.course;
+    var saved = localStorage.getItem('fta-tee:' + c.id);
+    return c.tees.indexOf(saved) !== -1 ? saved : c.defaultTee;
   }
 
   function todaysPlayers() {
@@ -544,10 +544,20 @@
     var input = $('#calc-hcp');
     if (!input) return;
     var gender = $('#calc-gender').dataset.value === 'f' ? 'f' : 'm';
-    var c = M.course;
-    // Tee-Auswahl des Rechners auf den aktiven Platz abstimmen
+    // Platz-Wahl des Rechners – unabhängig vom aktiven Platz, Start = aktiv
+    var courseSel = $('#calc-course');
+    if (!courseSel.dataset.ready) {
+      courseSel.innerHTML = M.COURSES.map(function (cc) {
+        return '<option value="' + cc.id + '">' + esc(cc.label) + '</option>';
+      }).join('');
+      courseSel.value = srv.courseId || M.DEFAULT_COURSE;
+      courseSel.dataset.ready = '1';
+    }
+    var c = M.courseById(courseSel.value) || M.course;
     var teeSel = $('#calc-tee');
-    var wanted = teeSel.dataset.course === c.id && teeSel.value ? teeSel.value : (srv.tees ? srv.tees[gender] : null);
+    var wanted = teeSel.dataset.course === c.id && teeSel.value
+      ? teeSel.value
+      : (c.id === srv.courseId && srv.tees ? srv.tees[gender] : null);
     var tee = M.normalizeTee(wanted, gender, c.id);
     teeSel.innerHTML = c.ratedTees.map(function (k) {
       return '<option value="' + k + '"' + (k === tee ? ' selected' : '') + '>Tee ' + k + '</option>';
@@ -567,35 +577,57 @@
     $('#calc-summary').textContent = t('rc_calc_summary', { target: M.targetFor(hcp, c.id, gender, tee), ch: signed(ch) }) +
       ' · CR ' + rating.cr + ' · Slope ' + rating.slope;
     $('#calc-table').innerHTML =
-      '<tr><th>' + t('c_hole') + '</th>' + M.COURSE.map(function (h) { return '<th>' + h.hole + '</th>'; }).join('') + '<th>' + t('c_total') + '</th></tr>' +
-      '<tr><td>' + t('c_par') + '</td>' + M.COURSE.map(function (h) { return '<td>' + h.par + '</td>'; }).join('') + '<td>' + M.PAR_TOTAL + '</td></tr>' +
-      '<tr><td>' + t('c_index') + '</td>' + M.COURSE.map(function (h) { return '<td>' + h.index + '</td>'; }).join('') + '<td></td></tr>' +
-      '<tr><td>' + t('sc_strokes') + '</td>' + M.COURSE.map(function (h) {
+      '<tr><th>' + t('c_hole') + '</th>' + c.holes.map(function (h) { return '<th>' + h.hole + '</th>'; }).join('') + '<th>' + t('c_total') + '</th></tr>' +
+      '<tr><td>' + t('c_par') + '</td>' + c.holes.map(function (h) { return '<td>' + h.par + '</td>'; }).join('') + '<td>' + c.par + '</td></tr>' +
+      '<tr><td>' + t('c_index') + '</td>' + c.holes.map(function (h) { return '<td>' + h.index + '</td>'; }).join('') + '<td></td></tr>' +
+      '<tr><td>' + t('sc_strokes') + '</td>' + c.holes.map(function (h) {
         var n = strokes[h.hole];
         return '<td class="sc-strokes">' + (n > 0 ? '•'.repeat(n) : n < 0 ? '−1' : '') + '</td>';
       }).join('') + '<td>' + signed(ch) + '</td></tr>' +
-      '<tr><td>' + t('rc_row_max') + '</td>' + M.COURSE.map(function (h) {
-        return '<td><strong>' + M.capFor(h.hole, strokes[h.hole]) + '</strong></td>';
+      '<tr><td>' + t('rc_row_max') + '</td>' + c.holes.map(function (h) {
+        return '<td><strong>' + M.capFor(h.hole, strokes[h.hole], c.id) + '</strong></td>';
       }).join('') + '<td></td></tr>';
   }
 
-  function renderCourseTable() {
+  function renderHero() {
     var c = M.course;
-    var tee = currentTee();
-    $('#course-title').textContent = t('r_course_title', { name: c.name });
+    var tee = displayTee(c);
     $('#hero-sub').textContent = c.label + ' · Par ' + c.par + ' · ' +
       c.distTotals[tee].toLocaleString('de-CH') + ' m · Golfpark Holzhäusern';
-    // Abschlag wählbar, wenn der Platz mehrere Tees hat
-    $('#tee-picker').innerHTML = c.tees.length > 1
-      ? c.tees.map(function (key) {
-          return '<button type="button" class="tee-chip ' + (key === tee ? 'on' : '') + '" data-tee="' + key + '">Tee ' + key + '</button>';
-        }).join('')
-      : '';
-    $('#course-table').innerHTML =
-      '<tr><th>' + t('c_hole') + '</th>' + c.holes.map(function (h) { return '<th>' + h.hole + '</th>'; }).join('') + '<th>' + t('c_total') + '</th></tr>' +
-      '<tr><td>' + t('c_par') + '</td>' + c.holes.map(function (h) { return '<td>' + h.par + '</td>'; }).join('') + '<td><strong>' + c.par + '</strong></td></tr>' +
-      '<tr><td>' + t('c_meters') + '</td>' + c.holes.map(function (h) { return '<td>' + h.dists[tee] + '</td>'; }).join('') + '<td><strong>' + c.distTotals[tee] + '</strong></td></tr>' +
-      '<tr><td>' + t('c_index') + '</td>' + c.holes.map(function (h) { return '<td>' + h.index + '</td>'; }).join('') + '<td></td></tr>';
+  }
+
+  // Beide Plätze sind immer sichtbar – der aktive trägt ein Badge.
+  function renderCourseTable() {
+    renderHero();
+    $('#course-cards').innerHTML = M.COURSES.map(function (c) {
+      var tee = displayTee(c);
+      var chips = c.tees.length > 1
+        ? '<div class="tee-picker">' + c.tees.map(function (key) {
+            return '<button type="button" class="tee-chip ' + (key === tee ? 'on' : '') + '" data-course="' + c.id + '" data-tee="' + key + '">Tee ' + key + '</button>';
+          }).join('') + '</div>'
+        : '';
+      var rm = c.ratings.m[tee];
+      var rf = c.ratings.f[tee];
+      // Ratings des angezeigten Tees – ohne Rating (z.B. reine Distanz-Tees)
+      // entfällt die Zeile
+      var ratingLine = rm && rf
+        ? '<p class="hint">Tee ' + tee + ': ♂ CR ' + rm.cr + ' · Slope ' + rm.slope +
+          ' — ♀ CR ' + rf.cr + ' · Slope ' + rf.slope + '</p>'
+        : '';
+      var table =
+        '<tr><th>' + t('c_hole') + '</th>' + c.holes.map(function (h) { return '<th>' + h.hole + '</th>'; }).join('') + '<th>' + t('c_total') + '</th></tr>' +
+        '<tr><td>' + t('c_par') + '</td>' + c.holes.map(function (h) { return '<td>' + h.par + '</td>'; }).join('') + '<td><strong>' + c.par + '</strong></td></tr>' +
+        '<tr><td>' + t('c_meters') + '</td>' + c.holes.map(function (h) { return '<td>' + (h.dists[tee] || '–') + '</td>'; }).join('') + '<td><strong>' + (c.distTotals[tee] || '–') + '</strong></td></tr>' +
+        '<tr><td>' + t('c_index') + '</td>' + c.holes.map(function (h) { return '<td>' + h.index + '</td>'; }).join('') + '<td></td></tr>';
+      return '<div class="card">' +
+        '<div class="event-head"><h2>' + t('r_course_title', { name: c.label }) + '</h2>' +
+        (c.id === srv.courseId ? '<span class="event-badge confirmed">' + t('c_active') + '</span>' : '') + '</div>' +
+        chips +
+        '<div class="table-scroll"><table class="course-table">' + table + '</table></div>' +
+        ratingLine +
+        '<p class="hint">' + t('r_course_hint') + '</p>' +
+        '</div>';
+    }).join('');
   }
 
   function renderDates() {
@@ -798,7 +830,7 @@
     }).join('');
 
     $('#hole-info').textContent =
-      t('e_hole_info', { h: info.hole, p: info.par, d: info.dists[currentTee()] || '?', i: info.index }) +
+      t('e_hole_info', { h: info.hole, p: info.par, d: info.dists[displayTee()] || '?', i: info.index }) +
       (info.par === 3 ? t('e_no_zebra') : '') +
       (flight && flight.teeTime ? ' · 🕐 ' + formatTee(flight.teeTime, true) : '');
 
@@ -1121,6 +1153,7 @@
 
   $('#calc-hcp').addEventListener('input', renderCalc);
   $('#calc-tee').addEventListener('change', renderCalc);
+  $('#calc-course').addEventListener('change', renderCalc);
   $('#calc-gender').addEventListener('click', function () {
     var next = this.dataset.value === 'f' ? 'm' : 'f';
     this.dataset.value = next;
@@ -1170,11 +1203,10 @@
   });
 
   // Abschlag (Tee) für Distanz-Anzeigen wählen – rein lokal pro Gerät
-  $('#tee-picker').addEventListener('click', function (e) {
+  $('#course-cards').addEventListener('click', function (e) {
     var chip = e.target.closest('[data-tee]');
     if (!chip) return;
-    ui.tee = chip.dataset.tee;
-    localStorage.setItem('fta-tee', ui.tee);
+    localStorage.setItem('fta-tee:' + chip.dataset.course, chip.dataset.tee);
     renderCourseTable();
   });
 

@@ -87,6 +87,7 @@
             <span class="calc-hcp-label">HCP</span>
             <input type="number" id="calc-hcp" value="15" step="0.1" min="-10" max="54" inputmode="decimal">
             <button type="button" class="btn gender-btn" id="calc-gender" data-value="m">♂</button>
+            <select id="calc-course"></select>
             <select id="calc-tee"></select>
           </div>
           <p class="calc-summary" id="calc-summary"></p>
@@ -128,14 +129,7 @@
         <p data-i18n="rc_second"><strong>Zweiter Preis:</strong> 🥈 die meisten gesammelten Tiere insgesamt – positive wie negative zählen. Bei Gleichstand gewinnen die positiven.</p>
       </div>
 
-      <div class="card">
-        <h2 id="course-title">Der Platz</h2>
-        <div class="tee-picker" id="tee-picker"></div>
-        <div class="table-scroll">
-          <table class="course-table" id="course-table"></table>
-        </div>
-        <p class="hint" data-i18n="r_course_hint">Distanz in Meter bis Mitte Grün.</p>
-      </div>
+      <div id="course-cards"></div>
     </section>
 
     <!-- ================= TURNIER: Spieler + Flights ================= -->
