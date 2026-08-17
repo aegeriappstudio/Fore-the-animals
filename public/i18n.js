@@ -113,8 +113,8 @@ window.I18N = (function () {
       en: 'Anna (HCP 15 → target 44, playing handicap 8) takes <strong>43 strokes</strong>, including a 9 on hole 2 (par 4 + 1 stroke → cap 7). Counted: 43 − 9 + 7 = <strong>41</strong>. She collects 🦓🦓🐇 (+3) and 🐍 (−1).<br>Points = 44 − 41 + 3 − 1 = <strong>+5</strong>',
     },
     rc_tiebreak: {
-      de: '<strong>Gleichstand:</strong> Es gewinnt, wer mehr positive Tiere hat; dann, wer weniger negative hat; dann der Countback wie im Golf üblich – das bessere Netto-Resultat auf den letzten 6 Löchern, dann den letzten 3, dann auf Loch 9. Ist auch das gleich, teilen sich beide den Rang.',
-      en: '<strong>Tie-break:</strong> More positive animals wins; then fewer negative ones; then the usual golf countback – the better net result on the last 6 holes, then the last 3, then hole 9. If still equal, the rank is shared.',
+      de: '<strong>Gleichstand:</strong> Es gewinnt, wer mehr positive Tiere hat; dann, wer weniger negative hat; dann der Countback wie im Golf üblich – das bessere Netto-Resultat auf den letzten 6 Löchern, dann den letzten 3, dann auf dem letzten Loch. Ist auch das gleich, teilen sich beide den Rang.',
+      en: '<strong>Tie-break:</strong> More positive animals wins; then fewer negative ones; then the usual golf countback – the better net result on the last 6 holes, then the last 3, then the last hole. If still equal, the rank is shared.',
     },
     rc_second: {
       de: '<strong>Zweiter Preis:</strong> 🥈 die meisten gesammelten Tiere insgesamt – positive wie negative zählen. Bei Gleichstand gewinnen die positiven.',
