@@ -72,8 +72,27 @@
       <div class="card">
         <h2 data-i18n="r_how_title">So wird gespielt</h2>
         <p data-i18n="r_how_p1">Wir spielen <strong>Beat Your Target</strong> als Einzelwettbewerb.</p>
-        <p class="target-formula" data-i18n="r_how_target">🎯 Dein Ziel: <strong>Par 36 + halbes Handicap</strong>, kaufmännisch gerundet.</p>
-        <p data-i18n="r_how_example">Beispiel: HCP 15 → Ziel = 36 + 8 = <strong>44</strong></p>
+        <p data-i18n="r_how_flow">Jeder spielt seine eigene Runde gegen sein persönliches Ziel: pro Loch werden die Bruttoschläge und die gesammelten Tiere eingetragen. Am Ende zählt, wie stark du dein Ziel geschlagen hast – dadurch sind alle Handicaps direkt vergleichbar.</p>
+        <p class="target-formula" data-i18n="r_how_zero">🎯 <strong>0 Punkte heisst: genau auf deinem Handicap gespielt.</strong> Plus ist besser, Minus ist schlechter – egal ob HCP 4 oder HCP 36.</p>
+      </div>
+
+      <div class="card">
+        <h2 data-i18n="rc_target_title">Dein Ziel &amp; deine Vorgabeschläge</h2>
+        <p data-i18n="rc_target_p1"><strong>Ziel = Par 36 + halbes Handicap</strong>, kaufmännisch gerundet (7,4 → 7 · 7,5 → 8). Das Ziel ist die Schlagzahl, mit der du genau auf 0 Punkte kommst.</p>
+        <p data-i18n="rc_target_p2">Beispiel HCP 15: 15 ÷ 2 = 7,5 → gerundet 8 → Ziel = 36 + 8 = <strong>44</strong>. Die Differenz zum Par – hier 8 – ist deine <strong>Spielvorgabe</strong>.</p>
+        <p data-i18n="rc_strokes_p">Die Spielvorgabe wird als <strong>Vorgabeschläge</strong> auf die Löcher verteilt, wie im offiziellen Handicap-System nach Stroke-Index: Schlag 1 aufs schwerste Loch (Index 1), Schlag 2 aufs zweitschwerste … Schlag 10 wieder aufs schwerste. Bei einem Plus-Handicap wird ab dem leichtesten Loch abgezogen.</p>
+        <div class="calc-box">
+          <label class="calc-label" for="calc-hcp" data-i18n="rc_calc_label">Rechne es für dein Handicap nach:</label>
+          <div class="calc-row">
+            <span class="calc-hcp-label">HCP</span>
+            <input type="number" id="calc-hcp" value="15" step="0.1" min="-10" max="54" inputmode="decimal">
+            <span class="calc-summary" id="calc-summary"></span>
+          </div>
+          <div class="table-scroll">
+            <table class="course-table" id="calc-table"></table>
+          </div>
+          <p class="hint" data-i18n="rc_calc_hint">«Max. zählt» = Netto-Doppelbogey (Par + 2 + Vorgabeschläge): Eintragen kannst du mehr, gewertet wird höchstens diese Zahl.</p>
+        </div>
       </div>
 
       <div class="card">
@@ -94,13 +113,17 @@
       </div>
 
       <div class="card">
-        <h2 data-i18n="r_final_title">Schlussresultat</h2>
-        <p data-i18n="r_final_p"><strong>Punkte = Ziel − Brutto + positive Tiere − negative Tiere.</strong></p>
-        <p data-i18n="r_final_win">Die höchste Punktzahl gewinnt. 🥇</p>
-        <p data-i18n="r_final_second">Zweiter Preis: 🥈 die meisten gesammelten Tiere insgesamt.</p>
-        <p class="hint" data-i18n="r_cap">Pro Loch zählt höchstens <strong>Netto-Doppelbogey</strong> (Par + 2 + Vorgabeschläge) – ein Katastrophen-Loch ruiniert die Runde nicht. Die Vorgabeschläge werden nach Stroke-Index verteilt.</p>
-        <p class="hint" data-i18n="r_tiebreak">Gleichstand: mehr positive Tiere, dann weniger negative Tiere, dann Countback (letzte 6 · letzte 3 · letztes Loch, netto).</p>
-        <p class="hint" data-i18n="r_open_holes">Für Löcher ohne eingetragenes Brutto wird <strong>Netto-Par</strong> gerechnet (Par + Vorgabeschläge) – ein offenes Loch bringt weder Vor- noch Nachteil. Solche Spieler sind mit einem <strong>*</strong> markiert.</p>
+        <h2 data-i18n="rc_points_title">So werden die Punkte gerechnet</h2>
+        <p class="target-formula" data-i18n="rc_formula"><strong>Punkte = Ziel − gewertetes Brutto + positive Tiere − negative Tiere.</strong> Die höchste Punktzahl gewinnt. 🥇</p>
+        <p data-i18n="rc_rule_cap"><strong>1 · Deckel pro Loch:</strong> Gewertet wird höchstens Netto-Doppelbogey (Par + 2 + Vorgabeschläge). Eine 12 an einem Par 4 mit einem Vorgabeschlag zählt als 7 – ein Katastrophen-Loch ruiniert die Runde nicht. Auf der Scorekarte sind gedeckelte Löcher unterstrichen.</p>
+        <p data-i18n="rc_rule_open"><strong>2 · Offene Löcher:</strong> Ein Loch ohne eingetragenes Brutto zählt als Netto-Par (Par + Vorgabeschläge) – das ist exakt punkteneutral. Abbrechen oder Auslassen bringt weder Vor- noch Nachteil; solche Spieler sind in der Rangliste mit <strong>*</strong> markiert.</p>
+        <p data-i18n="rc_rule_animals"><strong>3 · Tiere:</strong> Jedes positive Tier +1, jedes negative −1 – unabhängig vom Handicap, jedes Tier pro Loch nur einmal.</p>
+        <div class="calc-example">
+          <p class="ce-title" data-i18n="rc_example_title">Rechenbeispiel</p>
+          <p data-i18n="rc_example">Anna (HCP 15 → Ziel 44, Spielvorgabe 8) braucht <strong>43 Schläge</strong>, darunter eine 9 an Loch 2 (Par 4 + 1 Vorgabeschlag → Deckel 7). Gewertet werden 43 − 9 + 7 = <strong>41</strong>. Sie sammelt 🦓🦓🐇 (+3) und 🐍 (−1).<br>Punkte = 44 − 41 + 3 − 1 = <strong>+5</strong></p>
+        </div>
+        <p data-i18n="rc_tiebreak"><strong>Gleichstand:</strong> Es gewinnt, wer mehr positive Tiere hat; dann, wer weniger negative hat; dann der Countback wie im Golf üblich – das bessere Netto-Resultat auf den letzten 6 Löchern, dann den letzten 3, dann auf Loch 9. Ist auch das gleich, teilen sich beide den Rang.</p>
+        <p data-i18n="rc_second"><strong>Zweiter Preis:</strong> 🥈 die meisten gesammelten Tiere insgesamt – positive wie negative zählen. Bei Gleichstand gewinnen die positiven.</p>
       </div>
 
       <div class="card">

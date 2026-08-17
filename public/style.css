@@ -72,6 +72,23 @@ main { max-width: 860px; margin: 0 auto; padding: 14px 12px 40px; }
 
 .target-formula { background: var(--green-light); padding: 10px; border-radius: 8px; }
 
+/* ---------- Regeln: Vorgabe-Rechner & Rechenbeispiel ---------- */
+.calc-box {
+  background: var(--green-pale); border: 1px solid var(--border);
+  border-radius: 8px; padding: 12px; margin-top: 10px;
+}
+.calc-label { display: block; font-weight: 700; color: var(--green-dark); font-size: 0.9rem; margin-bottom: 8px; }
+.calc-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+.calc-hcp-label { font-weight: 700; color: var(--muted); font-size: 0.85rem; }
+#calc-hcp { width: 84px; text-align: center; font-weight: 700; }
+.calc-summary { font-weight: 800; color: var(--green-dark); }
+.calc-box .table-scroll { background: #fff; border-radius: 8px; }
+.calc-example {
+  background: var(--sand); border: 1px solid #e3d9bd; border-radius: 8px;
+  padding: 12px; margin: 10px 0;
+}
+.calc-example .ce-title { font-weight: 800; color: #7a5c1e; margin-bottom: 6px; }
+
 .animals-sub { font-weight: 700; margin-top: 8px; }
 .animal-list { list-style: none; margin-bottom: 8px; }
 .animal-list li { padding: 6px 10px; border-radius: 8px; margin: 4px 0; }
