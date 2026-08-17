@@ -219,6 +219,26 @@
 
   function pkey(pid, hole) { return pid + '|' + hole; }
 
+  // Letzten Serverstand lokal vorhalten – im Funkloch startet die App damit
+  // sofort mit Spielern, Flights und Scores statt mit einer leeren Seite.
+  // Eigene, noch nicht gesendete Eingaben liegen zusätzlich in `pending` und
+  // werden beim Anzeigen wie immer darübergelegt.
+  function persistState() {
+    try { localStorage.setItem('fta-state', JSON.stringify(srv)); } catch (err) { /* Speicher voll */ }
+  }
+
+  function loadCachedState() {
+    try {
+      var cached = JSON.parse(localStorage.getItem('fta-state') || 'null');
+      if (cached && Array.isArray(cached.players) && cached.rev !== undefined) {
+        srv = cached;
+        M.setCourse(srv.courseId);
+        return true;
+      }
+    } catch (err) { /* kaputter Cache – frisch laden */ }
+    return false;
+  }
+
   function loadPending() {
     try {
       var raw = JSON.parse(localStorage.getItem('fta-pending') || '[]');
@@ -396,6 +416,7 @@
       if (data.unchanged) return false;
       srv = data;
       M.setCourse(srv.courseId); // Getter im Modell zeigen auf den aktiven Platz
+      persistState();
       roundCache.forEach(function (_, id) {
         if (!srv.rounds.some(function (r) { return r.id === id; })) roundCache.delete(id);
       });
@@ -459,6 +480,7 @@
         else delete srv.scores[a.playerId][a.hole];
       });
       if (res.rev != null) srv.rev = res.rev;
+      persistState();
       savePending();
       if (res.rejected && res.rejected.length) {
         toast(res.rejected[0].error, true);
@@ -1996,6 +2018,7 @@
     });
   }
 
+  loadCachedState(); // sofort etwas zeigen – auch ohne Netz
   loadPending();
   I.applyStatic();
   updateSyncBanner();
