@@ -72,12 +72,12 @@ window.I18N = (function () {
     // ---------------- Berechnungsgrundlagen ----------------
     rc_target_title: { de: 'Dein Ziel & deine Vorgabeschläge', en: 'Your target & your handicap strokes' },
     rc_target_p1: {
-      de: '<strong>Ziel = Par 36 + halbes Handicap</strong>, kaufmännisch gerundet (7,4 → 7 · 7,5 → 8). Das Ziel ist die Schlagzahl, mit der du genau auf 0 Punkte kommst.',
-      en: '<strong>Target = par 36 + half your handicap</strong>, rounded to the nearest whole number (7.4 → 7 · 7.5 → 8). The target is the score that puts you at exactly 0 points.',
+      de: '<strong>Ziel = Platz-Par + Handicap-Anteil</strong>, kaufmännisch gerundet (7,4 → 7 · 7,5 → 8): auf dem 9-Loch-Platz zählt das halbe Handicap, auf 18 Löchern das ganze. Das Ziel ist die Schlagzahl, mit der du genau auf 0 Punkte kommst.',
+      en: '<strong>Target = course par + handicap share</strong>, rounded to the nearest whole number (7.4 → 7 · 7.5 → 8): half your handicap on the 9-hole course, your full handicap on 18 holes. The target is the score that puts you at exactly 0 points.',
     },
     rc_target_p2: {
-      de: 'Beispiel HCP 15: 15 ÷ 2 = 7,5 → gerundet 8 → Ziel = 36 + 8 = <strong>44</strong>. Die Differenz zum Par – hier 8 – ist deine <strong>Spielvorgabe</strong>.',
-      en: 'Example HCP 15: 15 ÷ 2 = 7.5 → rounded 8 → target = 36 + 8 = <strong>44</strong>. The difference to par – 8 here – is your <strong>playing handicap</strong>.',
+      de: 'Beispiel HCP 15: Rigi (9 Loch, Par 36): 15 ÷ 2 = 7,5 → gerundet 8 → Ziel <strong>44</strong>. Zugersee (18 Loch, Par 72): Ziel = 72 + 15 = <strong>87</strong>. Die Differenz zum Par ist deine <strong>Spielvorgabe</strong>.',
+      en: 'Example HCP 15: Rigi (9 holes, par 36): 15 ÷ 2 = 7.5 → rounded 8 → target <strong>44</strong>. Zugersee (18 holes, par 72): target = 72 + 15 = <strong>87</strong>. The difference to par is your <strong>playing handicap</strong>.',
     },
     rc_strokes_p: {
       de: 'Die Spielvorgabe wird als <strong>Vorgabeschläge</strong> auf die Löcher verteilt, wie im offiziellen Handicap-System nach Stroke-Index: Schlag 1 aufs schwerste Loch (Index 1), Schlag 2 aufs zweitschwerste … Schlag 10 wieder aufs schwerste. Bei einem Plus-Handicap wird ab dem leichtesten Loch abgezogen.',
@@ -136,7 +136,17 @@ window.I18N = (function () {
       de: 'Auf demselben Loch können mehrere Tiere gesammelt werden. Jedes Tier zählt pro Loch nur einmal.',
       en: 'Different animals can be collected on the same hole. Each animal counts only once per hole.',
     },
-    r_course_title: { de: 'Der Platz – Tee 27', en: 'The course – Tee 27' },
+    r_course_title: { de: 'Der Platz – {name}', en: 'The course – {name}' },
+    cs_label: { de: 'Platz', en: 'Course' },
+    cs_hint: {
+      de: 'Der Platz gilt für die laufende Runde. Wechseln geht nur, solange noch keine Scores eingetragen sind (PIN nötig).',
+      en: 'The course applies to the current round. Switching is only possible while no scores are entered yet (PIN required).',
+    },
+    cs_confirm: {
+      de: 'Auf «{name}» wechseln?\nZiel und Vorgabeschläge aller Spieler werden für diesen Platz gerechnet.',
+      en: 'Switch to “{name}”?\nTargets and handicap strokes will be calculated for this course.',
+    },
+    cs_switched: { de: 'Platz gewechselt: {name} ⛳', en: 'Course switched: {name} ⛳' },
     r_course_hint: { de: 'Distanz in Meter bis Mitte Grün.', en: 'Distance in metres to the middle of the green.' },
     c_hole: { de: 'Loch', en: 'Hole' },
     c_par: { de: 'Par', en: 'Par' },
@@ -226,7 +236,7 @@ window.I18N = (function () {
     e_flight_card: { de: '🧾 Flight-Karte', en: '🧾 Flight card' },
     e_par_n: { de: 'Par {p}', en: 'Par {p}' },
     e_next: { de: '✅ Loch {h} fertig – weiter zu Loch {n}', en: '✅ Hole {h} done – on to hole {n}' },
-    e_next_last: { de: '✅ Loch 9 fertig – zur Rangliste 🏆', en: '✅ Hole 9 done – to the leaderboard 🏆' },
+    e_next_last: { de: '✅ Loch {h} fertig – zur Rangliste 🏆', en: '✅ Hole {h} done – to the leaderboard 🏆' },
     e_missing: { de: 'Noch kein Brutto-Score für: {names}.\nTrotzdem weiter?', en: 'No gross score yet for: {names}.\nContinue anyway?' },
     e_good_luck: { de: 'Loch {h} – gutes Gelingen! ⛳', en: 'Hole {h} – good luck! ⛳' },
 
@@ -241,8 +251,8 @@ window.I18N = (function () {
       en: 'No round in progress – no scores entered yet.',
     },
     lb_hint: {
-      de: 'Punkte = Ziel − gewertetes Brutto + positive Tiere − negative Tiere (pro Loch max. Netto-Doppelbogey). <strong>*</strong> = noch nicht alle 9 Löcher eingetragen, offene Löcher zählen als Netto-Par (punkteneutral). Tipp auf einen Spieler zeigt die Scorekarte.',
-      en: 'Score = target − counted gross + positive animals − negative animals (net double bogey max per hole). <strong>*</strong> = not all 9 holes entered, open holes count as net par (neutral). Tap a player for the scorecard.',
+      de: 'Punkte = Ziel − gewertetes Brutto + positive Tiere − negative Tiere (pro Loch max. Netto-Doppelbogey). <strong>*</strong> = noch nicht alle Löcher eingetragen, offene zählen als Netto-Par (punkteneutral). Tipp auf einen Spieler zeigt die Scorekarte.',
+      en: 'Score = target − counted gross + positive animals − negative animals (net double bogey max per hole). <strong>*</strong> = not all holes entered, open holes count as net par (neutral). Tap a player for the scorecard.',
     },
     lb_ceremony: { de: '🎉 Preisverleihung', en: '🎉 Prize ceremony' },
     lb_share: { de: '📸 Als Bild teilen', en: '📸 Share as image' },
@@ -293,8 +303,8 @@ window.I18N = (function () {
       en: '{players} players will be scored.\nAfterwards the scores are cleared – the round is in the archive.',
     },
     sr_confirm_open: {
-      de: '{players} Spieler werden gewertet.\n⚠️ Noch nicht alle 9 Löcher eingetragen: {open} Spieler – offene Löcher zählen als Netto-Par.\nDanach sind die Scores geleert – die Runde liegt im Archiv.',
-      en: '{players} players will be scored.\n⚠️ Not all 9 holes entered: {open} player(s) – open holes count as net par.\nAfterwards the scores are cleared – the round is in the archive.',
+      de: '{players} Spieler werden gewertet.\n⚠️ Noch nicht alle Löcher eingetragen: {open} Spieler – offene Löcher zählen als Netto-Par.\nDanach sind die Scores geleert – die Runde liegt im Archiv.',
+      en: '{players} players will be scored.\n⚠️ Not all holes entered: {open} player(s) – open holes count as net par.\nAfterwards the scores are cleared – the round is in the archive.',
     },
     sr_nothing: { de: 'Keine Scores vorhanden – nichts zu speichern', en: 'No scores yet – nothing to save' },
     sr_saved: { de: '«{name}» gespeichert 💾', en: '“{name}” saved 💾' },

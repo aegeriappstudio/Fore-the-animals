@@ -20,7 +20,7 @@
     <img src="img/hero.jpg" alt="Fore the Animals – Golf Safari">
     <div class="hero-overlay">
       <h1>FORE THE ANIMALS!</h1>
-      <p>9-Hole Golf Safari · Rigi Holzhäusern · Tee 27 · Par 36 · 2'682 m</p>
+      <p id="hero-sub">Golf Safari · Golfpark Holzhäusern</p>
     </div>
   </header>
 
@@ -127,7 +127,8 @@
       </div>
 
       <div class="card">
-        <h2 data-i18n="r_course_title">Der Platz – Tee 27</h2>
+        <h2 id="course-title">Der Platz</h2>
+        <div class="tee-picker" id="tee-picker"></div>
         <div class="table-scroll">
           <table class="course-table" id="course-table"></table>
         </div>
@@ -137,6 +138,13 @@
 
     <!-- ================= TURNIER: Spieler + Flights ================= -->
     <section id="tab-tournament" class="tab">
+      <div class="card course-card">
+        <label class="lb-round-picker" data-i18n-label="cs_label">Platz
+          <select id="course-select"></select>
+        </label>
+        <p class="hint" data-i18n="cs_hint">Der Platz gilt für die laufende Runde. Wechseln geht nur, solange noch keine Scores eingetragen sind (PIN nötig).</p>
+      </div>
+
       <div class="card">
         <h2 data-i18n="tn_title">Wer spielt heute?</h2>
         <p class="hint" data-i18n="tn_hint">Markiere mit ✅/💤, wer heute dabei ist, und lose danach die Flights aus. Einzelne Spieler lassen sich nachträglich per Tipp in den Flight-Karten verschieben.</p>

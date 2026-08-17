@@ -344,3 +344,32 @@ test('Runde lässt sich mit einem Termin verknüpfen', async (t) => {
   const bogus = await srv.call('POST', '/api/rounds', { name: 'Ohne Termin', eventId: 'gibtsnicht' }, PIN);
   assert.equal(bogus.body.round.eventId, null);
 });
+
+test('Platz wechseln: PIN nötig, blockiert bei laufenden Scores, Runde trägt courseId', async (t) => {
+  const srv = await startServer();
+  t.after(() => srv.close());
+  const anna = await addPlayer(srv, 'Anna', 15);
+
+  assert.equal((await srv.call('PUT', '/api/course', { courseId: 'zugersee18' })).status, 403);
+  assert.equal((await srv.call('PUT', '/api/course', { courseId: 'mond9' }, PIN)).status, 400);
+
+  const ok = await srv.call('PUT', '/api/course', { courseId: 'zugersee18' }, PIN);
+  assert.equal(ok.status, 200);
+  assert.equal((await srv.call('GET', '/api/state')).body.courseId, 'zugersee18');
+
+  // Auf 18 Löchern ist Loch 12 gültig …
+  const far = await srv.call('PUT', '/api/scores', { entries: [{ playerId: anna.id, hole: 12, gross: 5 }] });
+  assert.equal(far.body.applied.length, 1);
+
+  // … und mit Scores ist der Rückwechsel blockiert
+  assert.equal((await srv.call('PUT', '/api/course', { courseId: 'rigi9' }, PIN)).status, 409);
+
+  // Runde abschliessen: courseId wandert mit, danach ist der Wechsel frei
+  const saved = await srv.call('POST', '/api/rounds', { name: 'Zugersee-Runde' }, PIN);
+  assert.equal(saved.body.round.courseId, 'zugersee18');
+  assert.equal((await srv.call('PUT', '/api/course', { courseId: 'rigi9' }, PIN)).status, 200);
+
+  // Auf Rigi ist Loch 12 wieder ungültig
+  const bad = await srv.call('PUT', '/api/scores', { entries: [{ playerId: anna.id, hole: 12, gross: 5 }] });
+  assert.equal(bad.body.rejected.length, 1);
+});
