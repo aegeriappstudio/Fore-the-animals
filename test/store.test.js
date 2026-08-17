@@ -46,7 +46,7 @@ const legacy = {
 
 test('Migration: alte Datei wird vollständig übernommen', () => {
   const state = migrate(legacy);
-  assert.equal(state.schema, 5);
+  assert.equal(state.schema, 6);
   assert.equal(state.rev, 42);            // aus `version`
   assert.equal(state.players.length, 2);
 });
@@ -92,14 +92,25 @@ test('Migration: verwaiste Scores und Flight-Zuteilungen verschwinden', () => {
 test('Migration: falsch berechnete Archiv-Resultate werden korrigiert', () => {
   const state = migrate(legacy);
   const result = state.rounds[0].results[0];
-  // 4 gespielte Löcher (17 Schläge, alle unter dem Deckel) + 5 offene Löcher
-  // als Netto-Par: Par 4+4+4+5+4 = 21 plus 4 Vorgabeschläge (Loch 5 hat bei
-  // Spielvorgabe 8 keinen) = 25
+  // Anna HCP 15, Herren Tee 27 → offizielle Spielvorgabe 6, Ziel 42.
+  // 4 gespielte Löcher (17 Schläge, unter dem Deckel) + 5 offene Löcher als
+  // Netto-Par: Par 4+4+4+5+4 = 21 plus 2 Vorgabeschläge (Löcher 7 und 9) = 23
+  assert.equal(result.target, 42);
   assert.equal(result.gross, 17);
   assert.equal(result.played, 4);
-  assert.equal(result.parOpen, 25);
+  assert.equal(result.parOpen, 23);
   assert.equal(result.neg, 1);
-  assert.equal(result.points, 44 - 42 - 1); // = 1 statt der gespeicherten 27
+  assert.equal(result.points, 42 - 40 - 1); // = 1 statt der gespeicherten 27
+});
+
+test('Migration: Wertungs-Tees und Geschlecht mit Defaults', () => {
+  const state = migrate(legacy);
+  assert.deepEqual(state.tees, { m: '27', f: '27' });          // Rigi-Standard
+  assert.ok(state.players.every((p) => p.gender === 'm'));     // Altbestand: Herren
+  assert.deepEqual(state.rounds[0].tees, { m: '27', f: '27' }); // Runden-Schnappschuss
+
+  const z = migrate({ courseId: 'zugersee18', players: [], tees: { m: '58', f: 'quatsch' } });
+  assert.deepEqual(z.tees, { m: '58', f: '49' }); // ungültiges Tee → Standard
 });
 
 test('Migration: Backup ohne Loch-Scores behält die alten Punkte', () => {

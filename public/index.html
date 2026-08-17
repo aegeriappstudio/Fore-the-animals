@@ -86,8 +86,10 @@
           <div class="calc-row">
             <span class="calc-hcp-label">HCP</span>
             <input type="number" id="calc-hcp" value="15" step="0.1" min="-10" max="54" inputmode="decimal">
-            <span class="calc-summary" id="calc-summary"></span>
+            <button type="button" class="btn gender-btn" id="calc-gender" data-value="m">♂</button>
+            <select id="calc-tee"></select>
           </div>
+          <p class="calc-summary" id="calc-summary"></p>
           <div class="table-scroll">
             <table class="course-table" id="calc-table"></table>
           </div>
@@ -142,7 +144,11 @@
         <label class="lb-round-picker" data-i18n-label="cs_label">Platz
           <select id="course-select"></select>
         </label>
-        <p class="hint" data-i18n="cs_hint">Der Platz gilt für die laufende Runde. Wechseln geht nur, solange noch keine Scores eingetragen sind (PIN nötig).</p>
+        <div class="tee-selects">
+          <label class="lb-round-picker">♂ <select id="tee-select-m"></select></label>
+          <label class="lb-round-picker">♀ <select id="tee-select-f"></select></label>
+        </div>
+        <p class="hint" data-i18n="cs_hint">Platz und Abschläge gelten für die laufende Runde und fliessen in die Spielvorgabe ein (offizielles Course Rating &amp; Slope). Wechseln geht nur, solange noch keine Scores eingetragen sind (PIN nötig).</p>
       </div>
 
       <div class="card">
@@ -153,6 +159,7 @@
         <form id="player-form" class="row-form new-player">
           <input type="text" id="player-name" placeholder="Name" maxlength="40" required data-i18n-ph="ph_name">
           <input type="number" id="player-hcp" placeholder="HCP" step="0.1" min="-10" max="54" required data-i18n-ph="ph_hcp">
+          <button type="button" class="btn gender-btn" id="new-gender" data-value="m" title="♂/♀">♂</button>
           <button type="submit" class="btn primary" data-i18n="p_add">Hinzufügen</button>
         </form>
         <p class="hint" data-i18n="p_persist_hint">Spieler nur einmal erfassen – sie bleiben über alle Runden gespeichert. Vor jeder Runde nur noch das Handicap anpassen.</p>

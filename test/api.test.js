@@ -373,3 +373,32 @@ test('Platz wechseln: PIN nötig, blockiert bei laufenden Scores, Runde trägt c
   const bad = await srv.call('PUT', '/api/scores', { entries: [{ playerId: anna.id, hole: 12, gross: 5 }] });
   assert.equal(bad.body.rejected.length, 1);
 });
+
+test('Wertungs-Tees und Geschlecht: Sperre, Schnappschuss, Damen-Vorgabe', async (t) => {
+  const srv = await startServer();
+  t.after(() => srv.close());
+  const anna = (await srv.call('POST', '/api/players', { name: 'Anna', hcp: 15, gender: 'f' })).body.player;
+  assert.equal(anna.gender, 'f');
+
+  // Tee wechseln geht mit PIN, solange keine Scores da sind
+  assert.equal((await srv.call('PUT', '/api/course', { teeM: '24' })).status, 403);
+  const ok = await srv.call('PUT', '/api/course', { teeM: '24' }, PIN);
+  assert.equal(ok.status, 200);
+  assert.deepEqual(ok.body.tees, { m: '24', f: '27' });
+
+  // Mit Scores ist auch der Tee-Wechsel gesperrt
+  await srv.call('PUT', '/api/scores', { entries: [{ playerId: anna.id, hole: 1, gross: 5 }] });
+  assert.equal((await srv.call('PUT', '/api/course', { teeF: '24' }, PIN)).status, 409);
+
+  // Runde abschliessen friert die Tees ein; Damen-Ziel = 46 (CR 37,1 · Slope 128)
+  const saved = await srv.call('POST', '/api/rounds', { name: 'Damenrunde' }, PIN);
+  const round = (await srv.call('GET', `/api/rounds/${saved.body.round.id}`)).body.round;
+  assert.deepEqual(round.tees, { m: '24', f: '27' });
+  assert.equal(round.results[0].target, 46);
+  assert.equal(round.results[0].gender, 'f');
+
+  // Geschlecht umschalten ändert die Vorgabe (Herren Tee 24: CR 33,0 · Slope 119)
+  await srv.call('PUT', `/api/players/${anna.id}`, { gender: 'm' });
+  const state = await srv.call('GET', '/api/state');
+  assert.equal(state.body.players[0].gender, 'm');
+});

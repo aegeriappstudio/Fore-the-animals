@@ -299,6 +299,17 @@
     return M.todaysPlayers(srv.players, liveScores());
   }
 
+  // Resultat/Ziel mit den Wertungs-Tees der laufenden Runde
+  function liveResult(p) {
+    return M.playerResult(p, scoresFor(p.id), srv.courseId, srv.tees);
+  }
+
+  function playerTarget(p, hcpOverride) {
+    var gender = M.normalizeGender(p.gender);
+    var tee = srv.tees ? srv.tees[gender] : undefined;
+    return M.targetFor(hcpOverride !== undefined ? hcpOverride : p.hcp, srv.courseId, gender, tee);
+  }
+
   function playerById(id) {
     return srv.players.find(function (p) { return p.id === id; });
   }
@@ -532,15 +543,29 @@
   function renderCalc() {
     var input = $('#calc-hcp');
     if (!input) return;
+    var gender = $('#calc-gender').dataset.value === 'f' ? 'f' : 'm';
+    var c = M.course;
+    // Tee-Auswahl des Rechners auf den aktiven Platz abstimmen
+    var teeSel = $('#calc-tee');
+    var wanted = teeSel.dataset.course === c.id && teeSel.value ? teeSel.value : (srv.tees ? srv.tees[gender] : null);
+    var tee = M.normalizeTee(wanted, gender, c.id);
+    teeSel.innerHTML = c.ratedTees.map(function (k) {
+      return '<option value="' + k + '"' + (k === tee ? ' selected' : '') + '>Tee ' + k + '</option>';
+    }).join('');
+    teeSel.value = tee;
+    teeSel.dataset.course = c.id;
+
     var hcp = input.value === '' ? null : M.normalizeHcp(input.value);
     if (hcp === null) {
       $('#calc-summary').textContent = '';
       $('#calc-table').innerHTML = '';
       return;
     }
-    var strokes = M.strokesFor(hcp);
-    var ch = M.courseHandicap(hcp);
-    $('#calc-summary').textContent = t('rc_calc_summary', { target: M.targetFor(hcp), ch: signed(ch) });
+    var rating = M.ratingFor(c.id, gender, tee);
+    var strokes = M.strokesFor(hcp, c.id, gender, tee);
+    var ch = M.courseHandicap(hcp, c.id, gender, tee);
+    $('#calc-summary').textContent = t('rc_calc_summary', { target: M.targetFor(hcp, c.id, gender, tee), ch: signed(ch) }) +
+      ' · CR ' + rating.cr + ' · Slope ' + rating.slope;
     $('#calc-table').innerHTML =
       '<tr><th>' + t('c_hole') + '</th>' + M.COURSE.map(function (h) { return '<th>' + h.hole + '</th>'; }).join('') + '<th>' + t('c_total') + '</th></tr>' +
       '<tr><td>' + t('c_par') + '</td>' + M.COURSE.map(function (h) { return '<td>' + h.par + '</td>'; }).join('') + '<td>' + M.PAR_TOTAL + '</td></tr>' +
@@ -643,6 +668,19 @@
         esc(c.label) + ' · Par ' + c.par + '</option>';
     }).join('');
     sel.value = srv.courseId;
+
+    // Wertungs-Tees pro Geschlecht – mit CR/Slope zur Orientierung
+    var c = M.courseById(srv.courseId) || M.course;
+    ['m', 'f'].forEach(function (g) {
+      var teeSel = $(g === 'm' ? '#tee-select-m' : '#tee-select-f');
+      var chosen = M.normalizeTee(srv.tees && srv.tees[g], g, c.id);
+      teeSel.innerHTML = c.ratedTees.map(function (tee) {
+        var r = c.ratings[g][tee];
+        return '<option value="' + tee + '"' + (tee === chosen ? ' selected' : '') + '>Tee ' + tee +
+          ' · CR ' + r.cr + ' · Slope ' + r.slope + '</option>';
+      }).join('');
+      teeSel.value = chosen;
+    });
   }
 
   function renderPlayers() {
@@ -669,7 +707,8 @@
         '<span class="p-name">' + esc(p.name) + '</span>' +
         '<label class="p-hcp">' + t('ph_hcp') +
         '<input type="number" class="p-hcp-input" data-hcp-player="' + p.id + '" value="' + esc(p.hcp) + '" step="0.1" min="' + M.MIN_HCP + '" max="' + M.MAX_HCP + '" inputmode="decimal" aria-label="' + t('ph_hcp') + ' ' + esc(p.name) + '"></label>' +
-        '<span class="badge" data-target-for="' + p.id + '">' + t('p_target') + ' ' + M.targetFor(p.hcp) + '</span>' +
+        '<button type="button" class="btn small gender" data-gender="' + p.id + '" title="' + t('p_gender') + '">' + (M.normalizeGender(p.gender) === 'f' ? '♀' : '♂') + '</button>' +
+        '<span class="badge" data-target-for="' + p.id + '">' + t('p_target') + ' ' + playerTarget(p) + '</span>' +
         '<button type="button" class="btn small" data-edit-player="' + p.id + '" title="' + t('p_rename') + '">✏️</button>' +
         '<button type="button" class="btn small" data-del-player="' + p.id + '">🗑️</button>' +
         '</div>';
@@ -778,7 +817,7 @@
       var p = playerById(pid);
       if (!p) return '';
       var entry = entryFor(pid, ui.hole) || { gross: null, animals: {} };
-      var stats = M.playerResult(p, scoresFor(pid));
+      var stats = liveResult(p);
       var animalBtns = M.ANIMALS.map(function (a) {
         var on = !!(entry.animals && entry.animals[a.key]);
         var disabled = !M.animalAllowed(a.key, ui.hole);
@@ -821,7 +860,7 @@
     var waiting = [];
     todaysPlayers().forEach(function (p) {
       var scores = scoresFor(p.id);
-      var result = M.playerResult(p, scores);
+      var result = liveResult(p);
       // Wer noch nichts eingetragen hat, steht nicht in der Wertung – sonst
       // würde die Par-Prognose Spieler mit hohem Handicap nach vorne spülen.
       if (M.hasScores(scores)) rows.push(result); else waiting.push(result);
@@ -975,10 +1014,13 @@
 
   // Solange die Rangliste gesperrt ist, zeigt die Karte keine Punkte – sonst
   // könnte man die Spannung über den Umweg der Scorekarte umgehen.
-  function showScorecard(player, scores, courseId) {
+  function showScorecard(player, scores, courseId, tees) {
     var c = M.courseById(courseId) || M.course;
-    var result = M.playerResult(player, scores || {}, c.id);
-    var strokes = M.strokesFor(player.hcp, c.id);
+    var useTees = tees || srv.tees;
+    var gender = M.normalizeGender(player.gender);
+    var tee = M.normalizeTee(useTees && useTees[gender], gender, c.id);
+    var result = M.playerResult(player, scores || {}, c.id, useTees);
+    var strokes = M.strokesFor(player.hcp, c.id, gender, tee);
     var showPoints = ui.unlocked;
     var grossCells = c.holes.map(function (h) {
       var e = (scores || {})[h.hole];
@@ -1004,12 +1046,12 @@
           var n = strokes[h.hole];
           var dots = n > 0 ? '•'.repeat(n) : n < 0 ? '+' : '';
           return '<td class="sc-strokes">' + dots + '</td>';
-        }).join('') + '<td>' + signed(M.courseHandicap(player.hcp, c.id)) + '</td></tr>'
+        }).join('') + '<td>' + signed(M.courseHandicap(player.hcp, c.id, gender, tee)) + '</td></tr>'
       : '';
 
     openModal(
       modalHead('🧾 ' + esc(player.name)) +
-      '<p class="hint">HCP ' + result.hcp + ' · ' + t('p_target') + ' ' + result.target +
+      '<p class="hint">HCP ' + result.hcp + ' · ' + (gender === 'f' ? '♀' : '♂') + ' Tee ' + tee + ' · ' + t('p_target') + ' ' + result.target +
       (showPoints ? ' · ' + t('sc_points') + ' <strong>' + signed(result.points) + '</strong>' : '') + '</p>' +
       '<div class="table-scroll"><table class="sc-table">' +
       '<tr><th>' + t('c_hole') + '</th>' + c.holes.map(function (h) { return '<th>' + h.hole + '</th>'; }).join('') + '<th>' + t('sc_tot') + '</th></tr>' +
@@ -1031,7 +1073,7 @@
       var p = playerById(pid);
       if (!p) return '';
       var scores = scoresFor(pid);
-      var result = M.playerResult(p, scores);
+      var result = liveResult(p);
       var cells = M.COURSE.map(function (h) {
         var e = scores[h.hole];
         var animals = '';
@@ -1078,6 +1120,19 @@
   });
 
   $('#calc-hcp').addEventListener('input', renderCalc);
+  $('#calc-tee').addEventListener('change', renderCalc);
+  $('#calc-gender').addEventListener('click', function () {
+    var next = this.dataset.value === 'f' ? 'm' : 'f';
+    this.dataset.value = next;
+    this.textContent = next === 'f' ? '♀' : '♂';
+    renderCalc();
+  });
+
+  $('#new-gender').addEventListener('click', function () {
+    var next = this.dataset.value === 'f' ? 'm' : 'f';
+    this.dataset.value = next;
+    this.textContent = next === 'f' ? '♀' : '♂';
+  });
 
   // Platz wechseln (PIN; nur ohne Scores in der laufenden Runde)
   $('#course-select').addEventListener('change', async function (e) {
@@ -1095,6 +1150,23 @@
       apiError(err);
       revert();
     }
+  });
+
+  ['m', 'f'].forEach(function (g) {
+    $(g === 'm' ? '#tee-select-m' : '#tee-select-f').addEventListener('change', async function (e) {
+      var body = {};
+      body[g === 'm' ? 'teeM' : 'teeF'] = e.target.value;
+      var revert = function () { renderCoursePicker(); };
+      if (!(await ensurePin())) return revert();
+      try {
+        await api('PUT', '/api/course', body);
+        toast(t('cs_tee_saved'));
+        pull(true);
+      } catch (err) {
+        apiError(err);
+        revert();
+      }
+    });
   });
 
   // Abschlag (Tee) für Distanz-Anzeigen wählen – rein lokal pro Gerät
@@ -1190,7 +1262,11 @@
     var duplicate = srv.players.some(function (p) { return p.name.toLowerCase() === name.toLowerCase(); });
     if (duplicate && !(await confirmDialog(t('p_dup_name', { name: name }), { okLabel: t('p_add') }))) return;
     try {
-      await api('POST', '/api/players', { name: name, hcp: $('#player-hcp').value });
+      await api('POST', '/api/players', {
+        name: name,
+        hcp: $('#player-hcp').value,
+        gender: $('#new-gender').dataset.value || 'm',
+      });
       $('#player-name').value = '';
       $('#player-hcp').value = '';
       toast(t('p_added', { name: name }));
@@ -1200,8 +1276,20 @@
 
   $('#player-list').addEventListener('click', async function (e) {
     var presBtn = e.target.closest('[data-presence]');
+    var genderBtn = e.target.closest('[data-gender]');
     var editBtn = e.target.closest('[data-edit-player]');
     var delBtn = e.target.closest('[data-del-player]');
+
+    if (genderBtn) {
+      var gp = playerById(genderBtn.dataset.gender);
+      if (!gp) return;
+      var next = M.normalizeGender(gp.gender) === 'f' ? 'm' : 'f';
+      try {
+        await api('PUT', '/api/players/' + gp.id, { gender: next });
+        pull(true);
+      } catch (err) { apiError(err); }
+      return;
+    }
 
     if (presBtn) {
       var p = playerById(presBtn.dataset.presence);
@@ -1241,8 +1329,9 @@
   $('#player-list').addEventListener('input', function (e) {
     var inp = e.target.closest('.p-hcp-input');
     if (!inp || inp.value === '') return;
+    var lp = playerById(inp.dataset.hcpPlayer);
     var badge = $('[data-target-for="' + inp.dataset.hcpPlayer + '"]');
-    if (badge) badge.textContent = t('p_target') + ' ' + M.targetFor(inp.value);
+    if (badge && lp) badge.textContent = t('p_target') + ' ' + playerTarget(lp, inp.value);
   });
 
   $('#player-list').addEventListener('change', async function (e) {
@@ -1256,7 +1345,7 @@
       p.hcp = res.player.hcp;
       inp.value = res.player.hcp;
       var badge = $('[data-target-for="' + p.id + '"]');
-      if (badge) badge.textContent = t('p_target') + ' ' + M.targetFor(res.player.hcp);
+      if (badge) badge.textContent = t('p_target') + ' ' + playerTarget(res.player);
       toast(t('p_hcp_saved', { name: p.name, hcp: res.player.hcp }));
     } catch (err) {
       apiError(err);
@@ -1461,7 +1550,7 @@
     if (!round) return;
     var player = (round.players || []).find(function (x) { return x.id === pid; })
       || (round.results || []).find(function (x) { return x.id === pid; });
-    if (player) showScorecard(player, (round.scores || {})[pid] || {}, round.courseId);
+    if (player) showScorecard(player, (round.scores || {})[pid] || {}, round.courseId, round.tees);
   });
 
   $('#modal').addEventListener('click', function (e) {
