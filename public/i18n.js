@@ -72,18 +72,18 @@ window.I18N = (function () {
     // ---------------- Berechnungsgrundlagen ----------------
     rc_target_title: { de: 'Dein Ziel & deine Vorgabeschläge', en: 'Your target & your handicap strokes' },
     rc_target_p1: {
-      de: '<strong>Ziel = Platz-Par + Handicap-Anteil</strong>, kaufmännisch gerundet (7,4 → 7 · 7,5 → 8): auf dem 9-Loch-Platz zählt das halbe Handicap, auf 18 Löchern das ganze. Das Ziel ist die Schlagzahl, mit der du genau auf 0 Punkte kommst.',
-      en: '<strong>Target = course par + handicap share</strong>, rounded to the nearest whole number (7.4 → 7 · 7.5 → 8): half your handicap on the 9-hole course, your full handicap on 18 holes. The target is the score that puts you at exactly 0 points.',
+      de: 'Deine <strong>Spielvorgabe</strong> wird wie im offiziellen Handicap-System berechnet: <strong>Handicap × Anteil × (Slope ÷ 113) + (Course Rating − Par)</strong>, kaufmännisch gerundet. Der Anteil ist auf dem 9-Loch-Platz das halbe, auf 18 Löchern das ganze Handicap; Course Rating und Slope sind die offiziellen Werte 2026 deines Abschlags (Damen/Herren). Dein <strong>Ziel = Par + Spielvorgabe</strong> – die Schlagzahl, mit der du genau auf 0 Punkte kommst.',
+      en: 'Your <strong>playing handicap</strong> is calculated as in the official handicap system: <strong>handicap × share × (slope ÷ 113) + (course rating − par)</strong>, rounded to the nearest whole number. The share is half your handicap on the 9-hole course and the full handicap on 18 holes; course rating and slope are the official 2026 values for your tee (ladies/men). Your <strong>target = par + playing handicap</strong> – the score that puts you at exactly 0 points.',
     },
     rc_target_p2: {
-      de: 'Beispiel HCP 15: Rigi (9 Loch, Par 36): 15 ÷ 2 = 7,5 → gerundet 8 → Ziel <strong>44</strong>. Zugersee (18 Loch, Par 72): Ziel = 72 + 15 = <strong>87</strong>. Die Differenz zum Par ist deine <strong>Spielvorgabe</strong>.',
-      en: 'Example HCP 15: Rigi (9 holes, par 36): 15 ÷ 2 = 7.5 → rounded 8 → target <strong>44</strong>. Zugersee (18 holes, par 72): target = 72 + 15 = <strong>87</strong>. The difference to par is your <strong>playing handicap</strong>.',
+      de: 'Beispiel HCP 15, Herren: Rigi Tee 27 (CR 34,2 · Slope 125): 7,5 × 1,106 − 1,8 = 6,5 → Spielvorgabe <strong>6</strong> → Ziel <strong>42</strong>. Zugersee Tee 51 (CR 68,2 · Slope 125): 15 × 1,106 − 3,8 = 12,8 → <strong>13</strong> → Ziel <strong>85</strong>. Genau die Werte aus den offiziellen Course-Handicap-Tabellen.',
+      en: 'Example HCP 15, men: Rigi tee 27 (CR 34.2 · slope 125): 7.5 × 1.106 − 1.8 = 6.5 → playing handicap <strong>6</strong> → target <strong>42</strong>. Zugersee tee 51 (CR 68.2 · slope 125): 15 × 1.106 − 3.8 = 12.8 → <strong>13</strong> → target <strong>85</strong>. Exactly the values from the official course handicap tables.',
     },
     rc_strokes_p: {
       de: 'Die Spielvorgabe wird als <strong>Vorgabeschläge</strong> auf die Löcher verteilt, wie im offiziellen Handicap-System nach Stroke-Index: Schlag 1 aufs schwerste Loch (Index 1), Schlag 2 aufs zweitschwerste … Schlag 10 wieder aufs schwerste. Bei einem Plus-Handicap wird ab dem leichtesten Loch abgezogen.',
       en: 'The playing handicap is distributed across the holes as <strong>handicap strokes</strong>, like in the official handicap system by stroke index: stroke 1 on the hardest hole (index 1), stroke 2 on the second hardest … stroke 10 on the hardest again. A plus handicap gives strokes back starting at the easiest hole.',
     },
-    rc_calc_label: { de: 'Rechne es für dein Handicap nach:', en: 'Check it for your handicap:' },
+    rc_calc_label: { de: 'Rechne es für dein Handicap nach (♂/♀ und Abschlag wählbar):', en: 'Check it for your handicap (choose ♂/♀ and tee):' },
     rc_calc_summary: { de: 'Ziel {target} · Spielvorgabe {ch}', en: 'Target {target} · playing handicap {ch}' },
     rc_row_max: { de: 'Max. zählt', en: 'Max counts' },
     rc_calc_hint: {
@@ -147,6 +147,7 @@ window.I18N = (function () {
       en: 'Switch to “{name}”?\nTargets and handicap strokes will be calculated for this course.',
     },
     cs_switched: { de: 'Platz gewechselt: {name} ⛳', en: 'Course switched: {name} ⛳' },
+    cs_tee_saved: { de: 'Abschlag gespeichert 🏌️', en: 'Tee saved 🏌️' },
     r_course_hint: { de: 'Distanz in Meter bis Mitte Grün.', en: 'Distance in metres to the middle of the green.' },
     c_hole: { de: 'Loch', en: 'Hole' },
     c_par: { de: 'Par', en: 'Par' },
@@ -175,6 +176,7 @@ window.I18N = (function () {
     },
     p_dup_name: { de: '«{name}» gibt es schon – trotzdem anlegen?', en: '“{name}” already exists – add anyway?' },
     p_rename: { de: 'Name ändern', en: 'Rename' },
+    p_gender: { de: 'Damen/Herren umschalten (für die Vorgabe)', en: 'Toggle ladies/men (for the handicap)' },
     p_hcp_saved: { de: 'HCP von {name} aktualisiert → {hcp}', en: 'HCP for {name} updated → {hcp}' },
     p_none: { de: 'Noch keine Spieler erfasst.', en: 'No players yet.' },
     p_target: { de: 'Ziel', en: 'Target' },

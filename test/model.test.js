@@ -25,55 +25,74 @@ test('Platz: 9 Löcher, Par 36, 2682 m', () => {
   assert.equal(M.DIST_TOTAL, 2682);
 });
 
-test('Ziel = 36 + halbes Handicap, kaufmännisch gerundet', () => {
-  assert.equal(M.targetFor(15), 44);   // 7,5 → 8
-  assert.equal(M.targetFor(14), 43);   // 7 → 7
-  assert.equal(M.targetFor(14.2), 43); // 7,1 → 7 (früher: aufgerundet auf 8)
-  assert.equal(M.targetFor(14.9), 43); // 7,45 → 7
-  assert.equal(M.targetFor(15.1), 44); // 7,55 → 8
-  assert.equal(M.targetFor(0), 36);
-  assert.equal(M.targetFor(36), 54);
-  assert.equal(M.targetFor(-2), 35);   // −1 → −1
-  assert.equal(M.targetFor(-1), 35);   // −0,5 → −1 (weg von Null)
+test('Spielvorgabe nach offizieller Formel (Rigi Herren Tee 27: CR 34,2 · Slope 125)', () => {
+  // CH = HCP/2 × (125/113) + (34,2 − 36), WHS-gerundet – Werte aus der
+  // offiziellen Course-Handicap-Tabelle 2026
+  assert.equal(M.courseHandicap(15, 'rigi9', 'm', '27'), 6);
+  assert.equal(M.targetFor(15, 'rigi9', 'm', '27'), 42);
+  assert.equal(M.courseHandicap(0, 'rigi9', 'm', '27'), -2);   // CR unter Par
+  assert.equal(M.courseHandicap(36, 'rigi9', 'm', '27'), 18);
+  assert.equal(M.courseHandicap(15.1, 'rigi9', 'm', '27'), 7); // Tabellengrenze 15,1–16,8 → 7
+  // Damen haben eigene Ratings (CR 37,1 · Slope 128)
+  assert.equal(M.courseHandicap(15, 'rigi9', 'f', '27'), 10);
+  assert.equal(M.targetFor(15, 'rigi9', 'f', '27'), 46);
+});
+
+test('WHS-Rundung: ,5 rundet aufwärts, Float-Grenzfälle exakt', () => {
+  assert.equal(M.roundHalf(11.5), 12);
+  assert.equal(M.roundHalf(-4.5), -4);           // Tabelle Zugersee Tee 49, HCP 0
+  assert.equal(M.roundHalf(11.3 * (127 / 113) - 1.2), 12); // 11,5 trotz Float-Drift
+  assert.equal(M.courseHandicap(0, 'zugersee18', 'm', '49'), -4);
+});
+
+test('Stichproben gegen die offiziellen Tabellen 2026', () => {
+  assert.equal(M.courseHandicap(22.6, 'rigi9', 'm', '28'), 12);
+  assert.equal(M.courseHandicap(33.9, 'zugersee18', 'f', '56'), 46);
+  assert.equal(M.courseHandicap(15, 'zugersee18', 'm', '51'), 13);
+  assert.equal(M.courseHandicap(30, 'zugersee18', 'f', '49'), 34);
 });
 
 test('Vorgabeschläge werden nach Stroke-Index verteilt', () => {
-  // HCP 15 → Spielvorgabe 8: die 8 schwersten Löcher bekommen einen Schlag,
-  // nur Loch 5 (Index 17, das leichteste) geht leer aus.
-  const s8 = M.strokesFor(15);
-  assert.equal(Object.values(s8).reduce((a, b) => a + b, 0), 8);
-  assert.equal(s8[5], 0);
-  assert.equal(s8[7], 1); // Index 1 – schwerstes Loch
-  // HCP 54 → Spielvorgabe 27: genau 3 Schläge auf jedem Loch
-  const s27 = M.strokesFor(54);
-  assert.ok(M.COURSE.every((h) => s27[h.hole] === 3));
+  // HCP 15, Rigi Herren Tee 27 → Spielvorgabe 6: die 6 schwersten Löcher
+  // (Index 1–11) bekommen einen Schlag, die drei leichtesten gehen leer aus.
+  const s6 = M.strokesFor(15, 'rigi9', 'm', '27');
+  assert.equal(Object.values(s6).reduce((a, b) => a + b, 0), 6);
+  assert.equal(s6[5], 0);  // Index 17
+  assert.equal(s6[6], 0);  // Index 15
+  assert.equal(s6[8], 0);  // Index 13
+  assert.equal(s6[7], 1);  // Index 1 – schwerstes Loch
+  // HCP 54 → Spielvorgabe 28: dreimal rundum plus 1 aufs schwerste Loch
+  const s28 = M.strokesFor(54, 'rigi9', 'm', '27');
+  assert.equal(Object.values(s28).reduce((a, b) => a + b, 0), 28);
+  assert.equal(s28[7], 4);
   // Plus-Handicap: Schläge werden ab dem leichtesten Loch zurückgegeben
-  const sMinus = M.strokesFor(-2); // Spielvorgabe −1
+  const sMinus = M.strokesFor(-2, 'rigi9', 'm', '27'); // Spielvorgabe −3
   assert.equal(sMinus[5], -1);
   assert.equal(sMinus[7], 0);
 });
 
 test('Punkte einer fertigen Runde: Ziel − Brutto + positive − negative Tiere', () => {
-  const r = M.playerResult(anna, fullRound);
+  const r = M.playerResult(anna, fullRound); // Rigi, Herren, Tee 27 → Ziel 42
+  assert.equal(r.target, 42);
   assert.equal(r.gross, 39);
   assert.equal(r.played, 9);
   assert.equal(r.complete, true);
   assert.equal(r.pos, 1);
   assert.equal(r.neg, 1);
-  assert.equal(r.points, 44 - 39 + 1 - 1);
+  assert.equal(r.points, 42 - 39 + 1 - 1);
 });
 
 test('offene Löcher zählen als Netto-Par und sind punkteneutral', () => {
   const partial = Object.assign({}, fullRound);
-  delete partial[8];  // Par 5, 1 Vorgabeschlag (Index 13)
+  delete partial[8];  // Par 5, kein Vorgabeschlag (Index 13, Spielvorgabe 6)
   delete partial[9];  // Par 4, 1 Vorgabeschlag (Index 7)
   const r = M.playerResult(anna, partial);
   assert.equal(r.gross, 29);
   assert.equal(r.played, 7);
   assert.equal(r.complete, false);
-  assert.equal(r.parOpen, 5 + 1 + 4 + 1); // Netto-Par beider offener Löcher
-  assert.equal(r.projected, 29 + 11);
-  assert.equal(r.points, 44 - 40 + 1 - 1);
+  assert.equal(r.parOpen, 5 + 0 + 4 + 1); // Netto-Par beider offener Löcher
+  assert.equal(r.projected, 29 + 10);
+  assert.equal(r.points, 42 - 39 + 1 - 1);
 });
 
 test('gar nichts eingetragen → exakt 0 Punkte (abbrechen lohnt sich nicht)', () => {
@@ -85,14 +104,13 @@ test('gar nichts eingetragen → exakt 0 Punkte (abbrechen lohnt sich nicht)', (
 });
 
 test('pro Loch zählt höchstens Netto-Doppelbogey', () => {
-  // Anna (HCP 15) hat auf Loch 1 (Par 4, 1 Vorgabeschlag) den Deckel bei 7
+  // Anna (HCP 15, Vorgabe 6) hat auf Loch 1 (Par 4, 1 Vorgabeschlag) den Deckel bei 7
   const blowUp = Object.assign({}, fullRound, { 1: { gross: 12, animals: { zebra: true } } });
   const r = M.playerResult(anna, blowUp);
   assert.equal(r.gross, 39 - 5 + 12);   // eingetragen bleibt die echte Zahl
   assert.equal(r.adjusted, 39 - 5 + 7); // gewertet wird der Deckel
   assert.equal(r.cappedHoles, 1);
-  assert.equal(r.points, 44 - 41 + 1 - 1);
-  // Ohne die 12 (mit 5) wären es 44 − 39 = +5 − aus −8 wird also −3.
+  assert.equal(r.points, 42 - 41 + 1 - 1);
 });
 
 test('Countback: letzte 6, dann letzte 3, dann letztes Loch (netto)', () => {
@@ -108,8 +126,10 @@ test('Countback: letzte 6, dann letzte 3, dann letztes Loch (netto)', () => {
     7: { gross: 4, animals: {} }, 8: { gross: 5, animals: {} }, 9: { gross: 4, animals: {} },
   });
   assert.equal(a.points, b.points);
-  assert.equal(a.cb6, 25);
-  assert.equal(b.cb6, 24);             // B war auf den letzten 6 besser …
+  // HCP 0 hat Spielvorgabe −2 (CR unter Par): auf den zwei leichtesten
+  // Löchern (5 und 6) wird je ein Schlag abgezogen → netto +1 dort
+  assert.equal(a.cb6, 27);
+  assert.equal(b.cb6, 26);             // B war auf den letzten 6 besser …
   const ranked = M.ranked([a, b], M.compareMain);
   assert.equal(ranked[0].name, 'B');   // … und gewinnt darum den Gleichstand
   assert.equal(ranked[0].rank, 1);
@@ -288,19 +308,20 @@ test('roundSummary nennt alle Sieger bei Gleichstand', () => {
 test('Zugersee: 18 Loch, Par 72, ganzes Handicap im Ziel', () => {
   assert.equal(M.courseById('zugersee18').holeCount, 18);
   assert.equal(M.courseById('zugersee18').par, 72);
-  assert.equal(M.targetFor(15, 'zugersee18'), 87);   // volles HCP
-  assert.equal(M.targetFor(15, 'rigi9'), 44);        // halbes HCP
-  assert.equal(M.courseHandicap(14.4, 'zugersee18'), 14);
+  // Standard-Tees: Herren 51 (CR 68,2 · Slope 125), Rigi Herren 27
+  assert.equal(M.targetFor(15, 'zugersee18'), 85);   // volles HCP: CH 13
+  assert.equal(M.targetFor(15, 'rigi9'), 42);        // halbes HCP: CH 6
+  assert.equal(M.courseHandicap(14.4, 'zugersee18'), 12);
 });
 
 test('Zugersee: Vorgabeschläge über 18 Löcher nach Stroke-Index', () => {
-  const s = M.strokesFor(15, 'zugersee18'); // Spielvorgabe 15
-  assert.equal(Object.values(s).reduce((a, b) => a + b, 0), 15);
+  const s = M.strokesFor(15, 'zugersee18'); // Spielvorgabe 13 (Herren Tee 51)
+  assert.equal(Object.values(s).reduce((a, b) => a + b, 0), 13);
   assert.equal(s[5], 1);   // Index 1 – bekommt einen Schlag
   assert.equal(s[10], 0);  // Index 18 – geht leer aus
   assert.equal(s[15], 0);  // Index 16 – ebenfalls
-  const s54 = M.strokesFor(54, 'zugersee18'); // Spielvorgabe 54 → 3 pro Loch
-  assert.ok(M.courseById('zugersee18').holes.every((h) => s54[h.hole] === 3));
+  const s54 = M.strokesFor(54, 'zugersee18'); // Spielvorgabe 56
+  assert.equal(Object.values(s54).reduce((a, b) => a + b, 0), 56);
 });
 
 test('Zugersee: leere Runde ist punkteneutral, Loch 10-18 gültig', () => {
@@ -318,8 +339,20 @@ test('setCourse steuert die Getter, courseId-Argumente stechen', () => {
   M.setCourse('zugersee18');
   assert.equal(M.HOLES, 18);
   assert.equal(M.PAR_TOTAL, 72);
-  assert.equal(M.targetFor(15), 87);
-  assert.equal(M.targetFor(15, 'rigi9'), 44); // explizit gewinnt
+  assert.equal(M.targetFor(15), 85);
+  assert.equal(M.targetFor(15, 'rigi9'), 42); // explizit gewinnt
   M.setCourse('rigi9');
   assert.equal(M.HOLES, 9);
+});
+
+test('Geschlecht und Tee fliessen ins Resultat ein', () => {
+  const lady = { id: 'l', name: 'Lea', hcp: 15, gender: 'f' };
+  const r = M.playerResult(lady, {}, 'rigi9', { m: '27', f: '27' });
+  assert.equal(r.target, 46);   // Damen Tee 27: CR 37,1 · Slope 128 → CH 10
+  assert.equal(r.gender, 'f');
+  assert.equal(r.tee, '27');
+  assert.equal(r.points, 0);    // leer bleibt neutral
+  // Anderes Tee = andere Vorgabe
+  const r49 = M.playerResult({ id: 'x', name: 'X', hcp: 15, gender: 'm' }, {}, 'zugersee18', { m: '49', f: '49' });
+  assert.equal(r49.target, 72 + M.courseHandicap(15, 'zugersee18', 'm', '49'));
 });

@@ -32,6 +32,13 @@
       hcpShare: 0.5,
       tees: ['27'],
       defaultTee: '27',
+      // Offizielles Course Rating & Slope 2026 pro Abschlag und Geschlecht
+      // (Quelle: Course-Handicap-Tabellen Golfpark Holzhäusern, Stand 29.01.26)
+      ratings: {
+        m: { 28: { cr: 34.8, slope: 127 }, 27: { cr: 34.2, slope: 125 }, 24: { cr: 33.0, slope: 119 }, 23: { cr: 32.4, slope: 116 } },
+        f: { 28: { cr: 37.8, slope: 131 }, 27: { cr: 37.1, slope: 128 }, 24: { cr: 35.7, slope: 121 }, 23: { cr: 34.7, slope: 120 } },
+      },
+      defaultTees: { m: '27', f: '27' },
       holes: [
         { hole: 1, par: 4, index: 9, dists: { 27: 295 } },
         { hole: 2, par: 4, index: 3, dists: { 27: 333 } },
@@ -51,6 +58,11 @@
       hcpShare: 1,
       tees: ['58', '56', '51', '49'],
       defaultTee: '51',
+      ratings: {
+        m: { 58: { cr: 71.3, slope: 135 }, 56: { cr: 70.7, slope: 130 }, 51: { cr: 68.2, slope: 125 }, 49: { cr: 67.5, slope: 118 } },
+        f: { 58: { cr: 77.8, slope: 138 }, 56: { cr: 76.1, slope: 138 }, 51: { cr: 73.0, slope: 131 }, 49: { cr: 72.4, slope: 126 } },
+      },
+      defaultTees: { m: '51', f: '49' },
       holes: [
         { hole: 1, par: 4, index: 7, dists: { 58: 355, 56: 339, 51: 306, 49: 292 } },
         { hole: 2, par: 4, index: 3, dists: { 58: 338, 56: 322, 51: 298, 49: 293 } },
@@ -87,6 +99,8 @@
     c.tees.forEach(function (tee) {
       c.distTotals[tee] = c.holes.reduce(function (s, h) { return s + (h.dists[tee] || 0); }, 0);
     });
+    // Tees mit offiziellem Rating, längster zuerst (Tabellen-Reihenfolge)
+    c.ratedTees = Object.keys(c.ratings.m).sort(function (a, b) { return Number(b) - Number(a); });
   });
 
   function courseById(id) {
@@ -235,21 +249,47 @@
   // Ziel, Vorgabeschläge & Punkte – die eine Formel
   // -------------------------------------------------------------------------
 
-  // Kaufmännisch runden (±0,5 weg von Null): 7,05 → 7 · 7,5 → 8.
+  // WHS-Rundung: ,5 rundet aufwärts (−4,5 → −4 · 11,5 → 12); vorher wird die
+  // Float-Drift geglättet, damit exakte ,5-Grenzen richtig kippen. Gegen alle
+  // 1608 Grenzwerte der offiziellen Course-Handicap-Tabellen 2026 validiert.
   function roundHalf(x) {
-    return Math.sign(x) * Math.round(Math.abs(x));
+    return Math.round(Math.round(x * 1e6) / 1e6);
   }
 
-  // Ziel = Platz-Par + Handicap-Anteil (9 Loch: halbes, 18 Loch: ganzes HCP)
-  function targetFor(hcp, courseId) {
-    var c = resolve(courseId);
-    return c.par + roundHalf(normalizeHcp(hcp) * c.hcpShare);
+  function normalizeGender(value) {
+    return value === 'f' ? 'f' : 'm';
   }
 
-  // Spielvorgabe für den Platz (= Ziel − Par)
-  function courseHandicap(hcp, courseId) {
+  function normalizeTee(tee, gender, courseId) {
     var c = resolve(courseId);
-    return targetFor(hcp, c.id) - c.par;
+    var g = normalizeGender(gender);
+    return c.ratings[g][tee] ? String(tee) : c.defaultTees[g];
+  }
+
+  /**
+   * Spielvorgabe nach offiziellem Handicap-System:
+   *   CH = HCP × Anteil × (Slope ÷ 113) + (Course Rating − Par)
+   * Anteil: 9 Loch = halbes, 18 Loch = ganzes Handicap. Course Rating und
+   * Slope hängen von Abschlag (Tee) und Geschlecht ab – dadurch sind auch
+   * Spieler von verschiedenen Tees fair vergleichbar.
+   */
+  function courseHandicap(hcp, courseId, gender, tee) {
+    var c = resolve(courseId);
+    var g = normalizeGender(gender);
+    var rating = c.ratings[g][normalizeTee(tee, g, c.id)];
+    return roundHalf(normalizeHcp(hcp) * c.hcpShare * (rating.slope / 113) + (rating.cr - c.par));
+  }
+
+  // Ziel = Platz-Par + Spielvorgabe
+  function targetFor(hcp, courseId, gender, tee) {
+    var c = resolve(courseId);
+    return c.par + courseHandicap(hcp, c.id, gender, tee);
+  }
+
+  function ratingFor(courseId, gender, tee) {
+    var c = resolve(courseId);
+    var g = normalizeGender(gender);
+    return c.ratings[g][normalizeTee(tee, g, c.id)];
   }
 
   /**
@@ -258,9 +298,9 @@
    * dann wieder von vorn. Plus-Handicaps geben Schläge zurück, beginnend beim
    * leichtesten Loch. Rückgabe: {loch: schläge}.
    */
-  function strokesFor(hcp, courseId) {
+  function strokesFor(hcp, courseId, gender, tee) {
     var c = resolve(courseId);
-    var ch = courseHandicap(hcp, c.id);
+    var ch = courseHandicap(hcp, c.id, gender, tee);
     var per = {};
     c.holes.forEach(function (h) { per[h.hole] = 0; });
     var order = ch >= 0 ? c.strokeOrder : c.strokeOrder.slice().reverse();
@@ -290,10 +330,12 @@
    *
    * Live-Ansicht und Archiv rechnen identisch.
    */
-  function playerResult(player, byHole, courseId) {
+  function playerResult(player, byHole, courseId, tees) {
     var c = resolve(courseId);
+    var gender = normalizeGender(player.gender);
+    var tee = normalizeTee(tees && tees[gender], gender, c.id);
     var scores = byHole || {};
-    var strokes = strokesFor(player.hcp, c.id);
+    var strokes = strokesFor(player.hcp, c.id, gender, tee);
     var gross = 0;
     var adjusted = 0;
     var openNet = 0;
@@ -335,12 +377,14 @@
       return sum;
     }
 
-    var target = targetFor(player.hcp, c.id);
+    var target = targetFor(player.hcp, c.id, gender, tee);
     var projected = adjusted + openNet;
     return {
       id: player.id,
       name: player.name,
       hcp: normalizeHcp(player.hcp),
+      gender: gender,
+      tee: tee,
       target: target,
       gross: gross,
       adjusted: adjusted,
@@ -360,9 +404,9 @@
     };
   }
 
-  function resultsFor(players, scores, courseId) {
+  function resultsFor(players, scores, courseId, tees) {
     var all = scores || {};
-    return (players || []).map(function (p) { return playerResult(p, all[p.id], courseId); });
+    return (players || []).map(function (p) { return playerResult(p, all[p.id], courseId, tees); });
   }
 
   // -------------------------------------------------------------------------
@@ -556,6 +600,9 @@
     animalAllowed: animalAllowed,
     clamp: clamp,
     roundHalf: roundHalf,
+    normalizeGender: normalizeGender,
+    normalizeTee: normalizeTee,
+    ratingFor: ratingFor,
     courseHandicap: courseHandicap,
     strokesFor: strokesFor,
     capFor: capFor,

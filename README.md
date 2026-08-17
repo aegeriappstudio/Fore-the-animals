@@ -10,7 +10,7 @@ die Rangliste aktualisiert sich live.
 
 Wir spielen **Beat Your Target** als Einzelwettbewerb.
 
-**🎯 Ziel:** Par 36 + halbes Handicap, kaufmännisch gerundet.
+**🎯 Ziel:** Par + Spielvorgabe nach offiziellem Handicap-System (Course Rating & Slope 2026, Damen/Herren, pro Abschlag).
 
 ### Tiere
 
@@ -33,10 +33,10 @@ Auf demselben Loch können mehrere Tiere gesammelt werden, jedes Tier zählt pro
 Die App kennt beide Plätze des Golfparks Holzhäusern und rechnet je nach
 Platz richtig:
 
-| Platz | Löcher | Par | Ziel | Abschläge |
+| Platz | Löcher | Par | HCP-Anteil | Geratete Abschläge |
 |---|---|---|---|---|
-| **Rigi** | 9 | 36 | Par + **halbes** HCP | 27 |
-| **Zugersee** | 18 | 72 | Par + **ganzes** HCP | 58 · 56 · 51 · 49 |
+| **Rigi** | 9 | 36 | **halbes** HCP | 28 · 27 · 24 · 23 |
+| **Zugersee** | 18 | 72 | **ganzes** HCP | 58 · 56 · 51 · 49 |
 
 Der Platz wird im Turnier-Tab gewählt (PIN nötig) und gilt für die laufende
 Runde; gewechselt werden kann nur, solange noch keine Scores eingetragen
@@ -47,8 +47,13 @@ für die Distanzen ist pro Gerät wählbar.
 
 ### Fairness-Regeln, die die App überall gleich handhabt
 
-- **Vorgabeschläge nach Stroke-Index.** Die Spielvorgabe (Ziel − Par) wird wie
-  im offiziellen Handicap-System auf die Löcher verteilt: Schlag 1 aufs
+- **Offizielle Spielvorgabe.** `HCP × Anteil × (Slope ÷ 113) + (CR − Par)`,
+  WHS-gerundet – mit den Course-Ratings 2026 des Golfparks pro Platz,
+  Abschlag und Geschlecht (♂/♀ pro Spieler, Wertungs-Tees pro Runde). Die
+  Formel wurde gegen alle 1608 Grenzwerte der offiziellen
+  Course-Handicap-Tabellen validiert: 0 Abweichungen.
+- **Vorgabeschläge nach Stroke-Index.** Die Spielvorgabe wird wie im
+  offiziellen Handicap-System auf die Löcher verteilt: Schlag 1 aufs
   schwerste Loch (Index 1), Schlag 10 wieder aufs schwerste usw. Die
   Scorekarte zeigt die Vorgabe pro Loch als Punkte (`•`).
 - **Offene Löcher zählen als Netto-Par** (Par + Vorgabeschläge) – exakt
