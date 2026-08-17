@@ -4,18 +4,16 @@
 window.I18N = (function () {
   var STRINGS = {
     // ---------------- Tabs ----------------
-    tab_rules: { de: '📖 Regeln', en: '📖 Rules' },
-    tab_dates: { de: '📅 Termine', en: '📅 Dates' },
-    tab_players: { de: '👥 Spieler', en: '👥 Players' },
-    tab_flights: { de: '🏌️ Flights', en: '🏌️ Flights' },
+    tab_info: { de: '📖 Info', en: '📖 Info' },
+    tab_tournament: { de: '🏌️ Turnier', en: '🏌️ Tournament' },
     tab_entry: { de: '⛳ Eintragen', en: '⛳ Score entry' },
     tab_leaderboard: { de: '🏆 Rangliste', en: '🏆 Leaderboard' },
 
     // ---------------- Termine ----------------
     d_title: { de: 'Termine & Turniere', en: 'Dates & tournaments' },
     d_intro: {
-      de: 'Die nächsten fixen und geplanten Turnier-Termine der Golf Safari. Tippe bei einem Termin auf deinen Namen, um dich an- oder abzumelden.',
-      en: 'The next confirmed and planned tournament dates of the Golf Safari. Tap your name on a date to sign up or off.',
+      de: 'Die nächsten fixen und geplanten Turnier-Termine der Golf Safari.',
+      en: 'The next confirmed and planned tournament dates of the Golf Safari.',
     },
     d_lbl_date: { de: 'Datum', en: 'Date' },
     d_lbl_flights: { de: 'Flights', en: 'Tee times' },
@@ -39,19 +37,6 @@ window.I18N = (function () {
       de: 'Zum Speichern oder Löschen von Terminen wird die PIN benötigt.',
       en: 'The PIN is required to save or delete dates.',
     },
-    ev_signups: { de: '✍️ Anmeldungen', en: '✍️ Sign-ups' },
-    ev_no_players_yet: {
-      de: 'Zuerst im Spieler-Tab Spieler erfassen – danach kann sich hier jeder anmelden.',
-      en: 'Add players in the Players tab first – then everyone can sign up here.',
-    },
-    ev_signed_up: { de: '{name} für «{ev}» angemeldet ✅', en: '{name} signed up for “{ev}” ✅' },
-    ev_signed_off: { de: '{name} von «{ev}» abgemeldet', en: '{name} signed off from “{ev}”' },
-    ev_apply: { de: '✅ Als Anwesenheit übernehmen', en: '✅ Apply as attendance' },
-    ev_apply_confirm: {
-      de: 'Anwesenheit gemäss den {n} Anmeldungen von «{name}» setzen?\nAlle anderen werden als abwesend markiert.',
-      en: 'Set attendance from the {n} sign-ups of “{name}”?\nEveryone else will be marked absent.',
-    },
-    ev_applied: { de: 'Anwesenheit übernommen – {n} dabei ✅', en: 'Attendance applied – {n} in ✅' },
 
     // ---------------- PIN ----------------
     pin_prompt: { de: 'PIN eingeben:', en: 'Enter PIN:' },
@@ -110,20 +95,26 @@ window.I18N = (function () {
     c_index: { de: 'Index', en: 'Index' },
     c_total: { de: 'Total', en: 'Total' },
 
-    // ---------------- Spieler ----------------
-    p_title: { de: 'Spieler erfassen', en: 'Add players' },
+    // ---------------- Turnier: Spieler & Flights ----------------
+    tn_title: { de: 'Wer spielt heute?', en: 'Who is playing today?' },
+    tn_hint: {
+      de: 'Tippe bei einem Spieler auf einen Flight – damit ist er für heute dabei. «–» heisst: spielt heute nicht mit. Mit ＋ entsteht ein neuer Flight.',
+      en: 'Tap a flight next to a player – that puts them in for today. “–” means not playing today. ＋ creates a new flight.',
+    },
+    tn_summary: { de: '⛳ {n} von {m} Spielern dabei · {f} Flights', en: '⛳ {n} of {m} players in · {f} flights' },
+    tn_nobody: { de: 'Noch niemand zugeteilt – tippe bei einem Spieler auf ＋.', en: 'Nobody assigned yet – tap ＋ next to a player.' },
+    tn_out: { de: 'spielt heute nicht mit', en: 'not playing today' },
+    tn_assigned: { de: '{name} → {flight}', en: '{name} → {flight}' },
+    tn_removed: { de: '{name} spielt heute nicht mit', en: '{name} is not playing today' },
     ph_name: { de: 'Name', en: 'Name' },
     ph_hcp: { de: 'HCP', en: 'HCP' },
     p_add: { de: 'Hinzufügen', en: 'Add' },
     p_persist_hint: {
-      de: 'Spieler nur einmal erfassen – sie bleiben über alle Runden gespeichert. Vor jeder Runde das Handicap anpassen und mit ✅/💤 markieren, wer heute mitspielt: Abwesende erscheinen weder in den Flights noch in der Rangliste.',
-      en: 'Add each player only once – they stay saved across all rounds. Before each round adjust the handicap and use ✅/💤 to mark who is playing today: absent players appear neither in the flights nor on the leaderboard.',
+      de: 'Spieler nur einmal erfassen – sie bleiben über alle Runden gespeichert. Vor jeder Runde nur noch das Handicap anpassen.',
+      en: 'Add each player only once – they stay saved across all rounds. Before each round just adjust the handicap.',
     },
+    p_dup_name: { de: '«{name}» gibt es schon – trotzdem anlegen?', en: '“{name}” already exists – add anyway?' },
     p_rename: { de: 'Name ändern', en: 'Rename' },
-    p_toggle: { de: 'Anwesenheit umschalten', en: 'Toggle attendance' },
-    p_now_present: { de: '{name} ist dabei ✅', en: '{name} is in ✅' },
-    p_now_absent: { de: '{name} ist heute abwesend 💤', en: '{name} is out today 💤' },
-    p_present_count: { de: '{n} von {m} Spielern dabei', en: '{n} of {m} players in' },
     p_hcp_saved: { de: 'HCP von {name} aktualisiert → {hcp}', en: 'HCP for {name} updated → {hcp}' },
     p_none: { de: 'Noch keine Spieler erfasst.', en: 'No players yet.' },
     p_target: { de: 'Ziel', en: 'Target' },
@@ -138,23 +129,32 @@ window.I18N = (function () {
     p_flights: { de: 'Flights', en: 'Flights' },
     ph_flight: { de: 'Flight-Name (z.B. Flight 1)', en: 'Flight name (e.g. Flight 1)' },
     p_create_flight: { de: 'Flight erstellen', en: 'Create flight' },
-    f_hint: {
-      de: 'Flights aus den anwesenden Spielern zusammenstellen – von Hand oder per Zufalls-Auslosung. Ein Spieler kann nur in einem Flight sein.',
-      en: 'Build flights from the players marked as in – by hand or with the random draw. A player can only be in one flight.',
-    },
+    f_add: { de: '＋ Flight', en: '＋ Flight' },
+    f_created: { de: '{name} erstellt', en: '{name} created' },
+    f_empty: { de: 'Noch niemand zugeteilt', en: 'Nobody assigned yet' },
+    f_progress: { de: '{n}/{m} Löcher', en: '{n}/{m} holes' },
+    f_not_started: { de: 'noch nicht gestartet', en: 'not started' },
+    f_done: { de: '✅ fertig', en: '✅ done' },
+    f_at_hole: { de: 'bei Loch {h}', en: 'on hole {h}' },
     f_tee: { de: 'Abschlag', en: 'Tee time' },
     f_tee_saved: { de: 'Abschlagszeit von «{name}» gespeichert 🕐', en: 'Tee time for “{name}” saved 🕐' },
     f_none: { de: 'Noch keine Flights erstellt.', en: 'No flights yet.' },
     f_count: { de: '({n} Spieler)', en: '({n} players)' },
-    f_no_avail: { de: 'Keine anwesenden Spieler', en: 'No players marked as in' },
     f_confirm_del: {
       de: 'Flight «{name}» löschen? (Spieler und Scores bleiben erhalten)',
       en: 'Delete flight “{name}”? (Players and scores are kept)',
     },
     p_randomize: { de: '🎲 Flights zufällig auslosen', en: '🎲 Draw random flights' },
     fr_first: { de: 'Zuerst Spieler erfassen', en: 'Add players first' },
-    fr_need_present: { de: 'Mindestens 2 anwesende Spieler nötig', en: 'At least 2 players marked as in required' },
     fr_prompt: { de: 'Maximale Anzahl Spieler pro Flight (2–4):', en: 'Maximum players per flight (2–4):' },
+    fr_confirm_assigned: {
+      de: 'Die {n} heute zugeteilten Spieler neu auf Flights zu je {size} verteilen?',
+      en: 'Redistribute the {n} players assigned today into flights of {size}?',
+    },
+    fr_confirm_all: {
+      de: 'Noch niemand ist zugeteilt – alle {n} Spieler auf Flights zu je {size} verteilen?',
+      en: 'Nobody is assigned yet – distribute all {n} players into flights of {size}?',
+    },
     fr_invalid: { de: 'Bitte 2, 3 oder 4 eingeben', en: 'Please enter 2, 3 or 4' },
     fr_replace: { de: 'Bestehende Flights werden ersetzt. Weiter?', en: 'Existing flights will be replaced. Continue?' },
     fr_done: { de: 'Flights zufällig ausgelost 🎲', en: 'Random flights drawn 🎲' },
@@ -171,6 +171,10 @@ window.I18N = (function () {
     },
     e_running: { de: 'Ziel {t} · Brutto {g} nach {n} Löchern', en: 'Target {t} · gross {g} after {n} holes' },
     e_gross: { de: 'Brutto:', en: 'Gross:' },
+    e_clear: { de: 'Eintrag löschen', en: 'Clear entry' },
+    e_more: { de: 'Höher', en: 'Higher' },
+    e_card: { de: '🧾 Karte', en: '🧾 Card' },
+    e_flight_card: { de: '🧾 Flight-Karte', en: '🧾 Flight card' },
     e_par_n: { de: 'Par {p}', en: 'Par {p}' },
     e_next: { de: '✅ Loch {h} fertig – weiter zu Loch {n}', en: '✅ Hole {h} done – on to hole {n}' },
     e_next_last: { de: '✅ Loch 9 fertig – zur Rangliste 🏆', en: '✅ Hole 9 done – to the leaderboard 🏆' },
@@ -285,6 +289,11 @@ window.I18N = (function () {
     sc_points: { de: 'Punkte', en: 'Points' },
     sc_legend: { de: '🟢 unter Par · ⚪ Par · 🟠 Bogey · 🔴 Doppelbogey+', en: '🟢 under par · ⚪ par · 🟠 bogey · 🔴 double bogey+' },
     sc_open: { de: '{n} Loch noch offen – dafür wird Par gerechnet.', en: '{n} hole(s) still open – counted as par.' },
+    sc_flight_title: { de: '🧾 {name} – Karte', en: '🧾 {name} – card' },
+    sc_hidden: {
+      de: 'Punkte bleiben verborgen, solange die Rangliste gesperrt ist.',
+      en: 'Points stay hidden while the leaderboard is locked.',
+    },
 
     // ---------------- Preisverleihung ----------------
     cer_intro_title: { de: 'Preisverleihung', en: 'Prize ceremony' },
@@ -313,6 +322,7 @@ window.I18N = (function () {
     },
     sync_saving: { de: '💾 {n} Einträge werden gesendet …', en: '💾 sending {n} entries …' },
     err_generic: { de: 'Etwas ist schiefgelaufen', en: 'Something went wrong' },
+    sw_update: { de: '🔄 Neue Version – zum Neuladen tippen', en: '🔄 New version – tap to reload' },
   };
 
   var lang = localStorage.getItem('fta-lang') || 'de';

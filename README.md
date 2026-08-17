@@ -68,22 +68,24 @@ Alternativen: Railway.app / Fly.io (Start: `node server.js`) oder ein Laptop im
 gleichen WLAN (`node server.js` starten und die lokale IP teilen, z.B.
 `http://192.168.1.20:3000`).
 
-## Bedienung
+## Bedienung – 4 Tabs
 
-1. **👥 Spieler** – alle Spieler mit Name und Handicap erfassen; das Ziel
-   (36 + HCP/2, aufgerundet) wird automatisch berechnet. Mit ✅/💤 markieren,
-   wer heute mitspielt – Abwesende bleiben gespeichert, erscheinen aber weder
-   in den Flights noch in der Rangliste.
-2. **📅 Termine** – jeder meldet sich per Tipp auf seinen Namen für einen
-   Termin an oder ab. Am Turniertag lassen sich die Anmeldungen mit einem
-   Klick als Anwesenheit übernehmen (PIN nötig).
-3. **🏌️ Flights** – Flights aus den anwesenden Spielern erstellen (optional
-   mit Abschlagszeit) oder zufällig auslosen, Spieler per Tipp zuteilen. Ein
-   Spieler ist immer nur in einem Flight.
-4. **⛳ Eintragen** – jeder Flight wählt sich selbst aus, wählt das Loch und
-   trägt pro Spieler Bruttoschläge und Tiere ein. Mehrere Flights können
-   gleichzeitig eintragen.
-5. **🏆 Rangliste** – während der Runde hinter der PIN versteckt. Die PIN
+1. **📖 Info** – Regeln, Platztabelle und die nächsten Turnier-Termine
+   (Datum, Abschlagszeiten, Dinner). Termine sind reine Ankündigungen und
+   werden mit der PIN gepflegt.
+2. **🏌️ Turnier** – die eine Ansicht für den Turniertag: Spieler erfassen
+   (Name/HCP, das Ziel wird automatisch berechnet) und per Tipp auf einen
+   Flight-Chip zuteilen. **Wer in einem Flight steht, spielt heute mit** –
+   ein separates An-/Abmelden gibt es nicht. «–» heisst: spielt heute nicht.
+   ＋ erstellt direkt einen neuen Flight. «🎲 Auslosen» mischt die heute
+   zugeteilten Spieler neu (oder alle, wenn noch niemand zugeteilt ist).
+   Jeder Flight zeigt seinen Fortschritt (bei welchem Loch, wie viele fertig).
+3. **⛳ Eintragen** – jeder Flight wählt sich selbst aus, wählt das Loch und
+   tippt pro Spieler direkt die Schlagzahl an (Par ist hervorgehoben, ＋ für
+   mehr, ✕ löscht) plus die Tiere. Die 🧾 Flight-Karte zeigt jederzeit alle
+   bisherigen Einträge des Flights – ohne Punktestand, die Rangliste bleibt
+   geheim. Mehrere Flights können gleichzeitig eintragen.
+4. **🏆 Rangliste** – während der Runde hinter der PIN versteckt. Die PIN
    **zeigt** die Rangliste nur an – sie speichert und löscht nichts. Oben lässt
    sich zwischen der laufenden Runde und jeder gespeicherten Runde umschalten.
    Ein Tipp auf einen Spieler zeigt seine Scorekarte Loch für Loch. Die
@@ -110,7 +112,8 @@ gleichen WLAN (`node server.js` starten und die lokale IP teilen, z.B.
   gepuffert und automatisch nachgesendet, sobald wieder Netz da ist. Die
   Live-Aktualisierung läuft dabei weiter: Server-Stand und eigene, noch nicht
   gesendete Eingaben werden übereinandergelegt statt gegeneinander
-  ausgespielt.
+  ausgespielt. Die App selbst startet dank Cache auch im Funkloch sofort;
+  liegt eine neue Version bereit, erscheint ein Hinweis zum Neuladen.
 - **💾 Runden-Archiv** – Runden abschliessen und speichern, inkl. ewiger
   Bestenliste über alle Runden (pro Spieler, nicht pro Name) sowie
   Backup-Download/-Restore.
@@ -159,7 +162,7 @@ auseinanderlaufen.
 | Methode & Pfad | PIN | Zweck |
 |---|---|---|
 | `GET /api/state?rev=` | – | Zustand bzw. `{unchanged:true}` |
-| `POST /api/players`, `PUT /api/players/:id` | – | Spieler erfassen/ändern |
+| `POST /api/players`, `PUT /api/players/:id` | – | Spieler erfassen/ändern; `PUT` mit `{flightId}` teilt einem Flight zu (`null` = spielt heute nicht) |
 | `DELETE /api/players/:id` | ✔ | Spieler löschen |
 | `POST /api/flights`, `PUT`/`DELETE /api/flights/:id` | – | Flights |
 | `POST /api/flights/randomize` | – | Flights auslosen |
@@ -168,8 +171,6 @@ auseinanderlaufen.
 | `POST /api/rounds` | ✔ | Runde abschliessen |
 | `DELETE /api/rounds/:id` | ✔ | Runde löschen |
 | `POST /api/events`, `PUT`/`DELETE /api/events/:id` | ✔ | Termine pflegen |
-| `POST /api/events/:id/signup` | – | An-/Abmelden |
-| `POST /api/events/:id/apply-attendance` | ✔ | Anmeldungen als Anwesenheit |
 | `POST /api/unlock` | – | PIN prüfen |
 | `GET /api/backup` | ✔ | vollständiger Zustand als Datei |
 | `POST /api/restore` | ✔ | Zustand aus Backup ersetzen |

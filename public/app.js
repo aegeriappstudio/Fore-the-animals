@@ -12,6 +12,9 @@
  * bestätigte Werte liegen in `pending` und werden beim Lesen über den
  * Server-Stand gelegt. Dadurch kann die Live-Aktualisierung immer laufen –
  * auch während eigene Einträge unterwegs sind.
+ *
+ * Wer heute mitspielt, ergibt sich allein aus der Flight-Zuteilung; ein
+ * eigenes Anwesenheits-Feld gibt es nicht.
  */
 'use strict';
 
@@ -36,8 +39,18 @@
     var el = $('#toast');
     el.textContent = msg;
     el.className = 'show' + (isError ? ' error' : '');
+    el.onclick = null;
     clearTimeout(el._t);
     el._t = setTimeout(function () { el.className = ''; }, 2600);
+  }
+
+  // Bleibt stehen, bis jemand tippt – für den Hinweis auf eine neue Version.
+  function stickyToast(msg, onClick) {
+    var el = $('#toast');
+    el.textContent = msg;
+    el.className = 'show action';
+    clearTimeout(el._t);
+    el.onclick = onClick;
   }
 
   function signed(n) { return (n > 0 ? '+' : '') + n; }
@@ -50,8 +63,9 @@
   function formatDate(value, withWeekday) {
     var d = new Date(value);
     if (isNaN(d)) return '';
-    var opts = { day: '2-digit', month: '2-digit', year: 'numeric' };
-    if (withWeekday) opts = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+    var opts = withWeekday
+      ? { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }
+      : { day: '2-digit', month: '2-digit', year: 'numeric' };
     return d.toLocaleDateString(I.dateLocale(), opts);
   }
 
@@ -73,7 +87,7 @@
   };
 
   var ui = {
-    tab: 'rules',
+    tab: 'info',
     flightId: localStorage.getItem('fta-flight') || '',
     hole: parseInt(localStorage.getItem('fta-hole') || '1', 10) || 1,
     unlocked: sessionStorage.getItem('fta-unlocked') === '1',
@@ -152,7 +166,16 @@
     return out;
   }
 
-  function presentPlayers() { return M.presentPlayers(srv.players); }
+  // Alle Scores der laufenden Runde inklusive offener Eingaben
+  function liveScores() {
+    var out = {};
+    srv.players.forEach(function (p) { out[p.id] = scoresFor(p.id); });
+    return out;
+  }
+
+  function todaysPlayers() {
+    return M.todaysPlayers(srv.players, srv.flights, liveScores());
+  }
 
   function playerById(id) {
     return srv.players.find(function (p) { return p.id === id; });
@@ -164,6 +187,19 @@
       if (a.teeTime !== b.teeTime) return String(a.teeTime).localeCompare(String(b.teeTime));
       return String(a.name).localeCompare(String(b.name));
     });
+  }
+
+  // Kurzbezeichnung für die Zuteilungs-Chips: «Flight 2» → «2»
+  function flightLabel(flight) {
+    var match = /^\s*Flight\s*(\d+)\s*$/i.exec(flight.name || '');
+    return match ? match[1] : String(flight.name || '?').slice(0, 8);
+  }
+
+  function progressText(flight) {
+    var p = M.flightProgress(flight, liveScores());
+    if (p.finished) return t('f_done');
+    if (!p.started) return t('f_not_started');
+    return t('f_progress', { n: p.done, m: p.holes }) + ' · ' + t('f_at_hole', { h: p.current });
   }
 
   // ---------------------------------------------------------------------------
@@ -193,7 +229,6 @@
     return data;
   }
 
-  // Stellt sicher, dass eine gültige PIN vorliegt – fragt bei Bedarf nach.
   async function ensurePin() {
     if (sessionStorage.getItem('fta-pin')) return true;
     var pin = prompt(t('pin_prompt'));
@@ -227,7 +262,6 @@
       updateSyncBanner();
       if (data.unchanged) return false;
       srv = data;
-      // Gespeicherte Runden können sich geändert haben
       roundCache.forEach(function (_, id) {
         if (!srv.rounds.some(function (r) { return r.id === id; })) roundCache.delete(id);
       });
@@ -345,10 +379,8 @@
   // 4. Rendering
   // ---------------------------------------------------------------------------
   var RENDER = {
-    rules: renderRules,
-    dates: renderDates,
-    players: renderPlayers,
-    flights: renderFlights,
+    info: renderInfo,
+    tournament: renderTournament,
     entry: renderEntry,
     leaderboard: renderLeaderboard,
   };
@@ -360,8 +392,13 @@
     if (fn) fn();
   }
 
-  // --- Regeln ------------------------------------------------------------
-  function renderRules() {
+  // --- Info: Termine + Regeln ---------------------------------------------
+  function renderInfo() {
+    renderDates();
+    renderCourseTable();
+  }
+
+  function renderCourseTable() {
     $('#course-table').innerHTML =
       '<tr><th>' + t('c_hole') + '</th>' + M.COURSE.map(function (h) { return '<th>' + h.hole + '</th>'; }).join('') + '<th>' + t('c_total') + '</th></tr>' +
       '<tr><td>' + t('c_par') + '</td>' + M.COURSE.map(function (h) { return '<td>' + h.par + '</td>'; }).join('') + '<td><strong>' + M.PAR_TOTAL + '</strong></td></tr>' +
@@ -369,10 +406,16 @@
       '<tr><td>' + t('c_index') + '</td>' + M.COURSE.map(function (h) { return '<td>' + h.index + '</td>'; }).join('') + '<td></td></tr>';
   }
 
-  // --- Termine -----------------------------------------------------------
   function renderDates() {
     var wrap = $('#event-list');
-    var events = srv.events.slice().sort(function (a, b) { return String(a.date).localeCompare(String(b.date)); });
+    var today = new Date().toISOString().slice(0, 10);
+    // Kommende Termine zuerst (chronologisch), vergangene danach
+    var events = srv.events.slice().sort(function (a, b) {
+      var pastA = String(a.date) < today;
+      var pastB = String(b.date) < today;
+      if (pastA !== pastB) return pastA ? 1 : -1;
+      return pastA ? String(b.date).localeCompare(String(a.date)) : String(a.date).localeCompare(String(b.date));
+    });
     if (!events.length) {
       wrap.innerHTML = '<div class="card"><p class="empty-note">' + t('ev_none') + '</p></div>';
       return;
@@ -380,58 +423,67 @@
     wrap.innerHTML = events.map(function (ev) {
       // T12:00 verhindert, dass die Zeitzone das Datum um einen Tag verschiebt
       var dateStr = ev.date ? formatDate(ev.date + 'T12:00', true) : '';
+      var past = String(ev.date) < today;
       var facts = [];
       if (dateStr) facts.push('<li><span class="ef-icon">📅</span><span class="ef-label">' + t('d_lbl_date') + '</span><span class="ef-val">' + esc(dateStr) + '</span></li>');
       if (ev.flights) facts.push('<li><span class="ef-icon">⛳</span><span class="ef-label">' + t('d_lbl_flights') + '</span><span class="ef-val">' + esc(ev.flights) + '</span></li>');
       if (ev.dinner) facts.push('<li><span class="ef-icon">🍽️</span><span class="ef-label">' + t('d_lbl_dinner') + '</span><span class="ef-val">' + esc(ev.dinner) + '</span></li>');
 
-      var signedUp = new Set(ev.playerIds || []);
-      var chips = srv.players.length
-        ? srv.players.map(function (p) {
-            return '<span class="member-chip ' + (signedUp.has(p.id) ? 'in' : '') + '" data-signup-event="' + ev.id + '" data-signup-player="' + p.id + '">' +
-              (signedUp.has(p.id) ? '✓ ' : '+ ') + esc(p.name) + '</span>';
-          }).join('')
-        : '<span class="empty-note">' + t('ev_no_players_yet') + '</span>';
-
-      return '<div class="card event ' + (ev.confirmed ? 'event-confirmed' : 'event-tentative') + '">' +
+      return '<div class="card event ' + (ev.confirmed ? 'event-confirmed' : 'event-tentative') + (past ? ' event-past' : '') + '">' +
         '<div class="event-head"><h2>' + esc(ev.name) + '</h2>' +
         '<span class="event-badge ' + (ev.confirmed ? 'confirmed' : 'tentative') + '">' + t(ev.confirmed ? 'd_badge_confirmed' : 'd_badge_tentative') + '</span></div>' +
         '<ul class="event-facts">' + facts.join('') + '</ul>' +
         (ev.note ? '<p class="hint">' + esc(ev.note) + '</p>' : '') +
-        '<div class="event-signups"><p class="es-title">' + t('ev_signups') + ' (' + signedUp.size + ')</p>' +
-        '<div class="flight-members">' + chips + '</div></div>' +
         '<div class="event-actions">' +
-        (signedUp.size ? '<button type="button" class="btn small" data-apply-event="' + ev.id + '">' + t('ev_apply') + '</button>' : '') +
         '<button type="button" class="btn small" data-edit-event="' + ev.id + '">✏️</button>' +
         '<button type="button" class="btn small" data-del-event="' + ev.id + '">🗑️</button>' +
         '</div></div>';
     }).join('');
   }
 
-  // --- Spieler -----------------------------------------------------------
+  // --- Turnier: Spieler + Flights -----------------------------------------
+  function renderTournament() {
+    renderPlayers();
+    renderFlights();
+  }
+
   function renderPlayers() {
     var list = $('#player-list');
+    var summary = $('#today-summary');
     if (!srv.players.length) {
       list.innerHTML = '<p class="empty-note">' + t('p_none') + '</p>';
+      summary.textContent = '';
       return;
     }
     // Nicht neu aufbauen, während ein HCP-Feld bearbeitet wird
     if (list.contains(document.activeElement) && document.activeElement.classList.contains('p-hcp-input')) return;
-    list.innerHTML = '<p class="hint">' + t('p_present_count', { n: presentPlayers().length, m: srv.players.length }) + '</p>' +
-      srv.players.map(function (p) {
-        return '<div class="player-row ' + (p.present === false ? 'absent' : '') + '">' +
-          '<button type="button" class="btn small presence" data-presence="' + p.id + '" title="' + t('p_toggle') + '" aria-label="' + t('p_toggle') + ' ' + esc(p.name) + '">' + (p.present === false ? '💤' : '✅') + '</button>' +
-          '<span class="p-name">' + esc(p.name) + '</span>' +
-          '<label class="p-hcp">' + t('ph_hcp') +
-          '<input type="number" class="p-hcp-input" data-hcp-player="' + p.id + '" value="' + esc(p.hcp) + '" step="0.1" min="' + M.MIN_HCP + '" max="' + M.MAX_HCP + '" inputmode="decimal" aria-label="' + t('ph_hcp') + ' ' + esc(p.name) + '"></label>' +
-          '<span class="badge" data-target-for="' + p.id + '">' + t('p_target') + ' ' + M.targetFor(p.hcp) + '</span>' +
-          '<button type="button" class="btn small" data-edit-player="' + p.id + '" title="' + t('p_rename') + '">✏️</button>' +
-          '<button type="button" class="btn small" data-del-player="' + p.id + '">🗑️</button>' +
-          '</div>';
-      }).join('');
+
+    var today = todaysPlayers();
+    summary.textContent = today.length
+      ? t('tn_summary', { n: today.length, m: srv.players.length, f: srv.flights.length })
+      : t('tn_nobody');
+
+    var flights = flightsSorted();
+    list.innerHTML = srv.players.map(function (p) {
+      var mine = M.flightOf(srv.flights, p.id);
+      var chips = '<button type="button" class="fchip ' + (mine ? '' : 'on') + '" data-assign="' + p.id + '" data-flight="" title="' + t('tn_out') + '">–</button>' +
+        flights.map(function (f) {
+          return '<button type="button" class="fchip ' + (mine && mine.id === f.id ? 'on' : '') + '" data-assign="' + p.id + '" data-flight="' + f.id + '" title="' + esc(f.name) + '">' + esc(flightLabel(f)) + '</button>';
+        }).join('') +
+        '<button type="button" class="fchip new" data-assign="' + p.id + '" data-flight="new" title="' + t('f_add') + '">＋</button>';
+
+      return '<div class="player-row ' + (mine ? 'playing' : 'out') + '">' +
+        '<span class="p-name">' + esc(p.name) + '</span>' +
+        '<label class="p-hcp">' + t('ph_hcp') +
+        '<input type="number" class="p-hcp-input" data-hcp-player="' + p.id + '" value="' + esc(p.hcp) + '" step="0.1" min="' + M.MIN_HCP + '" max="' + M.MAX_HCP + '" inputmode="decimal" aria-label="' + t('ph_hcp') + ' ' + esc(p.name) + '"></label>' +
+        '<span class="badge" data-target-for="' + p.id + '">' + t('p_target') + ' ' + M.targetFor(p.hcp) + '</span>' +
+        '<button type="button" class="btn small" data-edit-player="' + p.id + '" title="' + t('p_rename') + '">✏️</button>' +
+        '<button type="button" class="btn small" data-del-player="' + p.id + '">🗑️</button>' +
+        '<div class="p-flights">' + chips + '</div>' +
+        '</div>';
+    }).join('');
   }
 
-  // --- Flights -----------------------------------------------------------
   function renderFlights() {
     var list = $('#flight-list');
     if (!srv.flights.length) {
@@ -440,27 +492,48 @@
     }
     // Nicht neu aufbauen, während der Datums-Picker offen ist
     if (list.contains(document.activeElement) && document.activeElement.classList.contains('tee-input')) return;
-    var present = presentPlayers();
     list.innerHTML = flightsSorted().map(function (f) {
-      var chips = present.map(function (p) {
-        var inFlight = f.playerIds.indexOf(p.id) !== -1;
-        var elsewhere = !inFlight && srv.flights.some(function (o) { return o.id !== f.id && o.playerIds.indexOf(p.id) !== -1; });
-        if (elsewhere) return '';
-        return '<span class="member-chip ' + (inFlight ? 'in' : '') + '" data-flight="' + f.id + '" data-player="' + p.id + '">' +
-          (inFlight ? '✓ ' : '+ ') + esc(p.name) + '</span>';
+      var members = f.playerIds.map(function (pid) {
+        var p = playerById(pid);
+        if (!p) return '';
+        return '<span class="member-chip in" data-remove-player="' + pid + '">' + esc(p.name) + ' ✕</span>';
       }).join('');
       return '<div class="flight-card">' +
-        '<div class="flight-head"><h3>⛳ ' + esc(f.name) + ' <small>' + t('f_count', { n: f.playerIds.length }) + '</small></h3>' +
-        '<button type="button" class="btn small" data-del-flight="' + f.id + '">🗑️</button></div>' +
+        '<div class="flight-head">' +
+        '<h3>⛳ ' + esc(f.name) + ' <small>' + t('f_count', { n: f.playerIds.length }) + '</small></h3>' +
+        '<div class="fh-actions">' +
+        '<button type="button" class="btn small" data-rename-flight="' + f.id + '" title="' + t('p_rename') + '">✏️</button>' +
+        '<button type="button" class="btn small" data-del-flight="' + f.id + '">🗑️</button></div></div>' +
+        '<div class="flight-progress">' + progressText(f) + '</div>' +
         '<label class="flight-tee">🕐 ' + t('f_tee') +
         '<input type="datetime-local" class="tee-input" data-tee-flight="' + f.id + '" value="' + esc(f.teeTime || '') + '">' +
         (f.teeTime ? '<span class="tee-pretty">' + formatTee(f.teeTime) + '</span>' : '') + '</label>' +
-        '<div class="flight-members">' + (chips || '<span class="empty-note">' + t('f_no_avail') + '</span>') + '</div>' +
+        '<div class="flight-members">' + (members || '<span class="empty-note">' + t('f_empty') + '</span>') + '</div>' +
         '</div>';
     }).join('');
   }
 
-  // --- Eintragen ---------------------------------------------------------
+  // --- Eintragen -----------------------------------------------------------
+  function grossPicker(pid, entry, par) {
+    var cur = entry && entry.gross != null ? entry.gross : null;
+    var values = [];
+    for (var v = Math.max(M.MIN_GROSS, par - 2); v <= par + 4; v++) values.push(v);
+    if (cur !== null && values.indexOf(cur) === -1) values.push(cur);
+    values.sort(function (a, b) { return a - b; });
+
+    var buttons = values.map(function (value) {
+      return '<button type="button" class="g-btn ' + (value === cur ? 'on' : '') + (value === par ? ' par' : '') +
+        '" data-gross-set="' + value + '" data-player="' + pid + '">' + value + '</button>';
+    }).join('');
+    var more = cur !== null && cur < M.MAX_GROSS
+      ? '<button type="button" class="g-btn more" data-gross-more="1" data-player="' + pid + '" title="' + t('e_more') + '">＋</button>'
+      : '';
+    var clear = cur !== null
+      ? '<button type="button" class="g-btn clear" data-gross-set="" data-player="' + pid + '" title="' + t('e_clear') + '">✕</button>'
+      : '';
+    return '<div class="gross-picker">' + buttons + more + clear + '</div>';
+  }
+
   function renderEntry() {
     var sel = $('#entry-flight');
     var sorted = flightsSorted();
@@ -491,6 +564,9 @@
       (info.par === 3 ? t('e_no_zebra') : '') +
       (flight && flight.teeTime ? ' · 🕐 ' + formatTee(flight.teeTime, true) : '');
 
+    $('#entry-progress').textContent = flight ? progressText(flight) : '';
+    $('#flight-card-btn').hidden = !flight || !flight.playerIds.length;
+
     var wrap = $('#entry-players');
     if (!flight || !flight.playerIds.length) {
       wrap.innerHTML = '<div class="card"><p class="empty-note">' + t('e_no_players') + '</p></div>';
@@ -504,9 +580,6 @@
       if (!p) return '';
       var entry = entryFor(pid, ui.hole) || { gross: null, animals: {} };
       var stats = M.playerResult(p, scoresFor(pid));
-      var grossDisplay = entry.gross != null
-        ? '<span class="gross-value">' + entry.gross + '</span>'
-        : '<span class="gross-value empty">–</span>';
       var animalBtns = M.ANIMALS.map(function (a) {
         var on = !!(entry.animals && entry.animals[a.key]);
         var disabled = !M.animalAllowed(a.key, ui.hole);
@@ -519,17 +592,15 @@
       }).join('');
       return '<div class="entry-player">' +
         '<div class="ep-head"><h3>' + esc(p.name) + '</h3>' +
-        '<span class="running">' + t('e_running', { t: stats.target, g: stats.gross, n: stats.played }) + '</span></div>' +
+        '<button type="button" class="btn small" data-card="' + pid + '">' + t('e_card') + '</button></div>' +
+        '<div class="ep-sub">' + t('e_running', { t: stats.target, g: stats.gross, n: stats.played }) + '</div>' +
         '<div class="gross-row"><span class="gross-label">' + t('e_gross') + '</span>' +
-        '<div class="stepper">' +
-        '<button type="button" data-gross="-1" data-player="' + pid + '">−</button>' + grossDisplay +
-        '<button type="button" data-gross="1" data-player="' + pid + '">+</button></div>' +
-        '<span class="hint">' + t('e_par_n', { p: info.par }) + '</span></div>' +
+        grossPicker(pid, entry, info.par) + '</div>' +
         '<div class="animal-btns">' + animalBtns + '</div></div>';
     }).join('') + '<button type="button" class="btn primary next-hole" id="next-hole-btn">' + nextLabel + '</button>';
   }
 
-  // --- Rangliste ---------------------------------------------------------
+  // --- Rangliste -----------------------------------------------------------
   function medal(rank) {
     return rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank + '.';
   }
@@ -549,7 +620,7 @@
     }
     var rows = [];
     var waiting = [];
-    presentPlayers().forEach(function (p) {
+    todaysPlayers().forEach(function (p) {
       var scores = scoresFor(p.id);
       var result = M.playerResult(p, scores);
       // Wer noch nichts eingetragen hat, steht nicht in der Wertung – sonst
@@ -565,12 +636,9 @@
     if (!ui.unlocked) return;
 
     renderRoundPicker();
-    var data = leaderboardData();
-    renderLeaderboardTables(data);
+    renderLeaderboardTables(leaderboardData());
     renderArchive();
     renderAllTime();
-
-    // «Runde abschliessen» gibt es nur für die laufende Runde
     $('#save-round-card').hidden = ui.lbRound !== 'live';
   }
 
@@ -587,9 +655,7 @@
   }
 
   function statusLine(data) {
-    if (data.kind === 'saved') {
-      return t('lb_saved_status', { date: formatDate(data.round.date) });
-    }
+    if (data.kind === 'saved') return t('lb_saved_status', { date: formatDate(data.round.date) });
     if (data.kind === 'live') {
       var done = data.rows.filter(function (r) { return r.complete; }).length;
       return t('lb_live_status', { n: done, m: data.rows.length, time: formatTime(lastPullAt) });
@@ -607,7 +673,7 @@
       return;
     }
     if (!data.rows.length) {
-      var note = data.kind === 'empty' && !srv.players.length ? t('lb_no_players') : t('lb_no_round');
+      var note = !srv.players.length ? t('lb_no_players') : t('lb_no_round');
       main.innerHTML = second.innerHTML = '<tr><td class="empty-note">' + note + '</td></tr>';
       return;
     }
@@ -634,7 +700,7 @@
           '</tr>';
       }).join('') +
       (data.waiting && data.waiting.length
-        ? '<tr><td colspan="9" class="lb-waiting">💤 ' + data.waiting.map(function (r) { return esc(r.name); }).join(', ') + '</td></tr>'
+        ? '<tr><td colspan="9" class="lb-waiting">⏳ ' + data.waiting.map(function (r) { return esc(r.name); }).join(', ') + '</td></tr>'
         : '');
 
     var byAnimals = M.ranked(data.rows, M.compareAnimals);
@@ -655,7 +721,6 @@
       }).join('');
   }
 
-  // --- Gespeicherte Runden ------------------------------------------------
   function renderArchive() {
     var wrap = $('#archive-list');
     if (!srv.rounds.length) {
@@ -695,9 +760,22 @@
       }).join('');
   }
 
-  // --- Scorekarte ---------------------------------------------------------
+  // --- Scorekarten ---------------------------------------------------------
+  function openModal(html) {
+    $('#modal-content').innerHTML = html;
+    $('#modal').hidden = false;
+  }
+
+  function modalHead(title) {
+    return '<div class="modal-head"><h3>' + title + '</h3>' +
+      '<button type="button" class="btn small" id="modal-close">✕</button></div>';
+  }
+
+  // Solange die Rangliste gesperrt ist, zeigt die Karte keine Punkte – sonst
+  // könnte man die Spannung über den Umweg der Scorekarte umgehen.
   function showScorecard(player, scores) {
     var result = M.playerResult(player, scores || {});
+    var showPoints = ui.unlocked;
     var grossCells = M.COURSE.map(function (h) {
       var e = (scores || {})[h.hole];
       if (e && e.gross != null) {
@@ -714,11 +792,10 @@
       return '<td class="sc-animals">' + s + '</td>';
     }).join('');
 
-    $('#modal-content').innerHTML =
-      '<div class="modal-head"><h3>🧾 ' + esc(player.name) + '</h3>' +
-      '<button type="button" class="btn small" id="modal-close">✕</button></div>' +
+    openModal(
+      modalHead('🧾 ' + esc(player.name)) +
       '<p class="hint">HCP ' + result.hcp + ' · ' + t('p_target') + ' ' + result.target +
-      ' · ' + t('sc_points') + ' <strong>' + signed(result.points) + '</strong></p>' +
+      (showPoints ? ' · ' + t('sc_points') + ' <strong>' + signed(result.points) + '</strong>' : '') + '</p>' +
       '<div class="table-scroll"><table class="sc-table">' +
       '<tr><th>' + t('c_hole') + '</th>' + M.COURSE.map(function (h) { return '<th>' + h.hole + '</th>'; }).join('') + '<th>' + t('sc_tot') + '</th></tr>' +
       '<tr><td>' + t('sc_par') + '</td>' + M.COURSE.map(function (h) { return '<td>' + h.par + '</td>'; }).join('') + '<td>' + M.PAR_TOTAL + '</td></tr>' +
@@ -726,8 +803,44 @@
       '<tr><td>' + t('sc_animals') + '</td>' + animalCells + '<td>+' + result.pos + ' −' + result.neg + '</td></tr>' +
       '</table></div>' +
       '<p class="hint">' + t('sc_legend') + '</p>' +
-      (result.complete ? '' : '<p class="hint">⚠️ ' + t('sc_open', { n: M.HOLES - result.played }) + '</p>');
-    $('#modal').hidden = false;
+      (result.complete ? '' : '<p class="hint">⚠️ ' + t('sc_open', { n: M.HOLES - result.played }) + '</p>') +
+      (showPoints ? '' : '<p class="hint">🔒 ' + t('sc_hidden') + '</p>')
+    );
+  }
+
+  // Karte des ganzen Flights – Loch für Loch, ohne Punktestand
+  function showFlightCard(flight) {
+    var rows = flight.playerIds.map(function (pid) {
+      var p = playerById(pid);
+      if (!p) return '';
+      var scores = scoresFor(pid);
+      var result = M.playerResult(p, scores);
+      var cells = M.COURSE.map(function (h) {
+        var e = scores[h.hole];
+        var animals = '';
+        if (e && e.animals) M.ANIMALS.forEach(function (a) { if (e.animals[a.key]) animals += a.emoji; });
+        var gross = e && e.gross != null ? e.gross : '–';
+        var cls = '';
+        if (e && e.gross != null) {
+          var d = e.gross - h.par;
+          cls = d < 0 ? 'sc-under' : d === 0 ? 'sc-par' : d === 1 ? 'sc-over' : 'sc-dbl';
+        }
+        return '<td class="' + cls + '"><span class="fc-gross">' + gross + '</span>' +
+          (animals ? '<span class="fc-ani">' + animals + '</span>' : '') + '</td>';
+      }).join('');
+      return '<tr><td class="fc-name">' + esc(p.name) + '</td>' + cells +
+        '<td><strong>' + (result.played ? result.gross : '–') + '</strong></td></tr>';
+    }).join('');
+
+    openModal(
+      modalHead(t('sc_flight_title', { name: esc(flight.name) })) +
+      '<div class="table-scroll"><table class="sc-table fc-table">' +
+      '<tr><th>' + t('c_hole') + '</th>' + M.COURSE.map(function (h) { return '<th>' + h.hole + '</th>'; }).join('') + '<th>' + t('sc_tot') + '</th></tr>' +
+      '<tr><td>' + t('sc_par') + '</td>' + M.COURSE.map(function (h) { return '<td>' + h.par + '</td>'; }).join('') + '<td>' + M.PAR_TOTAL + '</td></tr>' +
+      rows + '</table></div>' +
+      '<p class="hint">' + t('sc_legend') + '</p>' +
+      (ui.unlocked ? '' : '<p class="hint">🔒 ' + t('sc_hidden') + '</p>')
+    );
   }
 
   // ---------------------------------------------------------------------------
@@ -739,8 +852,7 @@
     $$('.tab').forEach(function (section) { section.classList.toggle('active', section.id === 'tab-' + name); });
     render();
     window.scrollTo({ top: 0 });
-    // Beim Wechsel auf einen «lebendigen» Tab gleich frische Daten holen
-    if (name === 'entry' || name === 'leaderboard') pull(false);
+    if (name === 'entry' || name === 'leaderboard' || name === 'tournament') pull(false);
   }
 
   $('#tabs').addEventListener('click', function (e) {
@@ -751,7 +863,6 @@
   $('#lang-toggle').addEventListener('click', function () {
     I.setLang(I.lang === 'de' ? 'en' : 'de');
     I.applyStatic();
-    renderRules();   // die Platztabelle liegt in einem evtl. nicht sichtbaren Tab
     render();
     updateSyncBanner();
   });
@@ -793,39 +904,13 @@
   $('#ev-cancel').addEventListener('click', function () { fillEventForm(null); });
 
   $('#event-list').addEventListener('click', async function (e) {
-    var chip = e.target.closest('[data-signup-player]');
-    var applyBtn = e.target.closest('[data-apply-event]');
     var editBtn = e.target.closest('[data-edit-event]');
     var delBtn = e.target.closest('[data-del-event]');
-
-    if (chip) {
-      var ev = srv.events.find(function (x) { return x.id === chip.dataset.signupEvent; });
-      var p = playerById(chip.dataset.signupPlayer);
-      if (!ev || !p) return;
-      var attending = (ev.playerIds || []).indexOf(p.id) === -1;
-      try {
-        await api('POST', '/api/events/' + ev.id + '/signup', { playerId: p.id, attending: attending });
-        toast(t(attending ? 'ev_signed_up' : 'ev_signed_off', { name: p.name, ev: ev.name }));
-        pull(true);
-      } catch (err) { apiError(err); }
-      return;
-    }
-    if (applyBtn) {
-      var applyEv = srv.events.find(function (x) { return x.id === applyBtn.dataset.applyEvent; });
-      if (!applyEv) return;
-      if (!(await ensurePin())) return;
-      if (!confirm(t('ev_apply_confirm', { name: applyEv.name, n: (applyEv.playerIds || []).length }))) return;
-      try {
-        var res = await api('POST', '/api/events/' + applyEv.id + '/apply-attendance', {});
-        toast(t('ev_applied', { n: res.present }));
-        pull(true);
-      } catch (err) { apiError(err); }
-      return;
-    }
     if (editBtn) {
       var editEv = srv.events.find(function (x) { return x.id === editBtn.dataset.editEvent; });
       if (!editEv) return;
       fillEventForm(editEv);
+      $('.event-admin').open = true;
       $('#event-form').scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
@@ -848,6 +933,8 @@
     e.preventDefault();
     var name = $('#player-name').value.trim();
     if (!name) return;
+    var duplicate = srv.players.some(function (p) { return p.name.toLowerCase() === name.toLowerCase(); });
+    if (duplicate && !confirm(t('p_dup_name', { name: name }))) return;
     try {
       await api('POST', '/api/players', { name: name, hcp: $('#player-hcp').value });
       $('#player-name').value = '';
@@ -858,18 +945,23 @@
   });
 
   $('#player-list').addEventListener('click', async function (e) {
-    var presBtn = e.target.closest('[data-presence]');
+    var assignBtn = e.target.closest('[data-assign]');
     var editBtn = e.target.closest('[data-edit-player]');
     var delBtn = e.target.closest('[data-del-player]');
 
-    if (presBtn) {
-      var p = playerById(presBtn.dataset.presence);
+    if (assignBtn) {
+      var p = playerById(assignBtn.dataset.assign);
       if (!p) return;
-      var present = p.present === false;
+      var target = assignBtn.dataset.flight;
       try {
-        await api('PUT', '/api/players/' + p.id, { present: present });
-        toast(t(present ? 'p_now_present' : 'p_now_absent', { name: p.name }));
-        pull(true);
+        if (target === 'new') {
+          var created = await api('POST', '/api/flights', { name: '' });
+          target = created.flight.id;
+        }
+        await api('PUT', '/api/players/' + p.id, { flightId: target || null });
+        await pull(true);
+        var flight = M.flightOf(srv.flights, p.id);
+        toast(flight ? t('tn_assigned', { name: p.name, flight: flight.name }) : t('tn_removed', { name: p.name }));
       } catch (err) { apiError(err); }
       return;
     }
@@ -924,12 +1016,10 @@
   });
 
   // --- Flights ------------------------------------------------------------
-  $('#flight-form').addEventListener('submit', async function (e) {
-    e.preventDefault();
+  $('#add-flight-btn').addEventListener('click', async function () {
     try {
-      await api('POST', '/api/flights', { name: $('#flight-name').value, teeTime: $('#flight-tee').value || null });
-      $('#flight-name').value = '';
-      $('#flight-tee').value = '';
+      var res = await api('POST', '/api/flights', { name: '' });
+      toast(t('f_created', { name: res.flight.name }));
       pull(true);
     } catch (err) { apiError(err); }
   });
@@ -952,17 +1042,25 @@
   });
 
   $('#flight-list').addEventListener('click', async function (e) {
-    var chip = e.target.closest('.member-chip');
+    var removeChip = e.target.closest('[data-remove-player]');
+    var renameBtn = e.target.closest('[data-rename-flight]');
     var delBtn = e.target.closest('[data-del-flight]');
-    if (chip) {
-      var flight = srv.flights.find(function (f) { return f.id === chip.dataset.flight; });
-      if (!flight) return;
-      var pid = chip.dataset.player;
-      var ids = flight.playerIds.indexOf(pid) !== -1
-        ? flight.playerIds.filter(function (x) { return x !== pid; })
-        : flight.playerIds.concat([pid]);
+
+    if (removeChip) {
+      var pid = removeChip.dataset.removePlayer;
       try {
-        await api('PUT', '/api/flights/' + flight.id, { playerIds: ids });
+        await api('PUT', '/api/players/' + pid, { flightId: null });
+        pull(true);
+      } catch (err) { apiError(err); }
+      return;
+    }
+    if (renameBtn) {
+      var rf = srv.flights.find(function (x) { return x.id === renameBtn.dataset.renameFlight; });
+      if (!rf) return;
+      var name = prompt(t('ph_flight'), rf.name);
+      if (name === null || !name.trim()) return;
+      try {
+        await api('PUT', '/api/flights/' + rf.id, { name: name });
         pull(true);
       } catch (err) { apiError(err); }
       return;
@@ -980,14 +1078,19 @@
 
   $('#randomize-btn').addEventListener('click', async function () {
     if (!srv.players.length) return toast(t('fr_first'), true);
-    if (presentPlayers().length < 2) return toast(t('fr_need_present'), true);
+    var assigned = todaysPlayers();
+    var pool = assigned.length ? assigned : srv.players;
+    if (pool.length < 2) return toast(t('fr_first'), true);
     var answer = prompt(t('fr_prompt'), '3');
     if (answer === null) return;
     var size = parseInt(answer, 10);
     if (!(size >= 2 && size <= 4)) return toast(t('fr_invalid'), true);
-    if (srv.flights.length && !confirm(t('fr_replace'))) return;
+    var message = assigned.length
+      ? t('fr_confirm_assigned', { n: pool.length, size: size })
+      : t('fr_confirm_all', { n: pool.length, size: size });
+    if (!confirm(message)) return;
     try {
-      await api('POST', '/api/flights/randomize', { size: size });
+      await api('POST', '/api/flights/randomize', { size: size, playerIds: pool.map(function (p) { return p.id; }) });
       toast(t('fr_done'));
       pull(true);
     } catch (err) { apiError(err); }
@@ -1002,8 +1105,7 @@
 
   $('#hole-picker').addEventListener('click', function (e) {
     var btn = e.target.closest('button[data-hole]');
-    if (!btn) return;
-    setHole(parseInt(btn.dataset.hole, 10));
+    if (btn) setHole(parseInt(btn.dataset.hole, 10));
   });
 
   function setHole(hole) {
@@ -1012,9 +1114,16 @@
     renderEntry();
   }
 
+  $('#flight-card-btn').addEventListener('click', function () {
+    var flight = srv.flights.find(function (f) { return f.id === ui.flightId; });
+    if (flight) showFlightCard(flight);
+  });
+
   $('#entry-players').addEventListener('click', function (e) {
-    var grossBtn = e.target.closest('button[data-gross]');
+    var setBtn = e.target.closest('[data-gross-set]');
+    var moreBtn = e.target.closest('[data-gross-more]');
     var animalBtn = e.target.closest('button[data-animal]');
+    var cardBtn = e.target.closest('[data-card]');
     var nextBtn = e.target.closest('#next-hole-btn');
 
     if (nextBtn) {
@@ -1038,17 +1147,24 @@
       return;
     }
 
-    if (grossBtn) {
-      var pid = grossBtn.dataset.player;
-      var delta = parseInt(grossBtn.dataset.gross, 10);
-      var entry = entryFor(pid, ui.hole);
-      var par = M.parFor(ui.hole);
-      var gross;
-      if (!entry || entry.gross == null) gross = delta > 0 ? par : null; // erster «+» startet bei Par
-      else gross = entry.gross + delta;
-      if (gross != null && gross < M.MIN_GROSS) gross = null;
-      if (gross != null && gross > M.MAX_GROSS) gross = M.MAX_GROSS;
-      queuePatch(pid, ui.hole, { gross: gross });
+    if (cardBtn) {
+      var cp = playerById(cardBtn.dataset.card);
+      if (cp) showScorecard(cp, scoresFor(cp.id));
+      return;
+    }
+
+    if (setBtn) {
+      var value = setBtn.dataset.grossSet;
+      queuePatch(setBtn.dataset.player, ui.hole, { gross: value === '' ? null : parseInt(value, 10) });
+      renderEntry();
+      return;
+    }
+
+    if (moreBtn) {
+      var pid = moreBtn.dataset.player;
+      var cur = entryFor(pid, ui.hole);
+      var next = Math.min(M.MAX_GROSS, (cur && cur.gross != null ? cur.gross : M.parFor(ui.hole)) + 1);
+      queuePatch(pid, ui.hole, { gross: next });
       renderEntry();
       return;
     }
@@ -1056,8 +1172,8 @@
     if (animalBtn && !animalBtn.disabled) {
       var apid = animalBtn.dataset.player;
       var key = animalBtn.dataset.animal;
-      var cur = entryFor(apid, ui.hole);
-      var on = !!(cur && cur.animals && cur.animals[key]);
+      var entry = entryFor(apid, ui.hole);
+      var on = !!(entry && entry.animals && entry.animals[key]);
       var patch = { animals: {} };
       patch.animals[key] = !on;
       queuePatch(apid, ui.hole, patch);
@@ -1092,7 +1208,7 @@
   });
 
   // PIN-Sperre: entsperren zeigt die Rangliste – es wird nichts gespeichert
-  // und nichts geleert (das war früher eine böse Überraschung).
+  // und nichts geleert.
   $('#unlock-form').addEventListener('submit', async function (e) {
     e.preventDefault();
     var pin = $('#pin-input').value;
@@ -1357,12 +1473,17 @@
   // ---------------------------------------------------------------------------
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(function () {});
+    // Der Service Worker meldet sich, wenn eine neue App-Version bereitliegt.
+    navigator.serviceWorker.addEventListener('message', function (e) {
+      if (e.data && e.data.type === 'fta-updated') {
+        stickyToast(t('sw_update'), function () { location.reload(); });
+      }
+    });
   }
 
   loadPending();
   I.applyStatic();
   updateSyncBanner();
-  renderRules();
   render();
 
   pull(true).then(function () { if (pending.size) flush(); });

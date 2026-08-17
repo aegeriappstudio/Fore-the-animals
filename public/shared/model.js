@@ -338,9 +338,54 @@
     return Object.keys(all).some(function (pid) { return hasScores(all[pid]); });
   }
 
-  function presentPlayers(players) {
-    // Altbestand ohne das Feld gilt als anwesend
-    return (players || []).filter(function (p) { return p.present !== false; });
+  /**
+   * Wer spielt heute mit?
+   *
+   * Genau die Spieler, die in einem Flight stehen. Ein Spieler mit bereits
+   * eingetragenem Score zählt ebenfalls dazu – sonst würde er aus der Wertung
+   * fallen, wenn sein Flight mitten in der Runde gelöscht oder neu ausgelost
+   * wird. Ein eigenes «anwesend»-Feld gibt es nicht mehr: Flight-Zuteilung und
+   * Anwesenheit waren zwei Schalter für dieselbe Sache.
+   */
+  function todaysPlayers(players, flights, scores) {
+    var assigned = new Set();
+    (flights || []).forEach(function (f) {
+      (f.playerIds || []).forEach(function (id) { assigned.add(id); });
+    });
+    return (players || []).filter(function (p) {
+      return assigned.has(p.id) || hasScores((scores || {})[p.id]);
+    });
+  }
+
+  function flightOf(flights, playerId) {
+    return (flights || []).find(function (f) {
+      return (f.playerIds || []).indexOf(playerId) !== -1;
+    }) || null;
+  }
+
+  /**
+   * Fortschritt eines Flights.
+   *  done    – Löcher, auf denen ALLE Spieler des Flights ein Brutto haben
+   *  current – höchstes Loch, auf dem irgendetwas eingetragen ist
+   */
+  function flightProgress(flight, scores) {
+    var ids = (flight && flight.playerIds) || [];
+    var done = 0;
+    var current = 0;
+    if (ids.length) {
+      COURSE.forEach(function (h) {
+        var entries = ids.map(function (id) { return ((scores || {})[id] || {})[h.hole]; });
+        if (entries.every(function (e) { return e && e.gross != null; })) done += 1;
+        if (entries.some(function (e) { return e && (e.gross != null || Object.keys(e.animals || {}).length > 0); })) current = h.hole;
+      });
+    }
+    return {
+      done: done,
+      holes: HOLES,
+      current: current || 1,
+      started: current > 0,
+      finished: ids.length > 0 && done === HOLES,
+    };
   }
 
   return {
@@ -377,6 +422,8 @@
     allTime: allTime,
     hasScores: hasScores,
     hasAnyScore: hasAnyScore,
-    presentPlayers: presentPlayers,
+    todaysPlayers: todaysPlayers,
+    flightOf: flightOf,
+    flightProgress: flightProgress,
   };
 }));

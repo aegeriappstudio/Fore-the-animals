@@ -76,6 +76,8 @@ Weitere Hinweise:
   Runde kostet keine Eingaben.
 - **Zugriff:** Die URL ist öffentlich, aber nicht auffindbar – nur wer den
   Link hat, findet die Seite.
+- **Neue App-Version:** Nach einem Deploy zeigt die geöffnete App einen
+  Hinweis «Neue Version – zum Neuladen tippen». Niemand muss den Cache leeren.
 
 ## Rangliste & Preisverleihung: PIN
 

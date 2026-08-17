@@ -170,6 +170,50 @@ test('ewige Bestenliste gruppiert nach Spieler-ID, nicht nach Name', () => {
   assert.equal(beat.name, 'Beat Müller'); // jüngster Name
 });
 
+test('todaysPlayers: Flight-Zuteilung oder vorhandene Scores', () => {
+  const players = [
+    { id: 'a', name: 'A', hcp: 10 },
+    { id: 'b', name: 'B', hcp: 10 },
+    { id: 'c', name: 'C', hcp: 10 },
+  ];
+  const flights = [{ id: 'f1', name: 'Flight 1', playerIds: ['a'] }];
+  // B hat Scores, steht aber in keinem Flight (z.B. Flight gelöscht) – zählt trotzdem
+  const scores = { b: { 1: { gross: 4, animals: {} } } };
+  const today = M.todaysPlayers(players, flights, scores);
+  assert.deepEqual(today.map((p) => p.id), ['a', 'b']);
+});
+
+test('flightProgress: fertig, gestartet, aktuelles Loch', () => {
+  const flight = { id: 'f1', name: 'Flight 1', playerIds: ['a', 'b'] };
+  const none = M.flightProgress(flight, {});
+  assert.equal(none.started, false);
+  assert.equal(none.done, 0);
+
+  const partial = M.flightProgress(flight, {
+    a: { 1: { gross: 4, animals: {} }, 2: { gross: 5, animals: {} } },
+    b: { 1: { gross: 4, animals: {} } },
+  });
+  assert.equal(partial.done, 1);      // Loch 1 haben beide
+  assert.equal(partial.current, 2);   // auf Loch 2 ist schon etwas eingetragen
+  assert.equal(partial.finished, false);
+
+  const all = {};
+  ['a', 'b'].forEach((id) => {
+    all[id] = {};
+    for (let h = 1; h <= 9; h++) all[id][h] = { gross: 4, animals: {} };
+  });
+  assert.equal(M.flightProgress(flight, all).finished, true);
+});
+
+test('flightOf findet den Flight eines Spielers', () => {
+  const flights = [
+    { id: 'f1', playerIds: ['a'] },
+    { id: 'f2', playerIds: ['b'] },
+  ];
+  assert.equal(M.flightOf(flights, 'b').id, 'f2');
+  assert.equal(M.flightOf(flights, 'x'), null);
+});
+
 test('roundSummary nennt alle Sieger bei Gleichstand', () => {
   const round = {
     id: 'r1', name: 'Test', date: '2026-01-01T10:00:00.000Z',

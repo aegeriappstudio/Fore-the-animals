@@ -46,10 +46,12 @@ const legacy = {
 
 test('Migration: alte Datei wird vollständig übernommen', () => {
   const state = migrate(legacy);
-  assert.equal(state.schema, 2);
+  assert.equal(state.schema, 3);
   assert.equal(state.rev, 42);            // aus `version`
   assert.equal(state.players.length, 2);
-  assert.equal(state.players[1].present, true); // fehlendes Feld = anwesend
+  // `present` wird bei der Migration verworfen – Anwesenheit ergibt sich
+  // seither aus der Flight-Zuteilung
+  assert.equal(state.players[0].present, undefined);
 });
 
 test('Migration: verwaiste Scores und Flight-Zuteilungen verschwinden', () => {
@@ -57,7 +59,7 @@ test('Migration: verwaiste Scores und Flight-Zuteilungen verschwinden', () => {
   assert.deepEqual(Object.keys(state.scores).sort(), ['p1', 'p2']);
   assert.deepEqual(state.flights[0].playerIds, ['p1', 'p2']);
   assert.deepEqual(state.flights[1].playerIds, []); // p2 nur einmal
-  assert.deepEqual(state.events[0].playerIds, ['p1']);
+  assert.equal(state.events[0].playerIds, undefined); // Anmeldungen verworfen
 });
 
 test('Migration: falsch berechnete Archiv-Resultate werden korrigiert', () => {

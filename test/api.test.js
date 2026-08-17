@@ -209,15 +209,32 @@ test('ein Spieler ist immer nur in einem Flight', async (t) => {
   assert.deepEqual(byId[f2.id], [anna.id]);
 });
 
-test('abwesende Spieler fliegen aus den Flights', async (t) => {
+test('flightId auf einem Spieler setzt und entfernt die Zuteilung', async (t) => {
   const srv = await startServer();
   t.after(() => srv.close());
   const anna = await addPlayer(srv, 'Anna', 15);
-  const flight = (await srv.call('POST', '/api/flights', { name: 'Flight 1' })).body.flight;
-  await srv.call('PUT', `/api/flights/${flight.id}`, { playerIds: [anna.id] });
-  await srv.call('PUT', `/api/players/${anna.id}`, { present: false });
-  const state = await srv.call('GET', '/api/state');
-  assert.deepEqual(state.body.flights[0].playerIds, []);
+  const f1 = (await srv.call('POST', '/api/flights', { name: 'Flight 1' })).body.flight;
+  const f2 = (await srv.call('POST', '/api/flights', { name: 'Flight 2' })).body.flight;
+
+  // zuteilen
+  await srv.call('PUT', `/api/players/${anna.id}`, { flightId: f1.id });
+  let state = await srv.call('GET', '/api/state');
+  assert.deepEqual(state.body.flights.find((f) => f.id === f1.id).playerIds, [anna.id]);
+
+  // in anderen Flight wechseln – aus dem alten verschwindet sie
+  await srv.call('PUT', `/api/players/${anna.id}`, { flightId: f2.id });
+  state = await srv.call('GET', '/api/state');
+  assert.deepEqual(state.body.flights.find((f) => f.id === f1.id).playerIds, []);
+  assert.deepEqual(state.body.flights.find((f) => f.id === f2.id).playerIds, [anna.id]);
+
+  // null = spielt heute nicht mit
+  await srv.call('PUT', `/api/players/${anna.id}`, { flightId: null });
+  state = await srv.call('GET', '/api/state');
+  assert.ok(state.body.flights.every((f) => f.playerIds.length === 0));
+
+  // unbekannter Flight → 404
+  const bad = await srv.call('PUT', `/api/players/${anna.id}`, { flightId: 'gibtsnicht' });
+  assert.equal(bad.status, 404);
 });
 
 test('Backup und Wiederherstellung', async (t) => {
@@ -243,21 +260,14 @@ test('Backup und Wiederherstellung', async (t) => {
   assert.equal(state.body.rounds.length, 1);
 });
 
-test('Anmeldungen lassen sich als Anwesenheit übernehmen', async (t) => {
+test('Termin-Anmeldung existiert nicht mehr', async (t) => {
   const srv = await startServer();
   t.after(() => srv.close());
   const anna = await addPlayer(srv, 'Anna', 15);
-  const beat = await addPlayer(srv, 'Beat', 20);
   const ev = (await srv.call('POST', '/api/events', { name: 'Turnier', date: '2026-08-06' }, PIN)).body.event;
-
-  await srv.call('POST', `/api/events/${ev.id}/signup`, { playerId: anna.id, attending: true });
-  const applied = await srv.call('POST', `/api/events/${ev.id}/apply-attendance`, {}, PIN);
-  assert.equal(applied.body.present, 1);
-
-  const state = await srv.call('GET', '/api/state');
-  const byId = Object.fromEntries(state.body.players.map((p) => [p.id, p.present]));
-  assert.equal(byId[anna.id], true);
-  assert.equal(byId[beat.id], false);
+  assert.equal(ev.playerIds, undefined);
+  assert.equal((await srv.call('POST', `/api/events/${ev.id}/signup`, { playerId: anna.id, attending: true }, PIN)).status, 404);
+  assert.equal((await srv.call('POST', `/api/events/${ev.id}/apply-attendance`, {}, PIN)).status, 404);
 });
 
 test('ewige Bestenliste kommt fertig vom Server', async (t) => {
