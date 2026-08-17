@@ -25,12 +25,32 @@ test('Platz: 9 Löcher, Par 36, 2682 m', () => {
   assert.equal(M.DIST_TOTAL, 2682);
 });
 
-test('Ziel = 36 + halbes Handicap, aufgerundet', () => {
-  assert.equal(M.targetFor(15), 44);
-  assert.equal(M.targetFor(14), 43);
+test('Ziel = 36 + halbes Handicap, kaufmännisch gerundet', () => {
+  assert.equal(M.targetFor(15), 44);   // 7,5 → 8
+  assert.equal(M.targetFor(14), 43);   // 7 → 7
+  assert.equal(M.targetFor(14.2), 43); // 7,1 → 7 (früher: aufgerundet auf 8)
+  assert.equal(M.targetFor(14.9), 43); // 7,45 → 7
+  assert.equal(M.targetFor(15.1), 44); // 7,55 → 8
   assert.equal(M.targetFor(0), 36);
   assert.equal(M.targetFor(36), 54);
-  assert.equal(M.targetFor(-2), 35);
+  assert.equal(M.targetFor(-2), 35);   // −1 → −1
+  assert.equal(M.targetFor(-1), 35);   // −0,5 → −1 (weg von Null)
+});
+
+test('Vorgabeschläge werden nach Stroke-Index verteilt', () => {
+  // HCP 15 → Spielvorgabe 8: die 8 schwersten Löcher bekommen einen Schlag,
+  // nur Loch 5 (Index 17, das leichteste) geht leer aus.
+  const s8 = M.strokesFor(15);
+  assert.equal(Object.values(s8).reduce((a, b) => a + b, 0), 8);
+  assert.equal(s8[5], 0);
+  assert.equal(s8[7], 1); // Index 1 – schwerstes Loch
+  // HCP 54 → Spielvorgabe 27: genau 3 Schläge auf jedem Loch
+  const s27 = M.strokesFor(54);
+  assert.ok(M.COURSE.every((h) => s27[h.hole] === 3));
+  // Plus-Handicap: Schläge werden ab dem leichtesten Loch zurückgegeben
+  const sMinus = M.strokesFor(-2); // Spielvorgabe −1
+  assert.equal(sMinus[5], -1);
+  assert.equal(sMinus[7], 0);
 });
 
 test('Punkte einer fertigen Runde: Ziel − Brutto + positive − negative Tiere', () => {
@@ -43,18 +63,57 @@ test('Punkte einer fertigen Runde: Ziel − Brutto + positive − negative Tiere
   assert.equal(r.points, 44 - 39 + 1 - 1);
 });
 
-test('offene Löcher zählen als Par – nicht als 0 Schläge', () => {
+test('offene Löcher zählen als Netto-Par und sind punkteneutral', () => {
   const partial = Object.assign({}, fullRound);
-  delete partial[8];  // Par 5
-  delete partial[9];  // Par 4
+  delete partial[8];  // Par 5, 1 Vorgabeschlag (Index 13)
+  delete partial[9];  // Par 4, 1 Vorgabeschlag (Index 7)
   const r = M.playerResult(anna, partial);
   assert.equal(r.gross, 29);
   assert.equal(r.played, 7);
   assert.equal(r.complete, false);
-  assert.equal(r.parOpen, 9);
-  assert.equal(r.projected, 38);
-  // Ohne Par-Projektion wären das 44 − 29 = +15 gewesen (der alte Fehler).
-  assert.equal(r.points, 44 - 38 + 1 - 1);
+  assert.equal(r.parOpen, 5 + 1 + 4 + 1); // Netto-Par beider offener Löcher
+  assert.equal(r.projected, 29 + 11);
+  assert.equal(r.points, 44 - 40 + 1 - 1);
+});
+
+test('gar nichts eingetragen → exakt 0 Punkte (abbrechen lohnt sich nicht)', () => {
+  // Der alte Par-Ansatz gab hier +8 – je höher das Handicap, desto mehr.
+  const r = M.playerResult(anna, {});
+  assert.equal(r.points, 0);
+  const hoch = M.playerResult({ id: 'x', name: 'X', hcp: 30 }, {});
+  assert.equal(hoch.points, 0);
+});
+
+test('pro Loch zählt höchstens Netto-Doppelbogey', () => {
+  // Anna (HCP 15) hat auf Loch 1 (Par 4, 1 Vorgabeschlag) den Deckel bei 7
+  const blowUp = Object.assign({}, fullRound, { 1: { gross: 12, animals: { zebra: true } } });
+  const r = M.playerResult(anna, blowUp);
+  assert.equal(r.gross, 39 - 5 + 12);   // eingetragen bleibt die echte Zahl
+  assert.equal(r.adjusted, 39 - 5 + 7); // gewertet wird der Deckel
+  assert.equal(r.cappedHoles, 1);
+  assert.equal(r.points, 44 - 41 + 1 - 1);
+  // Ohne die 12 (mit 5) wären es 44 − 39 = +5 − aus −8 wird also −3.
+});
+
+test('Countback: letzte 6, dann letzte 3, dann letztes Loch (netto)', () => {
+  // Zwei identische Punktzahlen und Tiere – B ist auf den letzten 3 besser
+  const a = M.playerResult({ id: 'a', name: 'A', hcp: 0 }, {
+    1: { gross: 4, animals: {} }, 2: { gross: 4, animals: {} }, 3: { gross: 4, animals: {} },
+    4: { gross: 3, animals: {} }, 5: { gross: 4, animals: {} }, 6: { gross: 4, animals: {} },
+    7: { gross: 5, animals: {} }, 8: { gross: 5, animals: {} }, 9: { gross: 4, animals: {} },
+  });
+  const b = M.playerResult({ id: 'b', name: 'B', hcp: 0 }, {
+    1: { gross: 5, animals: {} }, 2: { gross: 4, animals: {} }, 3: { gross: 4, animals: {} },
+    4: { gross: 3, animals: {} }, 5: { gross: 4, animals: {} }, 6: { gross: 4, animals: {} },
+    7: { gross: 4, animals: {} }, 8: { gross: 5, animals: {} }, 9: { gross: 4, animals: {} },
+  });
+  assert.equal(a.points, b.points);
+  assert.equal(a.cb6, 25);
+  assert.equal(b.cb6, 24);             // B war auf den letzten 6 besser …
+  const ranked = M.ranked([a, b], M.compareMain);
+  assert.equal(ranked[0].name, 'B');   // … und gewinnt darum den Gleichstand
+  assert.equal(ranked[0].rank, 1);
+  assert.equal(ranked[1].rank, 2);
 });
 
 test('live und Schlussresultat rechnen identisch', () => {

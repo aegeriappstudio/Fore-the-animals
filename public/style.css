@@ -404,6 +404,9 @@ select.dlg-input { width: 100%; margin-bottom: 12px; }
 .sc-over { background: #fdf1e3; color: #b8860b; font-weight: 700; }
 .sc-dbl { background: var(--red-light); color: var(--red); font-weight: 700; }
 .sc-animals { font-size: 0.9rem; letter-spacing: -2px; }
+.sc-strokes { color: var(--muted); font-size: 0.7rem; letter-spacing: 1px; }
+/* Über dem Netto-Doppelbogey-Deckel: eingetragen ja, gewertet wird weniger */
+.sc-capped { text-decoration: underline dotted; text-underline-offset: 3px; }
 
 /* ---------- Preisverleihung ---------- */
 #ceremony {
