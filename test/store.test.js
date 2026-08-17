@@ -65,12 +65,14 @@ test('Migration: verwaiste Scores und Flight-Zuteilungen verschwinden', () => {
 test('Migration: falsch berechnete Archiv-Resultate werden korrigiert', () => {
   const state = migrate(legacy);
   const result = state.rounds[0].results[0];
-  // 4 gespielte Löcher (17 Schläge) + 5 offene Löcher (Par 4+4+5+4+4 = 21)
+  // 4 gespielte Löcher (17 Schläge, alle unter dem Deckel) + 5 offene Löcher
+  // als Netto-Par: Par 4+4+4+5+4 = 21 plus 4 Vorgabeschläge (Loch 5 hat bei
+  // Spielvorgabe 8 keinen) = 25
   assert.equal(result.gross, 17);
   assert.equal(result.played, 4);
-  assert.equal(result.parOpen, 21);
+  assert.equal(result.parOpen, 25);
   assert.equal(result.neg, 1);
-  assert.equal(result.points, 44 - 38 - 1); // = 5 statt der gespeicherten 27
+  assert.equal(result.points, 44 - 42 - 1); // = 1 statt der gespeicherten 27
 });
 
 test('Migration: Backup ohne Loch-Scores behält die alten Punkte', () => {

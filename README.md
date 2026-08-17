@@ -10,7 +10,7 @@ die Rangliste aktualisiert sich live.
 
 Wir spielen **Beat Your Target** als Einzelwettbewerb.
 
-**🎯 Ziel:** Par 36 + halbes Handicap, immer aufgerundet.
+**🎯 Ziel:** Par 36 + halbes Handicap, kaufmännisch gerundet.
 
 ### Tiere
 
@@ -28,17 +28,25 @@ Auf demselben Loch können mehrere Tiere gesammelt werden, jedes Tier zählt pro
 **Schlussresultat:** Ziel − Brutto + positive Tiere − negative Tiere. Höchste Punktzahl gewinnt.
 **Zweiter Preis:** die meisten gesammelten Tiere insgesamt.
 
-### Zwei Details, die die App überall gleich handhabt
+### Fairness-Regeln, die die App überall gleich handhabt
 
-- **Offene Löcher zählen als Par.** Wer nicht alle 9 Löcher eingetragen hat,
-  bekommt für die fehlenden Löcher das Par angerechnet – live wie im
-  gespeicherten Schlussresultat. Solche Spieler sind mit einem `*` markiert.
-  (Früher rechnete die Live-Ansicht mit Par, das Archiv aber mit 0 Schlägen –
-  ein nicht fertig gespielter Spieler landete dadurch mit einem Fantasie-Resultat
-  ganz oben.)
+- **Vorgabeschläge nach Stroke-Index.** Die Spielvorgabe (Ziel − 36) wird wie
+  im offiziellen Handicap-System auf die Löcher verteilt: Schlag 1 aufs
+  schwerste Loch (Index 1), Schlag 10 wieder aufs schwerste usw. Die
+  Scorekarte zeigt die Vorgabe pro Loch als Punkte (`•`).
+- **Offene Löcher zählen als Netto-Par** (Par + Vorgabeschläge) – exakt
+  punkteneutral. Abbrechen bringt weder Vor- noch Nachteil, und Flights auf
+  verschiedenen Löchern sind live fair vergleichbar. Nicht fertige Spieler
+  sind mit `*` markiert. (Reines Par wäre ein *gutes* Resultat: ein HCP 30,
+  der nach einem Loch aufhörte, hätte +13 Punkte geerbt.)
+- **Pro Loch zählt höchstens Netto-Doppelbogey** (Par + 2 + Vorgabeschläge,
+  WHS-Standard) – ein Katastrophen-Loch ruiniert die Runde nicht. Eingetragen
+  wird die echte Schlagzahl, gewertet der Deckel; die Scorekarte markiert
+  solche Löcher.
 - **Gleichstand** wird der Reihe nach entschieden über: mehr positive Tiere,
-  weniger negative Tiere, tieferes Brutto. Bleibt es exakt gleich, teilen sich
-  beide den Rang.
+  weniger negative Tiere, dann Countback wie im Golf üblich (letzte 6 Löcher,
+  letzte 3, letztes Loch – netto). Bleibt es exakt gleich, teilen sich beide
+  den Rang.
 
 ## Starten
 

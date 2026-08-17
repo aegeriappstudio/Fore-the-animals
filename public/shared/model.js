@@ -149,37 +149,97 @@
   }
 
   // -------------------------------------------------------------------------
-  // Ziel & Punkte – die eine Formel
+  // Ziel, Vorgabeschläge & Punkte – die eine Formel
   // -------------------------------------------------------------------------
+
+  // Kaufmännisch runden (±0,5 weg von Null): 7,05 → 7 · 7,5 → 8.
+  // Früher wurde immer aufgerundet – da gab HCP 14,1 einen ganzen Schlag mehr
+  // als HCP 14,0.
+  function roundHalf(x) {
+    return Math.sign(x) * Math.round(Math.abs(x));
+  }
+
   function targetFor(hcp) {
-    return PAR_TOTAL + Math.ceil(normalizeHcp(hcp) / 2);
+    return PAR_TOTAL + roundHalf(normalizeHcp(hcp) / 2);
+  }
+
+  // Spielvorgabe für die 9 Löcher (= Ziel − Par)
+  function courseHandicap(hcp) {
+    return targetFor(hcp) - PAR_TOTAL;
+  }
+
+  // Löcher in der Reihenfolge, in der Vorgabeschläge verteilt werden
+  // (schwerstes Loch = tiefster Stroke-Index zuerst)
+  var STROKE_ORDER = COURSE.slice().sort(function (a, b) { return a.index - b.index; })
+    .map(function (h) { return h.hole; });
+
+  /**
+   * Vorgabeschläge pro Loch, verteilt nach Stroke-Index (wie im offiziellen
+   * Handicap-System): Schlag 1 aufs schwerste Loch, Schlag 10 wieder aufs
+   * schwerste usw. Plus-Handicaps geben Schläge zurück, beginnend beim
+   * leichtesten Loch. Rückgabe: {loch: schläge}.
+   */
+  function strokesFor(hcp) {
+    var ch = courseHandicap(hcp);
+    var per = {};
+    COURSE.forEach(function (h) { per[h.hole] = 0; });
+    var order = ch >= 0 ? STROKE_ORDER : STROKE_ORDER.slice().reverse();
+    var n = Math.abs(ch);
+    for (var s = 0; s < n; s++) per[order[s % HOLES]] += ch >= 0 ? 1 : -1;
+    return per;
+  }
+
+  // Höchstes zählendes Ergebnis pro Loch: Netto-Doppelbogey
+  // (Par + 2 + Vorgabeschläge, wie im offiziellen Handicap-System).
+  function capFor(hole, strokes) {
+    return parFor(hole) + 2 + (strokes || 0);
   }
 
   /**
    * Resultat eines Spielers.
    *
-   * Punkte = Ziel − (Brutto + Par für noch offene Löcher) + positive Tiere
-   *          − negative Tiere
+   * Punkte = Ziel − gewertetes Brutto + positive Tiere − negative Tiere
    *
-   * Für eine fertig gespielte Runde ist «Par für offene Löcher» 0, die Formel
-   * entspricht dann exakt der Turnierregel. Während der Runde ist sie eine
-   * Prognose. Wichtig: Live-Ansicht und Archiv rechnen damit identisch – ein
-   * fehlendes Loch kann das Resultat nicht mehr künstlich aufblähen.
+   *  - Pro Loch zählt höchstens Netto-Doppelbogey (Par + 2 + Vorgabeschläge);
+   *    eingetragen bleibt die echte Schlagzahl (`gross`), gewertet wird
+   *    `adjusted`.
+   *  - Offene Löcher zählen als Netto-Par (Par + Vorgabeschläge) und sind
+   *    damit exakt punkteneutral: abbrechen bringt weder Vor- noch Nachteil,
+   *    und Flights auf verschiedenen Löchern sind live vergleichbar.
+   *  - `cb6/cb3/cb1` sind die Netto-Summen der letzten 6/3/1 Löcher für den
+   *    Countback beim Gleichstand (offene Löcher zählen dort als Netto-Par).
+   *
+   * Live-Ansicht und Archiv rechnen identisch.
    */
   function playerResult(player, byHole) {
     var scores = byHole || {};
+    var strokes = strokesFor(player.hcp);
     var gross = 0;
+    var adjusted = 0;
+    var openNet = 0;
     var played = 0;
-    var parOpen = 0;
+    var cappedHoles = 0;
     var pos = 0;
     var neg = 0;
     var counts = {};
+    var netByHole = {};
     ANIMAL_KEYS.forEach(function (key) { counts[key] = 0; });
 
     COURSE.forEach(function (h) {
+      var st = strokes[h.hole];
       var entry = scores[h.hole] || scores[String(h.hole)];
       var g = entry ? normalizeGross(entry.gross) : null;
-      if (g !== null) { gross += g; played += 1; } else { parOpen += h.par; }
+      if (g !== null) {
+        var counted = Math.min(g, capFor(h.hole, st));
+        if (counted < g) cappedHoles += 1;
+        gross += g;
+        adjusted += counted;
+        played += 1;
+        netByHole[h.hole] = counted - st;
+      } else {
+        openNet += h.par + st;      // Netto-Par: punkteneutral
+        netByHole[h.hole] = h.par;  // im Countback ebenfalls neutral
+      }
       if (entry && entry.animals) {
         ANIMAL_KEYS.forEach(function (key) {
           if (!entry.animals[key]) return;
@@ -189,22 +249,34 @@
       }
     });
 
+    function lastHoles(from) {
+      var sum = 0;
+      for (var hole = from; hole <= HOLES; hole++) sum += netByHole[hole];
+      return sum;
+    }
+
     var target = targetFor(player.hcp);
+    var projected = adjusted + openNet;
     return {
       id: player.id,
       name: player.name,
       hcp: normalizeHcp(player.hcp),
       target: target,
       gross: gross,
+      adjusted: adjusted,
+      cappedHoles: cappedHoles,
       played: played,
       complete: played === HOLES,
-      parOpen: parOpen,
-      projected: gross + parOpen,
+      parOpen: openNet,
+      projected: projected,
       pos: pos,
       neg: neg,
       counts: counts,
       totalAnimals: pos + neg,
-      points: target - (gross + parOpen) + pos - neg,
+      points: target - projected + pos - neg,
+      cb6: lastHoles(4),
+      cb3: lastHoles(7),
+      cb1: lastHoles(9),
     };
   }
 
@@ -221,15 +293,18 @@
   }
 
   // Hauptwertung: Punkte, dann mehr positive Tiere, dann weniger negative,
-  // dann tieferes Brutto. (Früher entschied pos+neg – wer mehr Krokodile
-  // sammelte, gewann den Gleichstand.)
+  // dann Countback wie im Golf üblich (letzte 6 Löcher, letzte 3, letztes
+  // Loch – jeweils netto, tiefer gewinnt). Sehr alte Archiv-Einträge ohne
+  // Countback-Felder gelten in diesem Kriterium als gleich.
   // Der Name gehört bewusst NICHT dazu: Gibt die Funktion 0 zurück, ist es ein
   // echter Gleichstand und beide teilen sich den Rang.
   function compareMain(a, b) {
     return (b.points - a.points)
       || (b.pos - a.pos)
       || (a.neg - b.neg)
-      || (a.projected - b.projected);
+      || ((a.cb6 || 0) - (b.cb6 || 0))
+      || ((a.cb3 || 0) - (b.cb3 || 0))
+      || ((a.cb1 || 0) - (b.cb1 || 0));
   }
 
   // Zweiter Preis: meiste gesammelte Tiere insgesamt (positive wie negative –
@@ -403,6 +478,10 @@
     NEG_KEYS: NEG_KEYS,
     parFor: parFor,
     animalAllowed: animalAllowed,
+    roundHalf: roundHalf,
+    courseHandicap: courseHandicap,
+    strokesFor: strokesFor,
+    capFor: capFor,
     clamp: clamp,
     normalizeHcp: normalizeHcp,
     normalizeGross: normalizeGross,

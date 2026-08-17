@@ -60,8 +60,8 @@ window.I18N = (function () {
       en: 'We play <strong>Beat Your Target</strong> as an individual competition.',
     },
     r_how_target: {
-      de: '🎯 Dein Ziel: <strong>Par 36 + halbes Handicap</strong>, immer aufgerundet.',
-      en: '🎯 Your target: <strong>Par 36 + half your handicap</strong>, always rounded up.',
+      de: '🎯 Dein Ziel: <strong>Par 36 + halbes Handicap</strong>, kaufmännisch gerundet.',
+      en: '🎯 Your target: <strong>Par 36 + half your handicap</strong>, rounded to the nearest whole number.',
     },
     r_how_example: {
       de: 'Beispiel: HCP 15 → Ziel = 36 + 8 = <strong>44</strong>',
@@ -91,12 +91,16 @@ window.I18N = (function () {
     r_final_win: { de: 'Die höchste Punktzahl gewinnt. 🥇', en: 'Highest score wins. 🥇' },
     r_final_second: { de: 'Zweiter Preis: 🥈 die meisten gesammelten Tiere insgesamt.', en: 'Second prize: 🥈 most animals collected in total.' },
     r_open_holes: {
-      de: 'Für Löcher ohne eingetragenes Brutto wird Par gerechnet – live wie im gespeicherten Schlussresultat. Solche Spieler sind mit einem <strong>*</strong> markiert.',
-      en: 'Holes without a gross score count as par – live and in the saved final result. Those players are marked with a <strong>*</strong>.',
+      de: 'Für Löcher ohne eingetragenes Brutto wird <strong>Netto-Par</strong> gerechnet (Par + Vorgabeschläge) – ein offenes Loch bringt weder Vor- noch Nachteil. Solche Spieler sind mit einem <strong>*</strong> markiert.',
+      en: 'Holes without a gross score count as <strong>net par</strong> (par + handicap strokes) – an open hole is neither an advantage nor a penalty. Those players are marked with a <strong>*</strong>.',
+    },
+    r_cap: {
+      de: 'Pro Loch zählt höchstens <strong>Netto-Doppelbogey</strong> (Par + 2 + Vorgabeschläge) – ein Katastrophen-Loch ruiniert die Runde nicht. Die Vorgabeschläge werden nach Stroke-Index verteilt.',
+      en: 'Each hole counts at most <strong>net double bogey</strong> (par + 2 + handicap strokes) – one disaster hole cannot ruin the round. Handicap strokes are allocated by stroke index.',
     },
     r_tiebreak: {
-      de: 'Gleichstand: mehr positive Tiere, dann weniger negative Tiere, dann tieferes Brutto.',
-      en: 'Tie-break: more positive animals, then fewer negative animals, then lower gross.',
+      de: 'Gleichstand: mehr positive Tiere, dann weniger negative Tiere, dann Countback (letzte 6 · letzte 3 · letztes Loch, netto).',
+      en: 'Tie-break: more positive animals, then fewer negative animals, then countback (last 6 · last 3 · last hole, net).',
     },
     r_course_title: { de: 'Der Platz – Tee 27', en: 'The course – Tee 27' },
     r_course_hint: { de: 'Distanz in Meter bis Mitte Grün.', en: 'Distance in metres to the middle of the green.' },
@@ -201,8 +205,8 @@ window.I18N = (function () {
       en: 'No round in progress – no scores entered yet.',
     },
     lb_hint: {
-      de: 'Punkte = Ziel − Brutto + positive Tiere − negative Tiere. <strong>*</strong> = noch nicht alle 9 Löcher eingetragen, für offene Löcher wird Par gerechnet. Tipp auf einen Spieler zeigt die Scorekarte.',
-      en: 'Score = target − gross + positive animals − negative animals. <strong>*</strong> = not all 9 holes entered, open holes count as par. Tap a player for the scorecard.',
+      de: 'Punkte = Ziel − gewertetes Brutto + positive Tiere − negative Tiere (pro Loch max. Netto-Doppelbogey). <strong>*</strong> = noch nicht alle 9 Löcher eingetragen, offene Löcher zählen als Netto-Par (punkteneutral). Tipp auf einen Spieler zeigt die Scorekarte.',
+      en: 'Score = target − counted gross + positive animals − negative animals (net double bogey max per hole). <strong>*</strong> = not all 9 holes entered, open holes count as net par (neutral). Tap a player for the scorecard.',
     },
     lb_ceremony: { de: '🎉 Preisverleihung', en: '🎉 Prize ceremony' },
     lb_share: { de: '📸 Als Bild teilen', en: '📸 Share as image' },
@@ -253,8 +257,8 @@ window.I18N = (function () {
       en: '{players} players will be scored.\nAfterwards the scores are cleared – the round is in the archive.',
     },
     sr_confirm_open: {
-      de: '{players} Spieler werden gewertet.\n⚠️ Noch nicht alle 9 Löcher eingetragen: {open} Spieler – für offene Löcher wird Par gerechnet.\nDanach sind die Scores geleert – die Runde liegt im Archiv.',
-      en: '{players} players will be scored.\n⚠️ Not all 9 holes entered: {open} player(s) – open holes count as par.\nAfterwards the scores are cleared – the round is in the archive.',
+      de: '{players} Spieler werden gewertet.\n⚠️ Noch nicht alle 9 Löcher eingetragen: {open} Spieler – offene Löcher zählen als Netto-Par.\nDanach sind die Scores geleert – die Runde liegt im Archiv.',
+      en: '{players} players will be scored.\n⚠️ Not all 9 holes entered: {open} player(s) – open holes count as net par.\nAfterwards the scores are cleared – the round is in the archive.',
     },
     sr_nothing: { de: 'Keine Scores vorhanden – nichts zu speichern', en: 'No scores yet – nothing to save' },
     sr_saved: { de: '«{name}» gespeichert 💾', en: '“{name}” saved 💾' },
@@ -302,7 +306,12 @@ window.I18N = (function () {
     sc_tot: { de: 'Tot', en: 'Tot' },
     sc_points: { de: 'Punkte', en: 'Points' },
     sc_legend: { de: '🟢 unter Par · ⚪ Par · 🟠 Bogey · 🔴 Doppelbogey+', en: '🟢 under par · ⚪ par · 🟠 bogey · 🔴 double bogey+' },
-    sc_open: { de: '{n} Loch noch offen – dafür wird Par gerechnet.', en: '{n} hole(s) still open – counted as par.' },
+    sc_open: { de: '{n} Loch noch offen – gewertet als Netto-Par (punkteneutral).', en: '{n} hole(s) still open – counted as net par (neutral).' },
+    sc_capped: {
+      de: '{n} Loch über dem Deckel – gewertet als Netto-Doppelbogey (unterstrichen).',
+      en: '{n} hole(s) above the cap – counted as net double bogey (underlined).',
+    },
+    sc_strokes: { de: 'Vorgabe', en: 'Strokes' },
     sc_flight_title: { de: '🧾 {name} – Karte', en: '🧾 {name} – card' },
     sc_hidden: {
       de: 'Punkte bleiben verborgen, solange die Rangliste gesperrt ist.',

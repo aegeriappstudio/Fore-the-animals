@@ -911,13 +911,16 @@
   // könnte man die Spannung über den Umweg der Scorekarte umgehen.
   function showScorecard(player, scores) {
     var result = M.playerResult(player, scores || {});
+    var strokes = M.strokesFor(player.hcp);
     var showPoints = ui.unlocked;
     var grossCells = M.COURSE.map(function (h) {
       var e = (scores || {})[h.hole];
       if (e && e.gross != null) {
         var d = e.gross - h.par;
         var cls = d < 0 ? 'sc-under' : d === 0 ? 'sc-par' : d === 1 ? 'sc-over' : 'sc-dbl';
-        return '<td class="' + cls + '">' + e.gross + '</td>';
+        // Über dem Netto-Doppelbogey-Deckel: gewertet wird weniger als eingetragen
+        var capped = e.gross > M.capFor(h.hole, strokes[h.hole]);
+        return '<td class="' + cls + (capped ? ' sc-capped' : '') + '">' + e.gross + '</td>';
       }
       return '<td>–</td>';
     }).join('');
@@ -927,6 +930,15 @@
       if (e && e.animals) M.ANIMALS.forEach(function (a) { if (e.animals[a.key]) s += a.emoji; });
       return '<td class="sc-animals">' + s + '</td>';
     }).join('');
+    // Vorgabeschläge pro Loch (•, •• …) – nur zeigen, wenn es welche gibt
+    var hasStrokes = M.COURSE.some(function (h) { return strokes[h.hole] !== 0; });
+    var strokeRow = hasStrokes
+      ? '<tr><td>' + t('sc_strokes') + '</td>' + M.COURSE.map(function (h) {
+          var n = strokes[h.hole];
+          var dots = n > 0 ? '•'.repeat(n) : n < 0 ? '+' : '';
+          return '<td class="sc-strokes">' + dots + '</td>';
+        }).join('') + '<td>' + signed(M.courseHandicap(player.hcp)) + '</td></tr>'
+      : '';
 
     openModal(
       modalHead('🧾 ' + esc(player.name)) +
@@ -935,10 +947,12 @@
       '<div class="table-scroll"><table class="sc-table">' +
       '<tr><th>' + t('c_hole') + '</th>' + M.COURSE.map(function (h) { return '<th>' + h.hole + '</th>'; }).join('') + '<th>' + t('sc_tot') + '</th></tr>' +
       '<tr><td>' + t('sc_par') + '</td>' + M.COURSE.map(function (h) { return '<td>' + h.par + '</td>'; }).join('') + '<td>' + M.PAR_TOTAL + '</td></tr>' +
+      strokeRow +
       '<tr><td>' + t('sc_gross') + '</td>' + grossCells + '<td><strong>' + (result.played ? result.gross : '–') + '</strong></td></tr>' +
       '<tr><td>' + t('sc_animals') + '</td>' + animalCells + '<td>+' + result.pos + ' −' + result.neg + '</td></tr>' +
       '</table></div>' +
       '<p class="hint">' + t('sc_legend') + '</p>' +
+      (result.cappedHoles ? '<p class="hint">🧢 ' + t('sc_capped', { n: result.cappedHoles }) + '</p>' : '') +
       (result.complete ? '' : '<p class="hint">⚠️ ' + t('sc_open', { n: M.HOLES - result.played }) + '</p>') +
       (showPoints ? '' : '<p class="hint">🔒 ' + t('sc_hidden') + '</p>')
     );
