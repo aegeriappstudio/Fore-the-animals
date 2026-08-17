@@ -68,15 +68,30 @@ Weitere Hinweise:
   «Backup wiederherstellen» – nach jedem Turnier ein Backup ziehen schadet nie.
   Zusätzlich legt der Server einmal pro Tag automatisch eine datierte Kopie
   der `data.json` im Ordner `backups/` auf der Disk ab (die letzten 14 bleiben
-  erhalten), und Render erstellt alle 24 h einen Disk-Snapshot.
+  erhalten), und Render erstellt alle 24 h einen Disk-Snapshot. Sollte die
+  `data.json` je defekt sein, überschreibt der Server sie nicht, sondern legt
+  sie als `data.json.corrupt-…` beiseite und startet aus dem jüngsten Backup.
+- **Deploy mitten im Turnier:** Der Server schreibt beim Herunterfahren
+  (`SIGTERM`) den letzten Stand noch auf die Disk – ein Deploy während der
+  Runde kostet keine Eingaben.
 - **Zugriff:** Die URL ist öffentlich, aber nicht auffindbar – nur wer den
   Link hat, findet die Seite.
 
 ## Rangliste & Preisverleihung: PIN
 
-Die Rangliste ist während der Runde gesperrt – sie wird erst enthüllt, wenn
-jemand die PIN eingibt. Danach startet automatisch die Preisverleihung, und
-anschliessend ist die Rangliste sichtbar.
+Die Rangliste ist während der Runde gesperrt. Wer die PIN eingibt, **sieht** die
+Rangliste – mehr passiert dabei nicht: Es wird nichts gespeichert und nichts
+gelöscht. Ein neugieriger Blick zwischendurch ist damit gefahrlos.
+
+Der Ablauf am Turnierabend:
+
+1. PIN eingeben → Rangliste erscheint.
+2. Knopf **«🎉 Preisverleihung»** → Vollbild-Show mit Platz 3, 2, Tierpreis und
+   Sieger.
+3. Knopf **«Runde abschliessen»** → die Runde wandert mit ihrer
+   Schlussrangliste ins Archiv, die Scores werden für die nächste Runde
+   geleert. Vorher zeigt eine Rückfrage, wie viele Spieler gewertet werden und
+   ob jemand noch nicht alle 9 Löcher eingetragen hat.
 
 - **Standard-PIN:** `1234`
 - **Eigene PIN setzen:** Im Render-Dashboard beim Dienst unter
@@ -85,9 +100,9 @@ anschliessend ist die Rangliste sichtbar.
   danach automatisch neu).
 
 Die gleiche PIN schützt auch die heiklen Aktionen: Spieler oder gespeicherte
-Runden löschen, Turnier zurücksetzen, Backup einspielen, Runde abschliessen
-und Termine bearbeiten. Nach dem Abschliessen einer Runde sperrt sich die
-Rangliste automatisch wieder – bereit für die nächste Runde.
+Runden löschen, laufende Runde zurücksetzen, Backup einspielen, Runde
+abschliessen und Termine bearbeiten. Nach zu vielen Fehlversuchen bremst der
+Server das Durchprobieren aus.
 
 Die Sperre ist ein einfacher Schutz gegen neugierige Blicke während der Runde –
 kein Hochsicherheits-Login. Für ein Spassturnier reicht das.

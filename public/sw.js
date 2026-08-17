@@ -2,9 +2,9 @@
  * Strategie: Netz zuerst (damit nie eine veraltete App-Version hängen bleibt),
  * bei fehlendem Empfang Rückgriff auf den Cache. API-Aufrufe werden nie gecacht.
  */
-const CACHE = 'fta-v1';
+const CACHE = 'fta-v2';
 const ASSETS = [
-  '/', '/index.html', '/style.css', '/app.js', '/manifest.json',
+  '/', '/index.html', '/style.css', '/app.js', '/i18n.js', '/shared/model.js', '/manifest.json',
   '/img/hero.jpg', '/img/icon-192.png', '/img/icon-512.png', '/img/apple-touch-icon.png',
 ];
 
