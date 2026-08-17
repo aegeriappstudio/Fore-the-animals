@@ -7,7 +7,7 @@
  *
  * CACHE-Version bei jeder Änderung an den App-Dateien hochzählen!
  */
-const CACHE = 'fta-v3';
+const CACHE = 'fta-v4';
 const ASSETS = [
   '/', '/index.html', '/style.css', '/app.js', '/i18n.js', '/shared/model.js', '/manifest.json',
   '/img/hero.jpg', '/img/icon-192.png', '/img/icon-512.png', '/img/apple-touch-icon.png',

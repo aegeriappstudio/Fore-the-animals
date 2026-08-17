@@ -38,8 +38,17 @@ window.I18N = (function () {
       en: 'The PIN is required to save or delete dates.',
     },
 
+    // ---------------- Dialoge ----------------
+    dlg_ok: { de: 'OK', en: 'OK' },
+    dlg_cancel: { de: 'Abbrechen', en: 'Cancel' },
+    dlg_delete: { de: 'Löschen', en: 'Delete' },
+    dlg_save: { de: 'Speichern', en: 'Save' },
+    dlg_continue: { de: 'Trotzdem weiter', en: 'Continue anyway' },
+    dlg_confirm_title: { de: 'Bist du sicher?', en: 'Are you sure?' },
+
     // ---------------- PIN ----------------
-    pin_prompt: { de: 'PIN eingeben:', en: 'Enter PIN:' },
+    pin_prompt: { de: '🔐 PIN eingeben', en: '🔐 Enter PIN' },
+    pin_unlock: { de: 'Entsperren', en: 'Unlock' },
     pin_denied: { de: 'PIN erforderlich – bitte erneut versuchen', en: 'PIN required – please try again' },
 
     // ---------------- Regeln ----------------
@@ -119,7 +128,7 @@ window.I18N = (function () {
     p_none: { de: 'Noch keine Spieler erfasst.', en: 'No players yet.' },
     p_target: { de: 'Ziel', en: 'Target' },
     p_added: { de: '{name} hinzugefügt 🎉', en: '{name} added 🎉' },
-    p_prompt_name: { de: 'Name:', en: 'Name:' },
+    p_prompt_name: { de: '✏️ Name ändern', en: '✏️ Rename' },
     p_confirm_del: {
       de: '{name} wirklich löschen?\nDie Scores der laufenden Runde gehen verloren, gespeicherte Runden bleiben erhalten.',
       en: 'Really delete {name}?\nScores of the current round will be lost, saved rounds are kept.',
@@ -127,7 +136,7 @@ window.I18N = (function () {
 
     // ---------------- Flights ----------------
     p_flights: { de: 'Flights', en: 'Flights' },
-    ph_flight: { de: 'Flight-Name (z.B. Flight 1)', en: 'Flight name (e.g. Flight 1)' },
+    ph_flight: { de: '✏️ Flight-Name', en: '✏️ Flight name' },
     p_create_flight: { de: 'Flight erstellen', en: 'Create flight' },
     f_add: { de: '＋ Flight', en: '＋ Flight' },
     f_created: { de: '{name} erstellt', en: '{name} created' },
@@ -146,17 +155,15 @@ window.I18N = (function () {
     },
     p_randomize: { de: '🎲 Flights zufällig auslosen', en: '🎲 Draw random flights' },
     fr_first: { de: 'Zuerst Spieler erfassen', en: 'Add players first' },
-    fr_prompt: { de: 'Maximale Anzahl Spieler pro Flight (2–4):', en: 'Maximum players per flight (2–4):' },
-    fr_confirm_assigned: {
-      de: 'Die {n} heute zugeteilten Spieler neu auf Flights zu je {size} verteilen?',
-      en: 'Redistribute the {n} players assigned today into flights of {size}?',
+    fr_title: { de: '🎲 Flights auslosen', en: '🎲 Draw flights' },
+    fr_text_assigned: {
+      de: 'Die {n} heute zugeteilten Spieler werden zufällig neu auf Flights verteilt.\nWie viele Spieler pro Flight?',
+      en: 'The {n} players assigned today will be randomly redistributed into flights.\nHow many players per flight?',
     },
-    fr_confirm_all: {
-      de: 'Noch niemand ist zugeteilt – alle {n} Spieler auf Flights zu je {size} verteilen?',
-      en: 'Nobody is assigned yet – distribute all {n} players into flights of {size}?',
+    fr_text_all: {
+      de: 'Noch niemand ist zugeteilt – alle {n} Spieler werden zufällig auf Flights verteilt.\nWie viele Spieler pro Flight?',
+      en: 'Nobody is assigned yet – all {n} players will be randomly distributed into flights.\nHow many players per flight?',
     },
-    fr_invalid: { de: 'Bitte 2, 3 oder 4 eingeben', en: 'Please enter 2, 3 or 4' },
-    fr_replace: { de: 'Bestehende Flights werden ersetzt. Weiter?', en: 'Existing flights will be replaced. Continue?' },
     fr_done: { de: 'Flights zufällig ausgelost 🎲', en: 'Random flights drawn 🎲' },
 
     // ---------------- Eintragen ----------------
@@ -235,15 +242,15 @@ window.I18N = (function () {
       en: 'Stores the current round with its final standings in the archive and clears the scores for the next round. Players and flights are kept.',
     },
     sr_btn: { de: 'Runde abschliessen', en: 'Finish round' },
-    sr_prompt: { de: 'Name der Runde:', en: 'Round name:' },
+    sr_prompt: { de: 'Name der Runde', en: 'Round name' },
     sr_default: { de: 'Runde vom {date}', en: 'Round of {date}' },
     sr_confirm: {
-      de: '«{name}» jetzt abschliessen?\n\n{players} Spieler werden gewertet.\nDanach sind die Scores geleert – die Runde liegt im Archiv.',
-      en: 'Finish “{name}” now?\n\n{players} players will be scored.\nAfterwards the scores are cleared – the round is in the archive.',
+      de: '{players} Spieler werden gewertet.\nDanach sind die Scores geleert – die Runde liegt im Archiv.',
+      en: '{players} players will be scored.\nAfterwards the scores are cleared – the round is in the archive.',
     },
     sr_confirm_open: {
-      de: '«{name}» jetzt abschliessen?\n\n{players} Spieler werden gewertet.\n⚠️ Noch nicht alle 9 Löcher eingetragen: {open} Spieler – für offene Löcher wird Par gerechnet.\nDanach sind die Scores geleert – die Runde liegt im Archiv.',
-      en: 'Finish “{name}” now?\n\n{players} players will be scored.\n⚠️ Not all 9 holes entered: {open} player(s) – open holes count as par.\nAfterwards the scores are cleared – the round is in the archive.',
+      de: '{players} Spieler werden gewertet.\n⚠️ Noch nicht alle 9 Löcher eingetragen: {open} Spieler – für offene Löcher wird Par gerechnet.\nDanach sind die Scores geleert – die Runde liegt im Archiv.',
+      en: '{players} players will be scored.\n⚠️ Not all 9 holes entered: {open} player(s) – open holes count as par.\nAfterwards the scores are cleared – the round is in the archive.',
     },
     sr_nothing: { de: 'Keine Scores vorhanden – nichts zu speichern', en: 'No scores yet – nothing to save' },
     sr_saved: { de: '«{name}» gespeichert 💾', en: '“{name}” saved 💾' },
@@ -278,7 +285,10 @@ window.I18N = (function () {
       en: 'Deletes all scores of the current round (players, flights and saved rounds are kept).',
     },
     dz_btn: { de: 'Scores der laufenden Runde löschen', en: 'Delete current round scores' },
-    dz_prompt: { de: 'Wirklich ALLE Scores der laufenden Runde löschen? Tippe RESET zum Bestätigen:', en: 'Really delete ALL scores of the current round? Type RESET to confirm:' },
+    dz_prompt: {
+      de: 'Wirklich ALLE Scores der laufenden Runde löschen?\nTippe RESET zum Bestätigen.',
+      en: 'Really delete ALL scores of the current round?\nType RESET to confirm.',
+    },
     dz_done: { de: 'Scores gelöscht', en: 'Scores deleted' },
 
     // ---------------- Scorekarte ----------------

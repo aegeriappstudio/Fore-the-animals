@@ -55,6 +55,108 @@
 
   function signed(n) { return (n > 0 ? '+' : '') + n; }
 
+  // ---------------------------------------------------------------------------
+  // Eigene Dialoge – Ersatz für prompt()/confirm(), die auf dem Handy hässlich
+  // und im Home-Bildschirm-Modus teils unzuverlässig sind. Promise-basiert:
+  //   await showDialog({title, text, input, buttons}) → {button, value} | null
+  // Abbrechen (Knopf, Backdrop, Escape) ergibt null.
+  // ---------------------------------------------------------------------------
+  var dialogResolve = null;
+  var dialogButtons = [];
+
+  function closeDialog(result) {
+    if (!dialogResolve) return;
+    var resolve = dialogResolve;
+    dialogResolve = null;
+    $('#dialog').hidden = true;
+    resolve(result);
+  }
+
+  function showDialog(opts) {
+    return new Promise(function (resolve) {
+      if (dialogResolve) dialogResolve(null); // offener Dialog wird verworfen
+      dialogResolve = resolve;
+      dialogButtons = opts.buttons || [
+        { label: t('dlg_cancel'), value: null, kind: 'plain' },
+        { label: t('dlg_ok'), value: 'ok', kind: 'primary' },
+      ];
+      var inp = opts.input;
+      $('#dialog-content').innerHTML =
+        (opts.title ? '<div class="dlg-title">' + esc(opts.title) + '</div>' : '') +
+        (opts.text ? '<p class="dlg-text">' + esc(opts.text).replace(/\n/g, '<br>') + '</p>' : '') +
+        (inp
+          ? '<input class="dlg-input" id="dialog-input" type="' + esc(inp.type || 'text') + '"' +
+            ' value="' + esc(inp.value || '') + '" placeholder="' + esc(inp.placeholder || '') + '"' +
+            (inp.inputmode ? ' inputmode="' + esc(inp.inputmode) + '"' : '') +
+            ' maxlength="' + (inp.maxlength || 60) + '" autocomplete="off" enterkeyhint="done">'
+          : '') +
+        '<div class="dlg-buttons">' + dialogButtons.map(function (b, i) {
+          var kind = b.kind === 'primary' ? 'primary' : b.kind === 'danger' ? 'danger' : 'plain';
+          // type=button: Enter im Eingabefeld löst über submit den Primär-Knopf aus
+          return '<button type="button" class="btn ' + kind + '" data-dlg="' + i + '">' + esc(b.label) + '</button>';
+        }).join('') + '</div>';
+      $('#dialog').hidden = false;
+      var field = $('#dialog-input');
+      if (field) { field.focus(); field.select(); }
+    });
+  }
+
+  function resolveDialogButton(index) {
+    var btn = dialogButtons[index];
+    if (!btn || btn.value === null || btn.value === undefined) return closeDialog(null);
+    var field = $('#dialog-input');
+    closeDialog({ button: btn.value, value: field ? field.value : undefined });
+  }
+
+  $('#dialog').addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-dlg]');
+    if (btn) return resolveDialogButton(parseInt(btn.dataset.dlg, 10));
+    if (e.target.id === 'dialog') closeDialog(null); // Tipp neben den Dialog
+  });
+
+  // Enter im Eingabefeld = Primär-Knopf (das <form> fängt den Submit)
+  $('#dialog-content').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var primary = dialogButtons.findIndex(function (b) { return b.kind === 'primary'; });
+    resolveDialogButton(primary === -1 ? dialogButtons.length - 1 : primary);
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if ($('#dialog').hidden) return;
+    if (e.key === 'Escape') { e.preventDefault(); closeDialog(null); }
+  });
+
+  // confirm()-Ersatz: true/false
+  async function confirmDialog(text, opts) {
+    opts = opts || {};
+    var res = await showDialog({
+      title: opts.title || t('dlg_confirm_title'),
+      text: text,
+      buttons: [
+        { label: t('dlg_cancel'), value: null, kind: 'plain' },
+        { label: opts.okLabel || t('dlg_ok'), value: 'ok', kind: opts.danger ? 'danger' : 'primary' },
+      ],
+    });
+    return !!res;
+  }
+
+  // prompt()-Ersatz: String oder null
+  async function promptDialog(opts) {
+    var res = await showDialog({
+      title: opts.title,
+      text: opts.text,
+      input: {
+        value: opts.value, placeholder: opts.placeholder, type: opts.type,
+        inputmode: opts.inputmode, maxlength: opts.maxlength,
+      },
+      buttons: [
+        { label: t('dlg_cancel'), value: null, kind: 'plain' },
+        { label: opts.okLabel || t('dlg_ok'), value: 'ok', kind: 'primary' },
+      ],
+    });
+    return res ? res.value : null;
+  }
+
   function formatTime(ts) {
     if (!ts) return '–';
     return new Date(ts).toLocaleTimeString(I.dateLocale(), { hour: '2-digit', minute: '2-digit' });
@@ -231,7 +333,13 @@
 
   async function ensurePin() {
     if (sessionStorage.getItem('fta-pin')) return true;
-    var pin = prompt(t('pin_prompt'));
+    var pin = await promptDialog({
+      title: t('pin_prompt'),
+      type: 'password',
+      inputmode: 'numeric',
+      maxlength: 20,
+      okLabel: t('pin_unlock'),
+    });
     if (!pin) return false;
     try {
       await api('POST', '/api/unlock', { pin: pin });
@@ -918,7 +1026,7 @@
       var delEv = srv.events.find(function (x) { return x.id === delBtn.dataset.delEvent; });
       if (!delEv) return;
       if (!(await ensurePin())) return;
-      if (!confirm(t('ev_confirm_del', { name: delEv.name }))) return;
+      if (!(await confirmDialog(t('ev_confirm_del', { name: delEv.name }), { danger: true, okLabel: t('dlg_delete') }))) return;
       try {
         await api('DELETE', '/api/events/' + delEv.id);
         if ($('#ev-id').value === delEv.id) fillEventForm(null);
@@ -934,7 +1042,7 @@
     var name = $('#player-name').value.trim();
     if (!name) return;
     var duplicate = srv.players.some(function (p) { return p.name.toLowerCase() === name.toLowerCase(); });
-    if (duplicate && !confirm(t('p_dup_name', { name: name }))) return;
+    if (duplicate && !(await confirmDialog(t('p_dup_name', { name: name }), { okLabel: t('p_add') }))) return;
     try {
       await api('POST', '/api/players', { name: name, hcp: $('#player-hcp').value });
       $('#player-name').value = '';
@@ -968,7 +1076,7 @@
     if (editBtn) {
       var ep = playerById(editBtn.dataset.editPlayer);
       if (!ep) return;
-      var name = prompt(t('p_prompt_name'), ep.name);
+      var name = await promptDialog({ title: t('p_prompt_name'), value: ep.name, maxlength: 40, okLabel: t('dlg_save') });
       if (name === null || !name.trim()) return;
       try {
         await api('PUT', '/api/players/' + ep.id, { name: name });
@@ -980,7 +1088,7 @@
       var dp = playerById(delBtn.dataset.delPlayer);
       if (!dp) return;
       if (!(await ensurePin())) return;
-      if (!confirm(t('p_confirm_del', { name: dp.name }))) return;
+      if (!(await confirmDialog(t('p_confirm_del', { name: dp.name }), { danger: true, okLabel: t('dlg_delete') }))) return;
       try {
         await api('DELETE', '/api/players/' + dp.id);
         pull(true);
@@ -1057,7 +1165,7 @@
     if (renameBtn) {
       var rf = srv.flights.find(function (x) { return x.id === renameBtn.dataset.renameFlight; });
       if (!rf) return;
-      var name = prompt(t('ph_flight'), rf.name);
+      var name = await promptDialog({ title: t('ph_flight'), value: rf.name, maxlength: 40, okLabel: t('dlg_save') });
       if (name === null || !name.trim()) return;
       try {
         await api('PUT', '/api/flights/' + rf.id, { name: name });
@@ -1068,7 +1176,7 @@
     if (delBtn) {
       var f = srv.flights.find(function (x) { return x.id === delBtn.dataset.delFlight; });
       if (!f) return;
-      if (!confirm(t('f_confirm_del', { name: f.name }))) return;
+      if (!(await confirmDialog(t('f_confirm_del', { name: f.name }), { danger: true, okLabel: t('dlg_delete') }))) return;
       try {
         await api('DELETE', '/api/flights/' + f.id);
         pull(true);
@@ -1081,16 +1189,21 @@
     var assigned = todaysPlayers();
     var pool = assigned.length ? assigned : srv.players;
     if (pool.length < 2) return toast(t('fr_first'), true);
-    var answer = prompt(t('fr_prompt'), '3');
-    if (answer === null) return;
-    var size = parseInt(answer, 10);
-    if (!(size >= 2 && size <= 4)) return toast(t('fr_invalid'), true);
-    var message = assigned.length
-      ? t('fr_confirm_assigned', { n: pool.length, size: size })
-      : t('fr_confirm_all', { n: pool.length, size: size });
-    if (!confirm(message)) return;
+    // Ein Dialog: Text erklärt, was passiert, die Knöpfe 2/3/4 wählen die
+    // Flight-Grösse und bestätigen zugleich.
+    var res = await showDialog({
+      title: t('fr_title'),
+      text: t(assigned.length ? 'fr_text_assigned' : 'fr_text_all', { n: pool.length }),
+      buttons: [
+        { label: t('dlg_cancel'), value: null, kind: 'plain' },
+        { label: '2', value: 2 },
+        { label: '3', value: 3, kind: 'primary' },
+        { label: '4', value: 4 },
+      ],
+    });
+    if (!res) return;
     try {
-      await api('POST', '/api/flights/randomize', { size: size, playerIds: pool.map(function (p) { return p.id; }) });
+      await api('POST', '/api/flights/randomize', { size: res.button, playerIds: pool.map(function (p) { return p.id; }) });
       toast(t('fr_done'));
       pull(true);
     } catch (err) { apiError(err); }
@@ -1119,7 +1232,7 @@
     if (flight) showFlightCard(flight);
   });
 
-  $('#entry-players').addEventListener('click', function (e) {
+  $('#entry-players').addEventListener('click', async function (e) {
     var setBtn = e.target.closest('[data-gross-set]');
     var moreBtn = e.target.closest('[data-gross-more]');
     var animalBtn = e.target.closest('button[data-animal]');
@@ -1135,7 +1248,7 @@
       if (missing.length) {
         var names = missing.map(function (pid) { var p = playerById(pid); return p ? p.name : null; })
           .filter(Boolean).join(', ');
-        if (!confirm(t('e_missing', { names: names }))) return;
+        if (!(await confirmDialog(t('e_missing', { names: names }), { okLabel: t('dlg_continue') }))) return;
       }
       if (ui.hole < M.HOLES) {
         setHole(ui.hole + 1);
@@ -1379,16 +1492,20 @@
     // Offene Einträge zuerst wegschicken, damit nichts verloren geht
     if (pending.size) { await flush(); await pull(true); }
 
-    var name = prompt(t('sr_prompt'), t('sr_default', { date: formatDate(Date.now()) }));
-    if (name === null) return;
     var rows = leaderboardData().rows;
     var open = rows.filter(function (r) { return !r.complete; }).length;
-    var message = open
-      ? t('sr_confirm_open', { name: name, players: rows.length, open: open })
-      : t('sr_confirm', { name: name, players: rows.length });
-    if (!confirm(message)) return;
+    var dlg = await showDialog({
+      title: t('sr_title').replace('&amp;', '&'),
+      text: t(open ? 'sr_confirm_open' : 'sr_confirm', { players: rows.length, open: open }),
+      input: { value: t('sr_default', { date: formatDate(Date.now()) }), placeholder: t('sr_prompt'), maxlength: 60 },
+      buttons: [
+        { label: t('dlg_cancel'), value: null, kind: 'plain' },
+        { label: t('sr_btn'), value: 'ok', kind: 'primary' },
+      ],
+    });
+    if (!dlg) return;
     try {
-      var res = await api('POST', '/api/rounds', { name: name });
+      var res = await api('POST', '/api/rounds', { name: dlg.value });
       toast(t('sr_saved', { name: res.round.name }));
       ui.lbRound = res.round.id;
       await pull(true);
@@ -1410,7 +1527,7 @@
       var round = srv.rounds.find(function (r) { return r.id === delBtn.dataset.delRound; });
       if (!round) return;
       if (!(await ensurePin())) return;
-      if (!confirm(t('ar_confirm_del', { name: round.name }))) return;
+      if (!(await confirmDialog(t('ar_confirm_del', { name: round.name }), { danger: true, okLabel: t('dlg_delete') }))) return;
       try {
         await api('DELETE', '/api/rounds/' + round.id);
         roundCache.delete(round.id);
@@ -1445,7 +1562,7 @@
     try { data = JSON.parse(await file.text()); } catch (err) { return toast(t('bk_invalid'), true); }
     if (!data || !Array.isArray(data.players)) return toast(t('bk_invalid'), true);
     if (!(await ensurePin())) return;
-    if (!confirm(t('bk_confirm'))) return;
+    if (!(await confirmDialog(t('bk_confirm'), { danger: true, okLabel: t('bk_up').replace('⬆️ ', '') }))) return;
     try {
       var res = await api('POST', '/api/restore', data);
       roundCache.clear();
@@ -1457,7 +1574,12 @@
 
   $('#reset-btn').addEventListener('click', async function () {
     if (!(await ensurePin())) return;
-    var answer = prompt(t('dz_prompt'));
+    var answer = await promptDialog({
+      title: t('dz_title'),
+      text: t('dz_prompt'),
+      placeholder: 'RESET',
+      okLabel: t('dlg_delete'),
+    });
     if (answer !== 'RESET') return;
     try {
       await api('POST', '/api/reset', { confirm: 'RESET' });
