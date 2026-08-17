@@ -203,6 +203,7 @@
 
   var ui = {
     tab: 'info',
+    tee: localStorage.getItem('fta-tee') || '',
     flightId: localStorage.getItem('fta-flight') || '',
     hole: parseInt(localStorage.getItem('fta-hole') || '1', 10) || 1,
     unlocked: sessionStorage.getItem('fta-unlocked') === '1',
@@ -286,6 +287,12 @@
     var out = {};
     srv.players.forEach(function (p) { out[p.id] = scoresFor(p.id); });
     return out;
+  }
+
+  // Gewählter Abschlag (Tee) für Distanz-Anzeigen – pro Gerät gespeichert
+  function currentTee() {
+    var c = M.course;
+    return c.tees.indexOf(ui.tee) !== -1 ? ui.tee : c.defaultTee;
   }
 
   function todaysPlayers() {
@@ -377,6 +384,7 @@
       updateSyncBanner();
       if (data.unchanged) return false;
       srv = data;
+      M.setCourse(srv.courseId); // Getter im Modell zeigen auf den aktiven Platz
       roundCache.forEach(function (_, id) {
         if (!srv.rounds.some(function (r) { return r.id === id; })) roundCache.delete(id);
       });
@@ -547,11 +555,22 @@
   }
 
   function renderCourseTable() {
+    var c = M.course;
+    var tee = currentTee();
+    $('#course-title').textContent = t('r_course_title', { name: c.name });
+    $('#hero-sub').textContent = c.label + ' · Par ' + c.par + ' · ' +
+      c.distTotals[tee].toLocaleString('de-CH') + ' m · Golfpark Holzhäusern';
+    // Abschlag wählbar, wenn der Platz mehrere Tees hat
+    $('#tee-picker').innerHTML = c.tees.length > 1
+      ? c.tees.map(function (key) {
+          return '<button type="button" class="tee-chip ' + (key === tee ? 'on' : '') + '" data-tee="' + key + '">Tee ' + key + '</button>';
+        }).join('')
+      : '';
     $('#course-table').innerHTML =
-      '<tr><th>' + t('c_hole') + '</th>' + M.COURSE.map(function (h) { return '<th>' + h.hole + '</th>'; }).join('') + '<th>' + t('c_total') + '</th></tr>' +
-      '<tr><td>' + t('c_par') + '</td>' + M.COURSE.map(function (h) { return '<td>' + h.par + '</td>'; }).join('') + '<td><strong>' + M.PAR_TOTAL + '</strong></td></tr>' +
-      '<tr><td>' + t('c_meters') + '</td>' + M.COURSE.map(function (h) { return '<td>' + h.dist + '</td>'; }).join('') + '<td><strong>' + M.DIST_TOTAL + '</strong></td></tr>' +
-      '<tr><td>' + t('c_index') + '</td>' + M.COURSE.map(function (h) { return '<td>' + h.index + '</td>'; }).join('') + '<td></td></tr>';
+      '<tr><th>' + t('c_hole') + '</th>' + c.holes.map(function (h) { return '<th>' + h.hole + '</th>'; }).join('') + '<th>' + t('c_total') + '</th></tr>' +
+      '<tr><td>' + t('c_par') + '</td>' + c.holes.map(function (h) { return '<td>' + h.par + '</td>'; }).join('') + '<td><strong>' + c.par + '</strong></td></tr>' +
+      '<tr><td>' + t('c_meters') + '</td>' + c.holes.map(function (h) { return '<td>' + h.dists[tee] + '</td>'; }).join('') + '<td><strong>' + c.distTotals[tee] + '</strong></td></tr>' +
+      '<tr><td>' + t('c_index') + '</td>' + c.holes.map(function (h) { return '<td>' + h.index + '</td>'; }).join('') + '<td></td></tr>';
   }
 
   function renderDates() {
@@ -612,8 +631,18 @@
 
   // --- Turnier: Spieler + Flights -----------------------------------------
   function renderTournament() {
+    renderCoursePicker();
     renderPlayers();
     renderFlights();
+  }
+
+  function renderCoursePicker() {
+    var sel = $('#course-select');
+    sel.innerHTML = M.COURSES.map(function (c) {
+      return '<option value="' + c.id + '"' + (c.id === srv.courseId ? ' selected' : '') + '>' +
+        esc(c.label) + ' · Par ' + c.par + '</option>';
+    }).join('');
+    sel.value = srv.courseId;
   }
 
   function renderPlayers() {
@@ -718,6 +747,7 @@
     sel.value = ui.flightId;
 
     var flight = srv.flights.find(function (f) { return f.id === ui.flightId; });
+    if (ui.hole > M.HOLES) setHole(1);
     var info = M.COURSE[ui.hole - 1];
 
     $('#hole-picker').innerHTML = M.COURSE.map(function (h) {
@@ -729,7 +759,7 @@
     }).join('');
 
     $('#hole-info').textContent =
-      t('e_hole_info', { h: info.hole, p: info.par, d: info.dist, i: info.index }) +
+      t('e_hole_info', { h: info.hole, p: info.par, d: info.dists[currentTee()] || '?', i: info.index }) +
       (info.par === 3 ? t('e_no_zebra') : '') +
       (flight && flight.teeTime ? ' · 🕐 ' + formatTee(flight.teeTime, true) : '');
 
@@ -742,7 +772,7 @@
       return;
     }
 
-    var nextLabel = ui.hole < M.HOLES ? t('e_next', { h: ui.hole, n: ui.hole + 1 }) : t('e_next_last');
+    var nextLabel = ui.hole < M.HOLES ? t('e_next', { h: ui.hole, n: ui.hole + 1 }) : t('e_next_last', { h: M.HOLES });
 
     wrap.innerHTML = flight.playerIds.map(function (pid) {
       var p = playerById(pid);
@@ -945,35 +975,36 @@
 
   // Solange die Rangliste gesperrt ist, zeigt die Karte keine Punkte – sonst
   // könnte man die Spannung über den Umweg der Scorekarte umgehen.
-  function showScorecard(player, scores) {
-    var result = M.playerResult(player, scores || {});
-    var strokes = M.strokesFor(player.hcp);
+  function showScorecard(player, scores, courseId) {
+    var c = M.courseById(courseId) || M.course;
+    var result = M.playerResult(player, scores || {}, c.id);
+    var strokes = M.strokesFor(player.hcp, c.id);
     var showPoints = ui.unlocked;
-    var grossCells = M.COURSE.map(function (h) {
+    var grossCells = c.holes.map(function (h) {
       var e = (scores || {})[h.hole];
       if (e && e.gross != null) {
         var d = e.gross - h.par;
         var cls = d < 0 ? 'sc-under' : d === 0 ? 'sc-par' : d === 1 ? 'sc-over' : 'sc-dbl';
         // Über dem Netto-Doppelbogey-Deckel: gewertet wird weniger als eingetragen
-        var capped = e.gross > M.capFor(h.hole, strokes[h.hole]);
+        var capped = e.gross > M.capFor(h.hole, strokes[h.hole], c.id);
         return '<td class="' + cls + (capped ? ' sc-capped' : '') + '">' + e.gross + '</td>';
       }
       return '<td>–</td>';
     }).join('');
-    var animalCells = M.COURSE.map(function (h) {
+    var animalCells = c.holes.map(function (h) {
       var e = (scores || {})[h.hole];
       var s = '';
       if (e && e.animals) M.ANIMALS.forEach(function (a) { if (e.animals[a.key]) s += a.emoji; });
       return '<td class="sc-animals">' + s + '</td>';
     }).join('');
     // Vorgabeschläge pro Loch (•, •• …) – nur zeigen, wenn es welche gibt
-    var hasStrokes = M.COURSE.some(function (h) { return strokes[h.hole] !== 0; });
+    var hasStrokes = c.holes.some(function (h) { return strokes[h.hole] !== 0; });
     var strokeRow = hasStrokes
-      ? '<tr><td>' + t('sc_strokes') + '</td>' + M.COURSE.map(function (h) {
+      ? '<tr><td>' + t('sc_strokes') + '</td>' + c.holes.map(function (h) {
           var n = strokes[h.hole];
           var dots = n > 0 ? '•'.repeat(n) : n < 0 ? '+' : '';
           return '<td class="sc-strokes">' + dots + '</td>';
-        }).join('') + '<td>' + signed(M.courseHandicap(player.hcp)) + '</td></tr>'
+        }).join('') + '<td>' + signed(M.courseHandicap(player.hcp, c.id)) + '</td></tr>'
       : '';
 
     openModal(
@@ -981,15 +1012,15 @@
       '<p class="hint">HCP ' + result.hcp + ' · ' + t('p_target') + ' ' + result.target +
       (showPoints ? ' · ' + t('sc_points') + ' <strong>' + signed(result.points) + '</strong>' : '') + '</p>' +
       '<div class="table-scroll"><table class="sc-table">' +
-      '<tr><th>' + t('c_hole') + '</th>' + M.COURSE.map(function (h) { return '<th>' + h.hole + '</th>'; }).join('') + '<th>' + t('sc_tot') + '</th></tr>' +
-      '<tr><td>' + t('sc_par') + '</td>' + M.COURSE.map(function (h) { return '<td>' + h.par + '</td>'; }).join('') + '<td>' + M.PAR_TOTAL + '</td></tr>' +
+      '<tr><th>' + t('c_hole') + '</th>' + c.holes.map(function (h) { return '<th>' + h.hole + '</th>'; }).join('') + '<th>' + t('sc_tot') + '</th></tr>' +
+      '<tr><td>' + t('sc_par') + '</td>' + c.holes.map(function (h) { return '<td>' + h.par + '</td>'; }).join('') + '<td>' + c.par + '</td></tr>' +
       strokeRow +
       '<tr><td>' + t('sc_gross') + '</td>' + grossCells + '<td><strong>' + (result.played ? result.gross : '–') + '</strong></td></tr>' +
       '<tr><td>' + t('sc_animals') + '</td>' + animalCells + '<td>+' + result.pos + ' −' + result.neg + '</td></tr>' +
       '</table></div>' +
       '<p class="hint">' + t('sc_legend') + '</p>' +
       (result.cappedHoles ? '<p class="hint">🧢 ' + t('sc_capped', { n: result.cappedHoles }) + '</p>' : '') +
-      (result.complete ? '' : '<p class="hint">⚠️ ' + t('sc_open', { n: M.HOLES - result.played }) + '</p>') +
+      (result.complete ? '' : '<p class="hint">⚠️ ' + t('sc_open', { n: c.holeCount - result.played }) + '</p>') +
       (showPoints ? '' : '<p class="hint">🔒 ' + t('sc_hidden') + '</p>')
     );
   }
@@ -1021,8 +1052,8 @@
     openModal(
       modalHead(t('sc_flight_title', { name: esc(flight.name) })) +
       '<div class="table-scroll"><table class="sc-table fc-table">' +
-      '<tr><th>' + t('c_hole') + '</th>' + M.COURSE.map(function (h) { return '<th>' + h.hole + '</th>'; }).join('') + '<th>' + t('sc_tot') + '</th></tr>' +
-      '<tr><td>' + t('sc_par') + '</td>' + M.COURSE.map(function (h) { return '<td>' + h.par + '</td>'; }).join('') + '<td>' + M.PAR_TOTAL + '</td></tr>' +
+      '<tr><th>' + t('c_hole') + '</th>' + c.holes.map(function (h) { return '<th>' + h.hole + '</th>'; }).join('') + '<th>' + t('sc_tot') + '</th></tr>' +
+      '<tr><td>' + t('sc_par') + '</td>' + c.holes.map(function (h) { return '<td>' + h.par + '</td>'; }).join('') + '<td>' + c.par + '</td></tr>' +
       rows + '</table></div>' +
       '<p class="hint">' + t('sc_legend') + '</p>' +
       (ui.unlocked ? '' : '<p class="hint">🔒 ' + t('sc_hidden') + '</p>')
@@ -1047,6 +1078,33 @@
   });
 
   $('#calc-hcp').addEventListener('input', renderCalc);
+
+  // Platz wechseln (PIN; nur ohne Scores in der laufenden Runde)
+  $('#course-select').addEventListener('change', async function (e) {
+    var course = M.courseById(e.target.value);
+    if (!course || course.id === srv.courseId) return;
+    var revert = function () { e.target.value = srv.courseId; };
+    if (!(await ensurePin())) return revert();
+    if (!(await confirmDialog(t('cs_confirm', { name: course.label }), { okLabel: t('dlg_ok') }))) return revert();
+    try {
+      await api('PUT', '/api/course', { courseId: course.id });
+      toast(t('cs_switched', { name: course.name }));
+      await pull(true);
+      renderInfo(); // Hero, Platz-Karte und Rechner nachführen
+    } catch (err) {
+      apiError(err);
+      revert();
+    }
+  });
+
+  // Abschlag (Tee) für Distanz-Anzeigen wählen – rein lokal pro Gerät
+  $('#tee-picker').addEventListener('click', function (e) {
+    var chip = e.target.closest('[data-tee]');
+    if (!chip) return;
+    ui.tee = chip.dataset.tee;
+    localStorage.setItem('fta-tee', ui.tee);
+    renderCourseTable();
+  });
 
   $('#lang-toggle').addEventListener('click', function () {
     I.setLang(I.lang === 'de' ? 'en' : 'de');
@@ -1403,7 +1461,7 @@
     if (!round) return;
     var player = (round.players || []).find(function (x) { return x.id === pid; })
       || (round.results || []).find(function (x) { return x.id === pid; });
-    if (player) showScorecard(player, (round.scores || {})[pid] || {});
+    if (player) showScorecard(player, (round.scores || {})[pid] || {}, round.courseId);
   });
 
   $('#modal').addEventListener('click', function (e) {

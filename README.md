@@ -1,6 +1,6 @@
 # 🦓 Fore the Animals!
 
-**9-Hole Golf Safari · Rigi Holzhäusern · Tee 27 · Par 36 · 2'682 m**
+**Golf Safari · Golfpark Holzhäusern · Rigi (9 Loch, Par 36) & Zugersee (18 Loch, Par 72)**
 
 Turnier-Webseite für das Spassturnier «Beat Your Target» mit Tier-Bonuspunkten.
 Mehrere Flights können gleichzeitig von ihren Handys aus Scores eintragen –
@@ -28,9 +28,26 @@ Auf demselben Loch können mehrere Tiere gesammelt werden, jedes Tier zählt pro
 **Schlussresultat:** Ziel − Brutto + positive Tiere − negative Tiere. Höchste Punktzahl gewinnt.
 **Zweiter Preis:** die meisten gesammelten Tiere insgesamt.
 
+### Zwei Plätze
+
+Die App kennt beide Plätze des Golfparks Holzhäusern und rechnet je nach
+Platz richtig:
+
+| Platz | Löcher | Par | Ziel | Abschläge |
+|---|---|---|---|---|
+| **Rigi** | 9 | 36 | Par + **halbes** HCP | 27 |
+| **Zugersee** | 18 | 72 | Par + **ganzes** HCP | 58 · 56 · 51 · 49 |
+
+Der Platz wird im Turnier-Tab gewählt (PIN nötig) und gilt für die laufende
+Runde; gewechselt werden kann nur, solange noch keine Scores eingetragen
+sind. Jede gespeicherte Runde merkt sich ihren Platz und wird auch später
+mit ihm ausgewertet – Scorekarten alter Zugersee-Runden zeigen also 18
+Löcher, egal welcher Platz gerade aktiv ist. Der angezeigte Abschlag (Tee)
+für die Distanzen ist pro Gerät wählbar.
+
 ### Fairness-Regeln, die die App überall gleich handhabt
 
-- **Vorgabeschläge nach Stroke-Index.** Die Spielvorgabe (Ziel − 36) wird wie
+- **Vorgabeschläge nach Stroke-Index.** Die Spielvorgabe (Ziel − Par) wird wie
   im offiziellen Handicap-System auf die Löcher verteilt: Schlag 1 aufs
   schwerste Loch (Index 1), Schlag 10 wieder aufs schwerste usw. Die
   Scorekarte zeigt die Vorgabe pro Loch als Punkte (`•`).

@@ -284,3 +284,42 @@ test('roundSummary nennt alle Sieger bei Gleichstand', () => {
   assert.equal(summary.playerCount, 2);
   assert.equal(summary.winners.length, 2);
 });
+
+test('Zugersee: 18 Loch, Par 72, ganzes Handicap im Ziel', () => {
+  assert.equal(M.courseById('zugersee18').holeCount, 18);
+  assert.equal(M.courseById('zugersee18').par, 72);
+  assert.equal(M.targetFor(15, 'zugersee18'), 87);   // volles HCP
+  assert.equal(M.targetFor(15, 'rigi9'), 44);        // halbes HCP
+  assert.equal(M.courseHandicap(14.4, 'zugersee18'), 14);
+});
+
+test('Zugersee: Vorgabeschläge über 18 Löcher nach Stroke-Index', () => {
+  const s = M.strokesFor(15, 'zugersee18'); // Spielvorgabe 15
+  assert.equal(Object.values(s).reduce((a, b) => a + b, 0), 15);
+  assert.equal(s[5], 1);   // Index 1 – bekommt einen Schlag
+  assert.equal(s[10], 0);  // Index 18 – geht leer aus
+  assert.equal(s[15], 0);  // Index 16 – ebenfalls
+  const s54 = M.strokesFor(54, 'zugersee18'); // Spielvorgabe 54 → 3 pro Loch
+  assert.ok(M.courseById('zugersee18').holes.every((h) => s54[h.hole] === 3));
+});
+
+test('Zugersee: leere Runde ist punkteneutral, Loch 10-18 gültig', () => {
+  const r = M.playerResult({ id: 'x', name: 'X', hcp: 20 }, {}, 'zugersee18');
+  assert.equal(r.points, 0);
+  assert.equal(r.complete, false);
+  assert.equal(M.normalizeHole(18, 'zugersee18'), 18);
+  assert.equal(M.normalizeHole(18, 'rigi9'), null);
+  // Zebra auf den Par-3-Löchern des Zugersees nicht möglich
+  assert.equal(M.animalAllowed('zebra', 11, 'zugersee18'), false);
+  assert.equal(M.animalAllowed('zebra', 12, 'zugersee18'), true);
+});
+
+test('setCourse steuert die Getter, courseId-Argumente stechen', () => {
+  M.setCourse('zugersee18');
+  assert.equal(M.HOLES, 18);
+  assert.equal(M.PAR_TOTAL, 72);
+  assert.equal(M.targetFor(15), 87);
+  assert.equal(M.targetFor(15, 'rigi9'), 44); // explizit gewinnt
+  M.setCourse('rigi9');
+  assert.equal(M.HOLES, 9);
+});

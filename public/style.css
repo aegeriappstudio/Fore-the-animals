@@ -72,6 +72,16 @@ main { max-width: 860px; margin: 0 auto; padding: 14px 12px 40px; }
 
 .target-formula { background: var(--green-light); padding: 10px; border-radius: 8px; }
 
+/* ---------- Platz & Tee-Auswahl ---------- */
+.tee-picker { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+.tee-picker:empty { display: none; }
+.tee-chip {
+  padding: 6px 14px; border: 1px solid var(--border); border-radius: 16px;
+  background: #fff; font-size: 0.85rem; font-weight: 700; color: var(--muted); cursor: pointer;
+}
+.tee-chip.on { background: var(--green); border-color: var(--green); color: #fff; }
+.course-card .lb-round-picker { margin-bottom: 4px; }
+
 /* ---------- Regeln: Vorgabe-Rechner & Rechenbeispiel ---------- */
 .calc-box {
   background: var(--green-pale); border: 1px solid var(--border);

@@ -46,9 +46,24 @@ const legacy = {
 
 test('Migration: alte Datei wird vollständig übernommen', () => {
   const state = migrate(legacy);
-  assert.equal(state.schema, 4);
+  assert.equal(state.schema, 5);
   assert.equal(state.rev, 42);            // aus `version`
   assert.equal(state.players.length, 2);
+});
+
+test('Migration: courseId auf Zustand und Runden (alte Daten = Rigi 9)', () => {
+  const state = migrate(legacy);
+  assert.equal(state.courseId, 'rigi9');
+  assert.equal(state.rounds[0].courseId, 'rigi9');
+
+  // 18-Loch-Zustand bleibt erhalten, Scores bis Loch 18 gültig
+  const z = migrate({
+    courseId: 'zugersee18',
+    players: [{ id: 'p1', name: 'Anna', hcp: 15, present: true }],
+    scores: { p1: { 18: { gross: 5, animals: {} }, 19: { gross: 4, animals: {} } } },
+  });
+  assert.equal(z.courseId, 'zugersee18');
+  assert.deepEqual(Object.keys(z.scores.p1), ['18']); // Loch 19 gibt es nicht
 });
 
 test('Migration: fehlendes present wird aus Flights/Scores hergeleitet', () => {
