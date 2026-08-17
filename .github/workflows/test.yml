@@ -1,0 +1,30 @@
+# Führt bei jedem Push und Pull Request die Tests aus.
+# Das Projekt hat keine Abhängigkeiten – kein npm install nötig.
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [18, 22]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - run: npm test
+      - name: Syntax-Check aller Skripte
+        run: |
+          node --check server.js
+          node --check lib/store.js
+          node --check lib/api.js
+          node --check public/shared/model.js
+          node --check public/i18n.js
+          node --check public/app.js
+          node --check public/sw.js
