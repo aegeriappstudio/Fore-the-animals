@@ -25,10 +25,8 @@
   </header>
 
   <nav class="tabs" id="tabs">
-    <button data-tab="rules" class="active" data-i18n="tab_rules">📖 Regeln</button>
-    <button data-tab="dates" data-i18n="tab_dates">📅 Termine</button>
-    <button data-tab="players" data-i18n="tab_players">👥 Spieler</button>
-    <button data-tab="flights" data-i18n="tab_flights">🏌️ Flights</button>
+    <button data-tab="info" class="active" data-i18n="tab_info">📖 Info</button>
+    <button data-tab="tournament" data-i18n="tab_tournament">🏌️ Turnier</button>
     <button data-tab="entry" data-i18n="tab_entry">⛳ Eintragen</button>
     <button data-tab="leaderboard" data-i18n="tab_leaderboard">🏆 Rangliste</button>
     <button id="lang-toggle" type="button">EN</button>
@@ -38,8 +36,39 @@
 
   <main>
 
-    <!-- ================= REGELN ================= -->
-    <section id="tab-rules" class="tab active">
+    <!-- ================= INFO: Termine + Regeln ================= -->
+    <section id="tab-info" class="tab active">
+      <div class="card">
+        <h2 data-i18n="d_title">Termine &amp; Turniere</h2>
+        <p class="hint" data-i18n="d_intro">Die nächsten fixen und geplanten Turnier-Termine der Golf Safari.</p>
+      </div>
+
+      <div id="event-list"></div>
+
+      <details class="card event-admin">
+        <summary data-i18n="ev_admin_title">✏️ Termin erfassen / bearbeiten</summary>
+        <form id="event-form">
+          <input type="hidden" id="ev-id">
+          <div class="row-form">
+            <input type="text" id="ev-name" maxlength="60" placeholder="Name (z.B. Fore the Animals #3)" data-i18n-ph="ev_ph_name" required>
+            <label class="ev-date-label">📅 <input type="date" id="ev-date" required></label>
+          </div>
+          <div class="row-form">
+            <input type="text" id="ev-flights" maxlength="80" placeholder="Flights (z.B. 18:30 & 18:40 Uhr)" data-i18n-ph="ev_ph_flights">
+            <input type="text" id="ev-dinner" maxlength="80" placeholder="Dinner (z.B. Albergo)" data-i18n-ph="ev_ph_dinner">
+          </div>
+          <div class="row-form">
+            <input type="text" id="ev-note" maxlength="200" placeholder="Notiz (optional)" data-i18n-ph="ev_ph_note">
+          </div>
+          <label class="ev-confirmed"><input type="checkbox" id="ev-confirmed"> <span data-i18n="ev_confirmed">✅ Termin ist bestätigt</span></label>
+          <div class="lb-actions">
+            <button type="submit" class="btn primary" data-i18n="ev_save">💾 Termin speichern</button>
+            <button type="button" class="btn" id="ev-cancel" data-i18n="ev_cancel" hidden>Abbrechen</button>
+          </div>
+        </form>
+        <p class="hint" data-i18n="ev_pin_hint">Zum Speichern oder Löschen von Terminen wird die PIN benötigt.</p>
+      </details>
+
       <div class="card">
         <h2 data-i18n="r_how_title">So wird gespielt</h2>
         <p data-i18n="r_how_p1">Wir spielen <strong>Beat Your Target</strong> als Einzelwettbewerb.</p>
@@ -69,6 +98,8 @@
         <p data-i18n="r_final_p"><strong>Punkte = Ziel − Brutto + positive Tiere − negative Tiere.</strong></p>
         <p data-i18n="r_final_win">Die höchste Punktzahl gewinnt. 🥇</p>
         <p data-i18n="r_final_second">Zweiter Preis: 🥈 die meisten gesammelten Tiere insgesamt.</p>
+        <p class="hint" data-i18n="r_tiebreak">Gleichstand: mehr positive Tiere, dann weniger negative Tiere, dann tieferes Brutto.</p>
+        <p class="hint" data-i18n="r_open_holes">Für Löcher ohne eingetragenes Brutto wird Par gerechnet – live wie im gespeicherten Schlussresultat. Solche Spieler sind mit einem <strong>*</strong> markiert.</p>
       </div>
 
       <div class="card">
@@ -80,68 +111,28 @@
       </div>
     </section>
 
-    <!-- ================= TERMINE ================= -->
-    <section id="tab-dates" class="tab">
+    <!-- ================= TURNIER: Spieler + Flights ================= -->
+    <section id="tab-tournament" class="tab">
       <div class="card">
-        <h2 data-i18n="d_title">Termine &amp; Turniere</h2>
-        <p class="hint" data-i18n="d_intro">Die nächsten fixen und geplanten Turnier-Termine der Golf Safari. Tippe bei einem Termin auf deinen Namen, um dich an- oder abzumelden.</p>
-      </div>
-
-      <div id="event-list"></div>
-
-      <div class="card">
-        <h2 data-i18n="ev_admin_title">✏️ Termin erfassen / bearbeiten</h2>
-        <form id="event-form">
-          <input type="hidden" id="ev-id">
-          <div class="row-form">
-            <input type="text" id="ev-name" maxlength="60" placeholder="Name (z.B. Fore the Animals #3)" data-i18n-ph="ev_ph_name" required>
-            <label class="ev-date-label">📅 <input type="date" id="ev-date" required></label>
-          </div>
-          <div class="row-form">
-            <input type="text" id="ev-flights" maxlength="80" placeholder="Flights (z.B. 18:30 & 18:40 Uhr)" data-i18n-ph="ev_ph_flights">
-            <input type="text" id="ev-dinner" maxlength="80" placeholder="Dinner (z.B. Albergo)" data-i18n-ph="ev_ph_dinner">
-          </div>
-          <div class="row-form">
-            <input type="text" id="ev-note" maxlength="200" placeholder="Notiz (optional)" data-i18n-ph="ev_ph_note">
-          </div>
-          <label class="ev-confirmed"><input type="checkbox" id="ev-confirmed"> <span data-i18n="ev_confirmed">✅ Termin ist bestätigt</span></label>
-          <div class="lb-actions">
-            <button type="submit" class="btn primary" data-i18n="ev_save">💾 Termin speichern</button>
-            <button type="button" class="btn" id="ev-cancel" data-i18n="ev_cancel" hidden>Abbrechen</button>
-          </div>
-        </form>
-        <p class="hint" data-i18n="ev_pin_hint">Zum Speichern oder Löschen von Terminen wird die PIN benötigt.</p>
-      </div>
-    </section>
-
-    <!-- ================= SPIELER ================= -->
-    <section id="tab-players" class="tab">
-      <div class="card">
-        <h2 data-i18n="p_title">Spieler erfassen</h2>
-        <p class="hint" data-i18n="p_persist_hint">Spieler nur einmal erfassen – sie bleiben über alle Runden gespeichert. Vor jeder Runde das Handicap anpassen und mit ✅/💤 markieren, wer heute mitspielt: Abwesende erscheinen weder in den Flights noch in der Rangliste.</p>
-        <form id="player-form" class="row-form">
+        <h2 data-i18n="tn_title">Wer spielt heute?</h2>
+        <p class="hint" data-i18n="tn_hint">Tippe bei einem Spieler auf einen Flight – damit ist er für heute dabei. «–» heisst: spielt heute nicht mit. Mit ＋ entsteht ein neuer Flight.</p>
+        <p class="today-summary" id="today-summary"></p>
+        <div id="player-list"></div>
+        <form id="player-form" class="row-form new-player">
           <input type="text" id="player-name" placeholder="Name" maxlength="40" required data-i18n-ph="ph_name">
           <input type="number" id="player-hcp" placeholder="HCP" step="0.1" min="-10" max="54" required data-i18n-ph="ph_hcp">
           <button type="submit" class="btn primary" data-i18n="p_add">Hinzufügen</button>
         </form>
-        <div id="player-list"></div>
+        <p class="hint" data-i18n="p_persist_hint">Spieler nur einmal erfassen – sie bleiben über alle Runden gespeichert. Vor jeder Runde nur noch das Handicap anpassen.</p>
       </div>
-    </section>
 
-    <!-- ================= FLIGHTS ================= -->
-    <section id="tab-flights" class="tab">
       <div class="card">
         <h2 data-i18n="p_flights">Flights</h2>
-        <p class="hint" data-i18n="f_hint">Flights aus den anwesenden Spielern zusammenstellen – von Hand oder per Zufalls-Auslosung.</p>
-        <form id="flight-form" class="row-form">
-          <input type="text" id="flight-name" placeholder="Flight-Name (z.B. Flight 1)" maxlength="40" data-i18n-ph="ph_flight">
-          <label class="tee-field">🕐 <span data-i18n="f_tee">Abschlag</span>
-            <input type="datetime-local" id="flight-tee">
-          </label>
-          <button type="submit" class="btn primary" data-i18n="p_create_flight">Flight erstellen</button>
-        </form>
-        <button type="button" class="btn" id="randomize-btn" data-i18n="p_randomize">🎲 Flights zufällig auslosen</button>
         <div id="flight-list"></div>
+        <div class="lb-actions">
+          <button type="button" class="btn" id="add-flight-btn" data-i18n="f_add">＋ Flight</button>
+          <button type="button" class="btn" id="randomize-btn" data-i18n="p_randomize">🎲 Auslosen</button>
+        </div>
       </div>
     </section>
 
@@ -152,11 +143,18 @@
           <label data-i18n-label="e_flight">Flight
             <select id="entry-flight"></select>
           </label>
-          <label data-i18n-label="e_hole">Loch
+          <!-- Bewusst KEIN <label>: ein Label leitet Klicks auf sein erstes
+               Bedienelement um – jeder Tipp auf ein Loch landete dadurch
+               wieder auf Loch 1. -->
+          <div class="picker-group" data-i18n-label="e_hole">Loch
             <div class="hole-picker" id="hole-picker"></div>
-          </label>
+          </div>
         </div>
         <div id="hole-info" class="hole-info"></div>
+        <div class="entry-actions">
+          <span class="flight-progress" id="entry-progress"></span>
+          <button type="button" class="btn small" id="flight-card-btn" data-i18n="e_flight_card">🧾 Flight-Karte</button>
+        </div>
       </div>
       <div id="entry-players"></div>
     </section>
@@ -167,22 +165,26 @@
       <div class="card lock-card" id="lb-lock">
         <div class="lock-emoji">🔒</div>
         <h2 data-i18n="lk_title">Rangliste gesperrt</h2>
-        <p data-i18n="lk_p">Die Rangliste bleibt während der Runde geheim. Mit der PIN startet die
-           Preisverleihung – danach wird die Rangliste angezeigt.</p>
+        <p data-i18n="lk_p">Die Rangliste bleibt während der Runde geheim. Mit der PIN wird sie
+           sichtbar – gespeichert oder geleert wird dabei nichts.</p>
         <form id="unlock-form" class="row-form lock-form">
           <input type="password" id="pin-input" inputmode="numeric" autocomplete="off"
                  maxlength="20" placeholder="PIN" data-i18n-ph="lk_ph" required>
-          <button type="submit" class="btn primary" data-i18n="lk_btn">🎉 Preisverleihung starten</button>
+          <button type="submit" class="btn primary" data-i18n="lk_btn">🔓 Rangliste anzeigen</button>
         </form>
       </div>
 
       <div id="lb-content" hidden>
       <div class="card">
         <h2 data-i18n="lb_title">🥇 Rangliste – Beat Your Target</h2>
+        <label class="lb-round-picker" data-i18n-label="lb_round_label">Runde
+          <select id="lb-round"></select>
+        </label>
+        <p class="lb-status" id="lb-status"></p>
         <div class="table-scroll">
           <table class="lb-table" id="lb-main"></table>
         </div>
-        <p class="hint" data-i18n="lb_hint">Punkte = Ziel − Brutto + Tiere. Für noch nicht gespielte Löcher wird Par angenommen (Live-Prognose). Aktualisiert sich automatisch alle 5 Sekunden. Tipp auf einen Spieler zeigt seine Scorekarte.</p>
+        <p class="hint" data-i18n="lb_hint">Punkte = Ziel − Brutto + positive Tiere − negative Tiere. <strong>*</strong> = noch nicht alle 9 Löcher eingetragen, für offene Löcher wird Par gerechnet. Tipp auf einen Spieler zeigt die Scorekarte.</p>
         <div class="lb-actions">
           <button type="button" class="btn primary" id="ceremony-btn" data-i18n="lb_ceremony">🎉 Preisverleihung</button>
           <button type="button" class="btn" id="share-btn" data-i18n="lb_share">📸 Als Bild teilen</button>
@@ -196,11 +198,11 @@
         </div>
       </div>
 
-      <div class="card">
+      <div class="card" id="save-round-card">
         <h2 data-i18n="sr_title">💾 Runde abschliessen &amp; speichern</h2>
-        <p data-i18n="sr_p">Legt die aktuelle Runde mit Schlussrangliste im Archiv ab und leert die
+        <p data-i18n="sr_p">Legt die laufende Runde mit Schlussrangliste im Archiv ab und leert die
            Scores für die nächste Runde. Spieler und Flights bleiben erhalten.</p>
-        <button type="button" class="btn primary" id="save-round-btn" data-i18n="sr_btn">Runde speichern</button>
+        <button type="button" class="btn primary" id="save-round-btn" data-i18n="sr_btn">Runde abschliessen</button>
       </div>
 
       <div class="card">
@@ -225,9 +227,9 @@
       </div>
 
       <div class="card danger-zone">
-        <h2 data-i18n="dz_title">⚠️ Turnier zurücksetzen</h2>
-        <p data-i18n="dz_p">Löscht alle eingetragenen Scores (Spieler, Flights und gespeicherte Runden bleiben erhalten).</p>
-        <button class="btn danger" id="reset-btn" data-i18n="dz_btn">Alle Scores löschen</button>
+        <h2 data-i18n="dz_title">⚠️ Laufende Runde zurücksetzen</h2>
+        <p data-i18n="dz_p">Löscht alle Scores der laufenden Runde (Spieler, Flights und gespeicherte Runden bleiben erhalten).</p>
+        <button class="btn danger" id="reset-btn" data-i18n="dz_btn">Scores der laufenden Runde löschen</button>
       </div>
       </div><!-- /lb-content -->
     </section>
@@ -239,9 +241,12 @@
   </footer>
 
   <div id="modal" hidden><div class="modal-box" id="modal-content"></div></div>
+  <div id="dialog" hidden><form class="dialog-box" id="dialog-content"></form></div>
   <div id="ceremony" hidden></div>
 
   <div id="toast"></div>
+  <script src="shared/model.js"></script>
+  <script src="i18n.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

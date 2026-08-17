@@ -92,6 +92,17 @@ main { max-width: 860px; margin: 0 auto; padding: 14px 12px 40px; }
 }
 .event-badge.confirmed { background: var(--green-light); color: var(--green-dark); }
 .event-badge.tentative { background: #fbf3d8; color: #8a6d13; }
+.event-badge.played { background: var(--green-dark); color: #fff; }
+
+/* Resultat-Zeile auf der Termin-Karte (verlinkte gespeicherte Runde) */
+.event-round {
+  display: block; width: 100%; text-align: left; cursor: pointer;
+  background: var(--green-light); color: var(--green-dark);
+  border: 1px solid var(--border); border-radius: 8px;
+  padding: 8px 10px; margin-top: 10px;
+  font-size: 0.85rem; font-weight: 700;
+}
+.event-round:active { background: var(--green); color: #fff; }
 .event-facts { list-style: none; }
 .event-facts li {
   display: flex; align-items: baseline; gap: 8px;
@@ -115,6 +126,31 @@ th { background: var(--green-light); color: var(--green-dark); }
 .lb-table tr.rank-3 { background: #f9ede0; }
 .lb-table .pts { font-weight: 800; color: var(--green-dark); }
 .lb-table .neg-pts { color: var(--red); }
+
+/* Auf dem Handy zeigt die Namenszelle die Details als zweite Zeile, die
+   Detail-Spalten werden ausgeblendet – so passt die Rangliste ohne
+   Horizontal-Scrollen auf den Screen. Ab 600px gilt die volle Tabelle. */
+.lb-table .col-detail { display: none; }
+.lb-table .row-meta {
+  display: block; font-weight: 500; font-size: 0.72rem; color: var(--muted);
+  white-space: normal; margin-top: 1px;
+}
+.lb-table th.col-name { text-align: left; }
+.lb-table td.name-cell { white-space: normal; }
+.lb-table .open-mark { color: #b8860b; font-weight: 800; cursor: help; }
+.lb-table .ani-strip { font-size: 0.85rem; letter-spacing: 0; }
+.ani-chip { display: inline-block; margin-right: 3px; }
+.lb-table td.lb-waiting {
+  text-align: left; color: var(--muted); font-size: 0.78rem;
+  white-space: normal; background: var(--green-pale);
+}
+.lb-round-picker {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  font-size: 0.85rem; font-weight: 700; color: var(--green-dark); margin-bottom: 8px;
+}
+.lb-round-picker select { flex: 1 1 200px; font-size: 0.9rem; padding: 7px 8px; }
+.lb-round-picker[hidden] { display: none; }
+.lb-status { font-size: 0.8rem; color: var(--muted); margin-bottom: 8px; }
 
 /* ---------- Formulare ---------- */
 .row-form { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
@@ -164,6 +200,7 @@ input:focus, select:focus { outline: 2px solid var(--green); border-color: var(-
 .flight-card { border: 1px solid var(--border); border-radius: 8px; padding: 10px; margin: 8px 0; background: var(--green-pale); }
 .flight-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
 .flight-head h3 { color: var(--green-dark); font-size: 1rem; }
+.flight-head h3 small { font-weight: 400; color: var(--muted); }
 .flight-members { display: flex; flex-wrap: wrap; gap: 6px; }
 .member-chip {
   display: inline-flex; align-items: center; gap: 4px;
@@ -193,23 +230,26 @@ input:focus, select:focus { outline: 2px solid var(--green); border-color: var(-
   background: #fff; border-radius: var(--radius); box-shadow: var(--shadow);
   border: 1px solid var(--border); padding: 14px; margin-bottom: 12px;
 }
-.entry-player .ep-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 8px; }
+.entry-player .ep-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2px; }
 .entry-player .ep-head h3 { color: var(--green-dark); font-size: 1.05rem; }
-.entry-player .ep-head .running { font-size: 0.8rem; color: var(--muted); }
+.entry-player .ep-sub { font-size: 0.8rem; color: var(--muted); margin-bottom: 8px; }
+.entry-actions {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 8px; margin-top: 8px; flex-wrap: wrap;
+}
 
-.gross-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.gross-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
 .gross-row .gross-label { font-weight: 700; }
-.stepper { display: flex; align-items: center; gap: 0; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
-.stepper button {
-  width: 46px; height: 46px; border: none; background: var(--green-light);
-  font-size: 1.4rem; font-weight: 800; color: var(--green-dark); cursor: pointer;
+.gross-picker { display: flex; gap: 4px; flex-wrap: wrap; }
+.g-btn {
+  min-width: 42px; height: 42px; border-radius: 10px;
+  border: 1px solid var(--border); background: #fff;
+  font-size: 1.05rem; font-weight: 800; color: var(--text); cursor: pointer;
 }
-.stepper button:active { background: var(--green); color: #fff; }
-.stepper .gross-value {
-  width: 56px; text-align: center; font-size: 1.4rem; font-weight: 800;
-  color: var(--text);
-}
-.stepper .gross-value.empty { color: var(--muted); font-size: 0.9rem; font-weight: 600; }
+.g-btn.par { border-color: var(--green); color: var(--green-dark); }
+.g-btn.on { background: var(--green); border-color: var(--green); color: #fff; }
+.g-btn.more, .g-btn.clear { color: var(--muted); font-weight: 700; }
+.g-btn.clear { border-style: dashed; }
 
 .animal-btns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
 .animal-btn {
@@ -240,19 +280,41 @@ input:focus, select:focus { outline: 2px solid var(--green); border-color: var(-
 /* ---------- Archiv & Backup ---------- */
 .archive-round {
   border: 1px solid var(--border); border-radius: 8px;
-  background: var(--green-pale); margin: 8px 0; padding: 0 10px;
+  background: var(--green-pale); margin: 8px 0; padding: 10px;
 }
-.archive-round summary {
-  cursor: pointer; padding: 10px 0; display: flex; flex-direction: column; gap: 2px;
-}
-.archive-round summary .ar-name { font-weight: 700; color: var(--green-dark); }
-.archive-round summary .ar-meta { font-size: 0.8rem; color: var(--muted); }
-.archive-round .table-scroll { margin-bottom: 8px; background: #fff; border-radius: 8px; }
-.archive-round .btn { margin-bottom: 10px; }
+.archive-round.current { border-color: var(--green); box-shadow: inset 0 0 0 1px var(--green); }
+.archive-round .ar-head { display: flex; flex-direction: column; gap: 2px; }
+.archive-round .ar-name { font-weight: 700; color: var(--green-dark); }
+.archive-round .ar-meta { font-size: 0.8rem; color: var(--muted); }
+.archive-round .ar-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
 .backup-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
 .backup-row .btn { text-align: center; }
 
-#modal[hidden], #ceremony[hidden], #offline-banner[hidden] { display: none; }
+#modal[hidden], #ceremony[hidden], #offline-banner[hidden], #dialog[hidden] { display: none; }
+
+/* ---------- Eigene Dialoge (statt prompt/confirm) ---------- */
+#dialog {
+  position: fixed; inset: 0; z-index: 95;
+  background: rgba(15, 46, 31, 0.6);
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+}
+.dialog-box {
+  background: #fff; border-radius: var(--radius); box-shadow: var(--shadow);
+  padding: 18px; width: 100%; max-width: 400px;
+  animation: dlg-pop 0.15s ease;
+}
+@keyframes dlg-pop { from { transform: scale(0.94); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.dlg-title { font-weight: 800; color: var(--green-dark); font-size: 1.05rem; margin-bottom: 8px; }
+.dlg-text { font-size: 0.92rem; margin-bottom: 12px; }
+.dlg-input { width: 100%; margin-bottom: 14px; }
+.dlg-buttons { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+.dlg-buttons .btn { min-width: 44px; }
+.dlg-buttons .btn.plain { background: var(--green-pale); color: var(--muted); }
+.dlg-label {
+  display: block; font-size: 0.78rem; font-weight: 700; color: var(--muted);
+  margin-bottom: 4px;
+}
+select.dlg-input { width: 100%; margin-bottom: 12px; }
 
 /* ---------- Offline-Banner ---------- */
 #offline-banner {
@@ -261,19 +323,30 @@ input:focus, select:focus { outline: 2px solid var(--green); border-color: var(-
   padding: 8px 12px; font-size: 0.85rem; font-weight: 600;
 }
 
-/* ---------- Spieler: Anwesenheit ---------- */
-.presence { min-width: 42px; }
-.player-row.absent .p-name,
-.player-row.absent .p-hcp,
-.player-row.absent .badge { opacity: 0.45; }
-.player-row.absent .p-name { text-decoration: line-through; }
-
-/* ---------- Termine: Anmeldungen & Bearbeitung ---------- */
-.event-signups { margin-top: 10px; }
-.event-signups .es-title {
-  font-size: 0.85rem; font-weight: 700; color: var(--green-dark); margin-bottom: 6px;
+/* ---------- Turnier: Flight-Zuteilung pro Spieler ---------- */
+.player-row.out .p-name,
+.player-row.out .p-hcp,
+.player-row.out .badge { opacity: 0.5; }
+.p-flights { flex: 1 1 100%; display: flex; gap: 5px; flex-wrap: wrap; }
+.fchip {
+  min-width: 38px; height: 32px; padding: 0 10px;
+  border: 1px solid var(--border); border-radius: 16px; background: #fff;
+  font-size: 0.85rem; font-weight: 700; color: var(--muted); cursor: pointer;
 }
+.fchip.on { background: var(--green); border-color: var(--green); color: #fff; }
+.fchip.new { color: var(--green-dark); border-style: dashed; }
+.today-summary { font-weight: 700; color: var(--green-dark); font-size: 0.9rem; margin-bottom: 8px; }
+.new-player { margin-top: 12px; }
+.fh-actions { display: flex; gap: 6px; }
+.flight-progress { font-size: 0.8rem; color: var(--muted); font-weight: 600; margin: 2px 0 4px; }
+
+/* ---------- Termine: Bearbeitung ---------- */
 .event-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.event-past { opacity: 0.65; }
+.event-admin summary {
+  cursor: pointer; font-weight: 700; color: var(--green-dark); font-size: 1.05rem;
+}
+.event-admin[open] summary { margin-bottom: 10px; }
 .ev-date-label {
   display: flex; align-items: center; gap: 6px;
   font-size: 0.9rem; color: var(--muted); flex: 1 1 160px;
@@ -365,10 +438,19 @@ footer { text-align: center; padding: 20px; color: var(--muted); font-size: 0.85
 }
 #toast.show { transform: translateX(-50%) translateY(0); }
 #toast.error { background: var(--red); }
+#toast.action { cursor: pointer; background: #b8860b; }
+
+/* ---------- Flight-Karte ---------- */
+.fc-table td { padding: 4px 5px; }
+.fc-table .fc-name { text-align: left; font-weight: 700; white-space: nowrap; }
+.fc-gross { display: block; font-weight: 700; }
+.fc-ani { display: block; font-size: 0.72rem; letter-spacing: -1px; }
 
 @media (min-width: 600px) {
   .entry-selectors { flex-direction: row; align-items: flex-end; }
   .entry-selectors label:first-child { flex: 1; }
   .animal-btns { grid-template-columns: repeat(6, 1fr); }
   .tabs button { font-size: 0.95rem; }
+  .lb-table .col-detail { display: table-cell; }
+  .lb-table .row-meta { display: none; }
 }
