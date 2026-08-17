@@ -80,10 +80,10 @@ window.I18N = (function () {
       en: 'Example HCP 15, men: Rigi tee 27 (CR 34.2 · slope 125): 7.5 × 1.106 − 1.8 = 6.5 → playing handicap <strong>6</strong> → target <strong>42</strong>. Zugersee tee 51 (CR 68.2 · slope 125): 15 × 1.106 − 3.8 = 12.8 → <strong>13</strong> → target <strong>85</strong>. Exactly the values from the official course handicap tables.',
     },
     rc_strokes_p: {
-      de: 'Die Spielvorgabe wird als <strong>Vorgabeschläge</strong> auf die Löcher verteilt, wie im offiziellen Handicap-System nach Stroke-Index: Schlag 1 aufs schwerste Loch (Index 1), Schlag 2 aufs zweitschwerste … Schlag 10 wieder aufs schwerste. Bei einem Plus-Handicap wird ab dem leichtesten Loch abgezogen.',
-      en: 'The playing handicap is distributed across the holes as <strong>handicap strokes</strong>, like in the official handicap system by stroke index: stroke 1 on the hardest hole (index 1), stroke 2 on the second hardest … stroke 10 on the hardest again. A plus handicap gives strokes back starting at the easiest hole.',
+      de: 'Die Spielvorgabe wird als <strong>Vorgabeschläge</strong> auf die Löcher verteilt, wie im offiziellen Handicap-System nach Stroke-Index: Schlag 1 aufs schwerste Loch (Index 1), Schlag 2 aufs zweitschwerste … danach wieder von vorn. Bei einem Plus-Handicap wird ab dem leichtesten Loch abgezogen. Das gilt auf beiden Plätzen gleich – die Platz-Tabellen mit Par, Index und Distanzen stehen weiter unten.',
+      en: 'The playing handicap is distributed across the holes as <strong>handicap strokes</strong>, like in the official handicap system by stroke index: stroke 1 on the hardest hole (index 1), stroke 2 on the second hardest … then again from the top. A plus handicap gives strokes back starting at the easiest hole. This works the same on both courses – the course tables with par, index and distances are further down.',
     },
-    rc_calc_label: { de: 'Rechne es für dein Handicap nach (♂/♀ und Abschlag wählbar):', en: 'Check it for your handicap (choose ♂/♀ and tee):' },
+    rc_calc_label: { de: 'Rechne es für dein Handicap nach – ♂/♀, Platz und Abschlag wählbar:', en: 'Check it for your handicap – choose ♂/♀, course and tee:' },
     rc_calc_summary: { de: 'Ziel {target} · Spielvorgabe {ch}', en: 'Target {target} · playing handicap {ch}' },
     rc_row_max: { de: 'Max. zählt', en: 'Max counts' },
     rc_calc_hint: {
@@ -154,6 +154,7 @@ window.I18N = (function () {
     c_meters: { de: 'Meter', en: 'Metres' },
     c_index: { de: 'Index', en: 'Index' },
     c_total: { de: 'Total', en: 'Total' },
+    c_active: { de: '⛳ Aktiv', en: '⛳ Active' },
 
     // ---------------- Turnier: Spieler & Flights ----------------
     tn_title: { de: 'Wer spielt heute?', en: 'Who is playing today?' },
