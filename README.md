@@ -99,7 +99,11 @@ gleichen WLAN (`node server.js` starten und die lokale IP teilen, z.B.
   die PIN (`LEADERBOARD_PIN`, Standard `1234`). Nach zu vielen Fehlversuchen
   bremst der Server das Durchprobieren aus.
 - **📅 Termine-Verwaltung** – Turnier-Termine (Datum, Flights, Dinner, Notiz,
-  Status) direkt in der App erfassen und bearbeiten, ohne Deploy.
+  Status) direkt in der App erfassen und bearbeiten, ohne Deploy. Beim
+  Abschliessen einer Runde lässt sie sich mit einem Termin verknüpfen (der
+  heutige ist vorgewählt und liefert den Rundennamen gleich mit): die
+  Termin-Karte zeigt danach «🏁 Gespielt» mit Sieger und springt per Tipp
+  direkt zur gespeicherten Rangliste.
 - **🗄️ Tages-Backups** – der Server legt automatisch einmal pro Tag eine
   datierte Kopie der `data.json` unter `backups/` ab (die letzten 14 bleiben).
   Ist die `data.json` einmal defekt, wird sie beiseitegelegt (nicht
@@ -107,7 +111,9 @@ gleichen WLAN (`node server.js` starten und die lokale IP teilen, z.B.
 - **🎉 Preisverleihung** – Vollbild-Show mit Platz 3 → 2 → Tierpreis → Sieger
   (mit Konfetti), ideal für den Apéro.
 - **📸 Als Bild teilen** – erzeugt die Rangliste als Bild für die
-  WhatsApp-Gruppe (Teilen-Dialog oder Download).
+  WhatsApp-Gruppe (Teilen-Dialog oder Download): Podest für die Top 3
+  (Gleichstände teilen sich einen Block), kompakte Liste ab Platz 4,
+  Tierpreis-Band und der Name der Runde im Kopf.
 - **📶 Offline-tolerant** – bei Funklöchern auf dem Platz werden Einträge lokal
   gepuffert und automatisch nachgesendet, sobald wieder Netz da ist. Die
   Live-Aktualisierung läuft dabei weiter: Server-Stand und eigene, noch nicht

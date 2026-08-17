@@ -20,6 +20,8 @@ window.I18N = (function () {
     d_lbl_dinner: { de: 'Dinner', en: 'Dinner' },
     d_badge_confirmed: { de: '✅ Bestätigt', en: '✅ Confirmed' },
     d_badge_tentative: { de: '⏳ Vorläufig', en: '⏳ Tentative' },
+    d_badge_played: { de: '🏁 Gespielt', en: '🏁 Played' },
+    ev_round_played: { de: 'Sieger: {winners} · Rangliste ansehen', en: 'Winner: {winners} · view leaderboard' },
     ev_none: { de: 'Noch keine Termine erfasst.', en: 'No dates yet.' },
     ev_admin_title: { de: '✏️ Termin erfassen / bearbeiten', en: '✏️ Add / edit date' },
     ev_ph_name: { de: 'Name (z.B. Fore the Animals #3)', en: 'Name (e.g. Fore the Animals #3)' },
@@ -243,6 +245,8 @@ window.I18N = (function () {
     },
     sr_btn: { de: 'Runde abschliessen', en: 'Finish round' },
     sr_prompt: { de: 'Name der Runde', en: 'Round name' },
+    sr_event: { de: 'Termin', en: 'Date' },
+    sr_no_event: { de: '– kein Termin –', en: '– no date –' },
     sr_default: { de: 'Runde vom {date}', en: 'Round of {date}' },
     sr_confirm: {
       de: '{players} Spieler werden gewertet.\nDanach sind die Scores geleert – die Runde liegt im Archiv.',

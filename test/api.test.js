@@ -290,3 +290,24 @@ test('unbekannte Pfade ergeben 404', async (t) => {
   t.after(() => srv.close());
   assert.equal((await srv.call('GET', '/api/gibtsnicht')).status, 404);
 });
+
+test('Runde lässt sich mit einem Termin verknüpfen', async (t) => {
+  const srv = await startServer();
+  t.after(() => srv.close());
+  const anna = await addPlayer(srv, 'Anna', 15);
+  const ev = (await srv.call('POST', '/api/events', { name: 'Safari #3', date: '2026-08-17' }, PIN)).body.event;
+  await srv.call('PUT', '/api/scores', { entries: [{ playerId: anna.id, hole: 1, gross: 4 }] });
+
+  const saved = await srv.call('POST', '/api/rounds', { name: 'Safari #3', eventId: ev.id }, PIN);
+  assert.equal(saved.status, 200);
+  assert.equal(saved.body.round.eventId, ev.id);
+
+  // Die Zusammenfassung im State trägt die Verknüpfung ebenfalls
+  const state = await srv.call('GET', '/api/state');
+  assert.equal(state.body.rounds[0].eventId, ev.id);
+
+  // Unbekannte Termin-IDs werden verworfen statt gespeichert
+  await srv.call('PUT', '/api/scores', { entries: [{ playerId: anna.id, hole: 1, gross: 5 }] });
+  const bogus = await srv.call('POST', '/api/rounds', { name: 'Ohne Termin', eventId: 'gibtsnicht' }, PIN);
+  assert.equal(bogus.body.round.eventId, null);
+});

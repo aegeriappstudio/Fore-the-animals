@@ -81,11 +81,19 @@
         { label: t('dlg_ok'), value: 'ok', kind: 'primary' },
       ];
       var inp = opts.input;
+      var sel = opts.select; // {label, value, options: [{value, label}]}
       $('#dialog-content').innerHTML =
         (opts.title ? '<div class="dlg-title">' + esc(opts.title) + '</div>' : '') +
         (opts.text ? '<p class="dlg-text">' + esc(opts.text).replace(/\n/g, '<br>') + '</p>' : '') +
+        (sel
+          ? (sel.label ? '<label class="dlg-label" for="dialog-select">' + esc(sel.label) + '</label>' : '') +
+            '<select class="dlg-input" id="dialog-select">' + (sel.options || []).map(function (o) {
+              return '<option value="' + esc(o.value) + '"' + (o.value === sel.value ? ' selected' : '') + '>' + esc(o.label) + '</option>';
+            }).join('') + '</select>'
+          : '') +
         (inp
-          ? '<input class="dlg-input" id="dialog-input" type="' + esc(inp.type || 'text') + '"' +
+          ? (inp.label ? '<label class="dlg-label" for="dialog-input">' + esc(inp.label) + '</label>' : '') +
+            '<input class="dlg-input" id="dialog-input" type="' + esc(inp.type || 'text') + '"' +
             ' value="' + esc(inp.value || '') + '" placeholder="' + esc(inp.placeholder || '') + '"' +
             (inp.inputmode ? ' inputmode="' + esc(inp.inputmode) + '"' : '') +
             ' maxlength="' + (inp.maxlength || 60) + '" autocomplete="off" enterkeyhint="done">'
@@ -105,7 +113,12 @@
     var btn = dialogButtons[index];
     if (!btn || btn.value === null || btn.value === undefined) return closeDialog(null);
     var field = $('#dialog-input');
-    closeDialog({ button: btn.value, value: field ? field.value : undefined });
+    var select = $('#dialog-select');
+    closeDialog({
+      button: btn.value,
+      value: field ? field.value : undefined,
+      select: select ? select.value : undefined,
+    });
   }
 
   $('#dialog').addEventListener('click', function (e) {
@@ -537,11 +550,23 @@
       if (ev.flights) facts.push('<li><span class="ef-icon">⛳</span><span class="ef-label">' + t('d_lbl_flights') + '</span><span class="ef-val">' + esc(ev.flights) + '</span></li>');
       if (ev.dinner) facts.push('<li><span class="ef-icon">🍽️</span><span class="ef-label">' + t('d_lbl_dinner') + '</span><span class="ef-val">' + esc(ev.dinner) + '</span></li>');
 
+      // Ist zu diesem Termin schon eine Runde gespeichert? Dann Resultat zeigen.
+      // (Nur abgeschlossene Runden – die laufende Rangliste bleibt geheim.)
+      var linked = srv.rounds.filter(function (r) { return r.eventId === ev.id; });
+      var results = linked.map(function (r) {
+        var winners = (r.winners || []).map(function (w) { return esc(w.name) + ' (' + signed(w.points) + ')'; }).join(' & ') || '–';
+        return '<button type="button" class="event-round" data-open-round="' + r.id + '">🏁 ' +
+          t('ev_round_played', { winners: winners }) + '</button>';
+      }).join('');
+      var badge = linked.length
+        ? '<span class="event-badge played">' + t('d_badge_played') + '</span>'
+        : '<span class="event-badge ' + (ev.confirmed ? 'confirmed' : 'tentative') + '">' + t(ev.confirmed ? 'd_badge_confirmed' : 'd_badge_tentative') + '</span>';
+
       return '<div class="card event ' + (ev.confirmed ? 'event-confirmed' : 'event-tentative') + (past ? ' event-past' : '') + '">' +
-        '<div class="event-head"><h2>' + esc(ev.name) + '</h2>' +
-        '<span class="event-badge ' + (ev.confirmed ? 'confirmed' : 'tentative') + '">' + t(ev.confirmed ? 'd_badge_confirmed' : 'd_badge_tentative') + '</span></div>' +
+        '<div class="event-head"><h2>' + esc(ev.name) + '</h2>' + badge + '</div>' +
         '<ul class="event-facts">' + facts.join('') + '</ul>' +
         (ev.note ? '<p class="hint">' + esc(ev.note) + '</p>' : '') +
+        results +
         '<div class="event-actions">' +
         '<button type="button" class="btn small" data-edit-event="' + ev.id + '">✏️</button>' +
         '<button type="button" class="btn small" data-del-event="' + ev.id + '">🗑️</button>' +
@@ -837,9 +862,12 @@
     }
     wrap.innerHTML = srv.rounds.map(function (r) {
       var winners = (r.winners || []).map(function (w) { return esc(w.name) + ' (' + signed(w.points) + ')'; }).join(', ') || '–';
+      var linkedEv = r.eventId && srv.events.find(function (ev) { return ev.id === r.eventId; });
       return '<div class="archive-round ' + (r.id === ui.lbRound ? 'current' : '') + '">' +
         '<div class="ar-head"><span class="ar-name">🏆 ' + esc(r.name) + '</span>' +
-        '<span class="ar-meta">' + esc(formatDate(r.date)) + ' · ' + t('ar_players', { n: r.playerCount }) + ' · ' + t('ar_winner') + ': ' + winners + '</span></div>' +
+        '<span class="ar-meta">' + esc(formatDate(r.date)) +
+        (linkedEv && linkedEv.name !== r.name ? ' · 📅 ' + esc(linkedEv.name) : '') +
+        ' · ' + t('ar_players', { n: r.playerCount }) + ' · ' + t('ar_winner') + ': ' + winners + '</span></div>' +
         '<div class="ar-actions">' +
         '<button type="button" class="btn small" data-show-round="' + r.id + '">' + t('ar_show') + '</button>' +
         '<button type="button" class="btn small danger" data-del-round="' + r.id + '">' + t('ar_delete') + '</button>' +
@@ -1012,8 +1040,16 @@
   $('#ev-cancel').addEventListener('click', function () { fillEventForm(null); });
 
   $('#event-list').addEventListener('click', async function (e) {
+    var openRound = e.target.closest('[data-open-round]');
     var editBtn = e.target.closest('[data-edit-event]');
     var delBtn = e.target.closest('[data-del-event]');
+    if (openRound) {
+      // Zur gespeicherten Runde springen – die PIN-Sperre der Rangliste
+      // greift wie gewohnt, falls dieses Gerät noch gesperrt ist.
+      ui.lbRound = openRound.dataset.openRound;
+      switchTab('leaderboard');
+      return;
+    }
     if (editBtn) {
       var editEv = srv.events.find(function (x) { return x.id === editBtn.dataset.editEvent; });
       if (!editEv) return;
@@ -1413,57 +1449,149 @@
   });
 
   // --- Rangliste als Bild -------------------------------------------------
+  // Abgerundetes Rechteck (roundRect() fehlt in älteren Safari-Versionen)
+  function rrect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  // Schrift so weit verkleinern, bis der Text in die Breite passt
+  function fitFont(ctx, text, maxWidth, size, weight) {
+    for (; size > 18; size -= 2) {
+      ctx.font = (weight || 'bold') + ' ' + size + 'px sans-serif';
+      if (ctx.measureText(text).width <= maxWidth) break;
+    }
+    return size;
+  }
+
   $('#share-btn').addEventListener('click', function () {
     var data = leaderboardData();
     if (!data.rows.length) return toast(t('cer_no_players'), true);
     var rows = M.ranked(data.rows, M.compareMain);
     var byAnimals = M.ranked(data.rows, M.compareAnimals);
 
-    var W = 1000, headH = 190, rowH = 62, footH = 120;
-    var H = headH + 70 + rows.length * rowH + footH;
+    // Podest: Gleichstände teilen sich einen Block («Anna & Beat»)
+    function group(rank) {
+      var g = rows.filter(function (r) { return r.rank === rank; });
+      if (!g.length) return null;
+      return {
+        names: g.map(function (r) { return r.name + (r.complete ? '' : ' *'); }).join(' & '),
+        points: g[0].points,
+        gross: g.map(function (r) { return r.played ? r.gross : '–'; }).join(' & '),
+        pos: g[0].pos, neg: g[0].neg, single: g.length === 1,
+      };
+    }
+    var podium = [group(1), group(2), group(3)];
+    var rest = rows.filter(function (r) { return r.rank > 3; });
+    var topAnimals = byAnimals.filter(function (r) { return r.rank === 1 && r.totalAnimals > 0; });
+
+    var W = 1080, headH = 230, podH = 350;
+    var restH = rest.length ? rest.length * 56 + 24 : 0;
+    var aniH = topAnimals.length ? 108 : 0;
+    var footH = 104;
+    var H = headH + podH + restH + aniH + footH;
+
     var cv = document.createElement('canvas');
     cv.width = W; cv.height = H;
     var ctx = cv.getContext('2d');
+    ctx.textBaseline = 'alphabetic';
 
+    // Hintergrund + Kopf
     ctx.fillStyle = '#f4f9f6'; ctx.fillRect(0, 0, W, H);
     ctx.fillStyle = '#1d5c3f'; ctx.fillRect(0, 0, W, headH);
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 50px sans-serif';
-    ctx.fillText('🦓 FORE THE ANIMALS!', 40, 78);
-    ctx.font = '26px sans-serif'; ctx.globalAlpha = 0.9;
-    ctx.fillText(t('img_subtitle'), 40, 122);
-    ctx.fillText(data.kind === 'saved' ? data.round.name + ' · ' + formatDate(data.round.date) : formatDate(Date.now()), 40, 158);
+    ctx.font = 'bold 54px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('🦓 FORE THE ANIMALS!', W / 2, 88);
+    ctx.font = '26px sans-serif'; ctx.globalAlpha = 0.85;
+    ctx.fillText(t('img_subtitle'), W / 2, 132);
     ctx.globalAlpha = 1;
+    ctx.fillStyle = '#f5c542';
+    var headline = data.kind === 'saved'
+      ? data.round.name + ' · ' + formatDate(data.round.date)
+      : t('lb_live') + ' · ' + formatDate(Date.now());
+    ctx.font = 'bold ' + fitFont(ctx, headline, W - 120, 30) + 'px sans-serif';
+    ctx.fillText(headline, W / 2, 188);
 
-    var y = headH + 42;
-    ctx.fillStyle = '#1d5c3f'; ctx.font = 'bold 24px sans-serif';
-    ctx.fillText(t('h_rank'), 40, y);
-    ctx.fillText(t('h_player'), 150, y);
-    ctx.fillText(t('h_gross'), 560, y);
-    ctx.fillText(t('sc_animals'), 700, y);
-    ctx.fillText(t('h_points'), 850, y);
-    y += 14;
-
-    rows.forEach(function (r, i) {
-      var ry = y + i * rowH;
-      ctx.fillStyle = r.rank === 1 ? '#fdf6dd' : (i % 2 === 0 ? '#e8f2ec' : '#ffffff');
-      ctx.fillRect(24, ry, W - 48, rowH - 4);
-      ctx.fillStyle = '#21302a'; ctx.font = 'bold 28px sans-serif';
-      ctx.fillText(medal(r.rank), 40, ry + 40);
-      ctx.fillText(r.name.slice(0, 20) + (r.complete ? '' : ' *'), 150, ry + 40);
-      ctx.font = '28px sans-serif';
-      ctx.fillText(String(r.played ? r.gross : '–'), 560, ry + 40);
-      ctx.fillText('+' + r.pos + ' / −' + r.neg, 700, ry + 40);
-      ctx.font = 'bold 30px sans-serif';
-      ctx.fillStyle = r.points < 0 ? '#b23a48' : '#1d5c3f';
-      ctx.fillText(signed(r.points), 850, ry + 40);
+    // Podest: 2. links, 1. in der Mitte (am höchsten), 3. rechts
+    var base = headH + podH - 34;
+    var blocks = [
+      { g: podium[1], x: 30, w: 320, h: 140, medal: '🥈', bg: '#f2f2f2', edge: '#c9ccc9' },
+      { g: podium[0], x: 380, w: 320, h: 200, medal: '🥇', bg: '#fdf6dd', edge: '#e3c761' },
+      { g: podium[2], x: 730, w: 320, h: 110, medal: '🥉', bg: '#f9ede0', edge: '#d9b38c' },
+    ];
+    blocks.forEach(function (b) {
+      if (!b.g) return;
+      var top = base - b.h;
+      var cx = b.x + b.w / 2;
+      ctx.fillStyle = b.bg;
+      rrect(ctx, b.x, top, b.w, b.h, 14); ctx.fill();
+      ctx.strokeStyle = b.edge; ctx.lineWidth = 3;
+      rrect(ctx, b.x, top, b.w, b.h, 14); ctx.stroke();
+      // Medaille über dem Block
+      ctx.font = '58px sans-serif'; ctx.fillStyle = '#21302a';
+      ctx.fillText(b.medal, cx, top - 16);
+      // Name, Punkte, Detail im Block
+      var nameSize = fitFont(ctx, b.g.names, b.w - 36, 32);
+      ctx.font = 'bold ' + nameSize + 'px sans-serif'; ctx.fillStyle = '#21302a';
+      ctx.fillText(b.g.names, cx, top + 46);
+      ctx.font = 'bold 42px sans-serif';
+      ctx.fillStyle = b.g.points < 0 ? '#b23a48' : '#1d5c3f';
+      ctx.fillText(signed(b.g.points), cx, top + 96);
+      if (b.h >= 140) {
+        ctx.font = '22px sans-serif'; ctx.fillStyle = '#6b7d74';
+        ctx.fillText(t('h_gross') + ' ' + b.g.gross + ' · ➕' + b.g.pos + ' ➖' + b.g.neg, cx, top + b.h - 22);
+      }
     });
 
-    var fy = y + rows.length * rowH + 52;
-    ctx.fillStyle = '#21302a'; ctx.font = '26px sans-serif';
-    if (byAnimals[0] && byAnimals[0].totalAnimals > 0) {
-      ctx.fillText(t('img_most_animals', { name: byAnimals[0].name, n: byAnimals[0].totalAnimals }), 40, fy);
+    // Ab Platz 4: kompakte Zeilen
+    var y = headH + podH + 10;
+    ctx.textAlign = 'left';
+    rest.forEach(function (r, i) {
+      var ry = y + i * 56;
+      ctx.fillStyle = i % 2 === 0 ? '#eaf3ee' : '#ffffff';
+      rrect(ctx, 30, ry, W - 60, 50, 10); ctx.fill();
+      ctx.fillStyle = '#6b7d74'; ctx.font = 'bold 26px sans-serif';
+      ctx.fillText(r.rank + '.', 52, ry + 35);
+      ctx.fillStyle = '#21302a';
+      ctx.font = 'bold ' + fitFont(ctx, r.name, 430, 28) + 'px sans-serif';
+      ctx.fillText(r.name + (r.complete ? '' : ' *'), 110, ry + 35);
+      ctx.fillStyle = '#6b7d74'; ctx.font = '24px sans-serif'; ctx.textAlign = 'right';
+      ctx.fillText(t('h_gross') + ' ' + (r.played ? r.gross : '–') + ' · ➕' + r.pos + ' ➖' + r.neg, W - 170, ry + 35);
+      ctx.font = 'bold 30px sans-serif';
+      ctx.fillStyle = r.points < 0 ? '#b23a48' : '#1d5c3f';
+      ctx.fillText(signed(r.points), W - 56, ry + 36);
+      ctx.textAlign = 'left';
+    });
+
+    // Tierpreis-Band
+    if (topAnimals.length) {
+      var ay = headH + podH + restH + 12;
+      ctx.fillStyle = '#f7f3e8';
+      rrect(ctx, 30, ay, W - 60, 78, 14); ctx.fill();
+      ctx.strokeStyle = '#e3d9bd'; ctx.lineWidth = 2;
+      rrect(ctx, 30, ay, W - 60, 78, 14); ctx.stroke();
+      var aniText = t('img_most_animals', {
+        name: topAnimals.map(function (r) { return r.name; }).join(' & '),
+        n: topAnimals[0].totalAnimals,
+      });
+      ctx.fillStyle = '#7a5c1e'; ctx.textAlign = 'center';
+      ctx.font = 'bold ' + fitFont(ctx, aniText, W - 140, 30) + 'px sans-serif';
+      ctx.fillText(aniText, W / 2, ay + 49);
     }
+
+    // Fusszeile
+    ctx.textAlign = 'center';
+    ctx.font = '30px sans-serif'; ctx.fillStyle = '#21302a';
+    ctx.fillText('🦓 🦒 🐇 🦂 🐊 🐍', W / 2, H - 56);
+    ctx.font = '20px sans-serif'; ctx.fillStyle = '#6b7d74';
+    ctx.fillText('Fore the Animals! · ' + t('img_subtitle'), W / 2, H - 24);
+    ctx.textAlign = 'left';
 
     cv.toBlob(async function (blob) {
       var file = new File([blob], 'fore-the-animals-rangliste.png', { type: 'image/png' });
@@ -1494,18 +1622,50 @@
 
     var rows = leaderboardData().rows;
     var open = rows.filter(function (r) { return !r.complete; }).length;
-    var dlg = await showDialog({
+
+    // Termin-Auswahl: der heutige (bzw. der nächstliegende innerhalb einer
+    // Woche) ist vorgewählt; die Wahl füllt den Rundennamen gleich mit aus.
+    var today = new Date();
+    var defaultName = t('sr_default', { date: formatDate(today) });
+    var candidates = srv.events.filter(function (ev) { return ev.date; }).map(function (ev) {
+      return { ev: ev, dist: Math.abs(new Date(ev.date + 'T12:00') - today) };
+    }).sort(function (a, b) { return a.dist - b.dist; });
+    var preselected = candidates.length && candidates[0].dist <= 7 * 24 * 3600 * 1000 ? candidates[0].ev : null;
+    var eventOptions = [{ value: '', label: t('sr_no_event') }].concat(
+      srv.events.slice().sort(function (a, b) { return String(b.date).localeCompare(String(a.date)); })
+        .map(function (ev) { return { value: ev.id, label: ev.name + (ev.date ? ' · ' + formatDate(ev.date + 'T12:00') : '') }; })
+    );
+
+    var dlgPromise = showDialog({
       title: t('sr_title').replace('&amp;', '&'),
       text: t(open ? 'sr_confirm_open' : 'sr_confirm', { players: rows.length, open: open }),
-      input: { value: t('sr_default', { date: formatDate(Date.now()) }), placeholder: t('sr_prompt'), maxlength: 60 },
+      select: { label: t('sr_event'), value: preselected ? preselected.id : '', options: eventOptions },
+      input: {
+        label: t('sr_prompt'),
+        value: preselected ? preselected.name : defaultName,
+        placeholder: t('sr_prompt'),
+        maxlength: 60,
+      },
       buttons: [
         { label: t('dlg_cancel'), value: null, kind: 'plain' },
         { label: t('sr_btn'), value: 'ok', kind: 'primary' },
       ],
     });
+    // Termin gewählt → Name übernehmen, solange er nicht von Hand geändert wurde
+    var nameField = $('#dialog-input');
+    var eventField = $('#dialog-select');
+    var nameTouched = false;
+    nameField.addEventListener('input', function () { nameTouched = true; });
+    eventField.addEventListener('change', function () {
+      if (nameTouched) return;
+      var ev = srv.events.find(function (x) { return x.id === eventField.value; });
+      nameField.value = ev ? ev.name : defaultName;
+    });
+
+    var dlg = await dlgPromise;
     if (!dlg) return;
     try {
-      var res = await api('POST', '/api/rounds', { name: dlg.value });
+      var res = await api('POST', '/api/rounds', { name: dlg.value, eventId: dlg.select || null });
       toast(t('sr_saved', { name: res.round.name }));
       ui.lbRound = res.round.id;
       await pull(true);

@@ -92,6 +92,17 @@ main { max-width: 860px; margin: 0 auto; padding: 14px 12px 40px; }
 }
 .event-badge.confirmed { background: var(--green-light); color: var(--green-dark); }
 .event-badge.tentative { background: #fbf3d8; color: #8a6d13; }
+.event-badge.played { background: var(--green-dark); color: #fff; }
+
+/* Resultat-Zeile auf der Termin-Karte (verlinkte gespeicherte Runde) */
+.event-round {
+  display: block; width: 100%; text-align: left; cursor: pointer;
+  background: var(--green-light); color: var(--green-dark);
+  border: 1px solid var(--border); border-radius: 8px;
+  padding: 8px 10px; margin-top: 10px;
+  font-size: 0.85rem; font-weight: 700;
+}
+.event-round:active { background: var(--green); color: #fff; }
 .event-facts { list-style: none; }
 .event-facts li {
   display: flex; align-items: baseline; gap: 8px;
@@ -299,6 +310,11 @@ input:focus, select:focus { outline: 2px solid var(--green); border-color: var(-
 .dlg-buttons { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
 .dlg-buttons .btn { min-width: 44px; }
 .dlg-buttons .btn.plain { background: var(--green-pale); color: var(--muted); }
+.dlg-label {
+  display: block; font-size: 0.78rem; font-weight: 700; color: var(--muted);
+  margin-bottom: 4px;
+}
+select.dlg-input { width: 100%; margin-bottom: 12px; }
 
 /* ---------- Offline-Banner ---------- */
 #offline-banner {
