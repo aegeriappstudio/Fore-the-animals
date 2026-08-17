@@ -416,19 +416,15 @@
   /**
    * Wer spielt heute mit?
    *
-   * Genau die Spieler, die in einem Flight stehen. Ein Spieler mit bereits
+   * Die als anwesend markierten Spieler (`present`). Ein Spieler mit bereits
    * eingetragenem Score zählt ebenfalls dazu – sonst würde er aus der Wertung
-   * fallen, wenn sein Flight mitten in der Runde gelöscht oder neu ausgelost
-   * wird. Ein eigenes «anwesend»-Feld gibt es nicht mehr: Flight-Zuteilung und
-   * Anwesenheit waren zwei Schalter für dieselbe Sache.
+   * fallen, wenn er mitten in der Runde versehentlich abgemeldet wird.
+   * Die Flight-Zuteilung entsteht aus der Auslosung und kann danach von Hand
+   * angepasst werden; sie definiert die Anwesenheit nicht.
    */
-  function todaysPlayers(players, flights, scores) {
-    var assigned = new Set();
-    (flights || []).forEach(function (f) {
-      (f.playerIds || []).forEach(function (id) { assigned.add(id); });
-    });
+  function todaysPlayers(players, scores) {
     return (players || []).filter(function (p) {
-      return assigned.has(p.id) || hasScores((scores || {})[p.id]);
+      return p.present === true || hasScores((scores || {})[p.id]);
     });
   }
 

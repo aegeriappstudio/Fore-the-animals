@@ -289,7 +289,7 @@
   }
 
   function todaysPlayers() {
-    return M.todaysPlayers(srv.players, srv.flights, liveScores());
+    return M.todaysPlayers(srv.players, liveScores());
   }
 
   function playerById(id) {
@@ -302,12 +302,6 @@
       if (a.teeTime !== b.teeTime) return String(a.teeTime).localeCompare(String(b.teeTime));
       return String(a.name).localeCompare(String(b.name));
     });
-  }
-
-  // Kurzbezeichnung für die Zuteilungs-Chips: «Flight 2» → «2»
-  function flightLabel(flight) {
-    var match = /^\s*Flight\s*(\d+)\s*$/i.exec(flight.name || '');
-    return match ? match[1] : String(flight.name || '?').slice(0, 8);
   }
 
   function progressText(flight) {
@@ -530,21 +524,30 @@
   function renderDates() {
     var wrap = $('#event-list');
     var today = new Date().toISOString().slice(0, 10);
-    // Kommende Termine zuerst (chronologisch), vergangene danach
-    var events = srv.events.slice().sort(function (a, b) {
-      var pastA = String(a.date) < today;
-      var pastB = String(b.date) < today;
-      if (pastA !== pastB) return pastA ? 1 : -1;
-      return pastA ? String(b.date).localeCompare(String(a.date)) : String(a.date).localeCompare(String(b.date));
-    });
-    if (!events.length) {
+    if (!srv.events.length) {
       wrap.innerHTML = '<div class="card"><p class="empty-note">' + t('ev_none') + '</p></div>';
       return;
     }
-    wrap.innerHTML = events.map(function (ev) {
+    // Durchgeführt = Datum vorbei ODER schon eine Runde dazu gespeichert –
+    // diese Termine wandern zuunterst in einen zugeklappten Archiv-Block.
+    function isDone(ev) {
+      return String(ev.date) < today || srv.rounds.some(function (r) { return r.eventId === ev.id; });
+    }
+    var upcoming = srv.events.filter(function (ev) { return !isDone(ev); })
+      .sort(function (a, b) { return String(a.date).localeCompare(String(b.date)); });
+    var done = srv.events.filter(isDone)
+      .sort(function (a, b) { return String(b.date).localeCompare(String(a.date)); });
+
+    wrap.innerHTML = upcoming.map(eventCard).join('') +
+      (done.length
+        ? '<details class="event-archive"><summary>' + t('ev_past_title', { n: done.length }) + '</summary>' +
+          done.map(eventCard).join('') + '</details>'
+        : '');
+
+    function eventCard(ev) {
       // T12:00 verhindert, dass die Zeitzone das Datum um einen Tag verschiebt
       var dateStr = ev.date ? formatDate(ev.date + 'T12:00', true) : '';
-      var past = String(ev.date) < today;
+      var past = isDone(ev);
       var facts = [];
       if (dateStr) facts.push('<li><span class="ef-icon">📅</span><span class="ef-label">' + t('d_lbl_date') + '</span><span class="ef-val">' + esc(dateStr) + '</span></li>');
       if (ev.flights) facts.push('<li><span class="ef-icon">⛳</span><span class="ef-label">' + t('d_lbl_flights') + '</span><span class="ef-val">' + esc(ev.flights) + '</span></li>');
@@ -571,7 +574,7 @@
         '<button type="button" class="btn small" data-edit-event="' + ev.id + '">✏️</button>' +
         '<button type="button" class="btn small" data-del-event="' + ev.id + '">🗑️</button>' +
         '</div></div>';
-    }).join('');
+    }
   }
 
   // --- Turnier: Spieler + Flights -----------------------------------------
@@ -596,23 +599,17 @@
       ? t('tn_summary', { n: today.length, m: srv.players.length, f: srv.flights.length })
       : t('tn_nobody');
 
-    var flights = flightsSorted();
     list.innerHTML = srv.players.map(function (p) {
-      var mine = M.flightOf(srv.flights, p.id);
-      var chips = '<button type="button" class="fchip ' + (mine ? '' : 'on') + '" data-assign="' + p.id + '" data-flight="" title="' + t('tn_out') + '">–</button>' +
-        flights.map(function (f) {
-          return '<button type="button" class="fchip ' + (mine && mine.id === f.id ? 'on' : '') + '" data-assign="' + p.id + '" data-flight="' + f.id + '" title="' + esc(f.name) + '">' + esc(flightLabel(f)) + '</button>';
-        }).join('') +
-        '<button type="button" class="fchip new" data-assign="' + p.id + '" data-flight="new" title="' + t('f_add') + '">＋</button>';
-
-      return '<div class="player-row ' + (mine ? 'playing' : 'out') + '">' +
+      var here = p.present === true;
+      return '<div class="player-row ' + (here ? 'playing' : 'out') + '">' +
+        '<button type="button" class="presence-chip ' + (here ? 'on' : '') + '" data-presence="' + p.id + '">' +
+        (here ? '✅ ' + t('tn_here') : '💤 ' + t('tn_away')) + '</button>' +
         '<span class="p-name">' + esc(p.name) + '</span>' +
         '<label class="p-hcp">' + t('ph_hcp') +
         '<input type="number" class="p-hcp-input" data-hcp-player="' + p.id + '" value="' + esc(p.hcp) + '" step="0.1" min="' + M.MIN_HCP + '" max="' + M.MAX_HCP + '" inputmode="decimal" aria-label="' + t('ph_hcp') + ' ' + esc(p.name) + '"></label>' +
         '<span class="badge" data-target-for="' + p.id + '">' + t('p_target') + ' ' + M.targetFor(p.hcp) + '</span>' +
         '<button type="button" class="btn small" data-edit-player="' + p.id + '" title="' + t('p_rename') + '">✏️</button>' +
         '<button type="button" class="btn small" data-del-player="' + p.id + '">🗑️</button>' +
-        '<div class="p-flights">' + chips + '</div>' +
         '</div>';
     }).join('');
   }
@@ -625,11 +622,17 @@
     }
     // Nicht neu aufbauen, während der Datums-Picker offen ist
     if (list.contains(document.activeElement) && document.activeElement.classList.contains('tee-input')) return;
+    // Anwesende ohne Flight können per Tipp in jeden Flight geholt werden
+    var unassigned = srv.players.filter(function (p) {
+      return p.present === true && !M.flightOf(srv.flights, p.id);
+    });
     list.innerHTML = flightsSorted().map(function (f) {
       var members = f.playerIds.map(function (pid) {
         var p = playerById(pid);
         if (!p) return '';
         return '<span class="member-chip in" data-remove-player="' + pid + '">' + esc(p.name) + ' ✕</span>';
+      }).join('') + unassigned.map(function (p) {
+        return '<span class="member-chip" data-add-player="' + p.id + '" data-flight="' + f.id + '">+ ' + esc(p.name) + '</span>';
       }).join('');
       return '<div class="flight-card">' +
         '<div class="flight-head">' +
@@ -1103,23 +1106,18 @@
   });
 
   $('#player-list').addEventListener('click', async function (e) {
-    var assignBtn = e.target.closest('[data-assign]');
+    var presBtn = e.target.closest('[data-presence]');
     var editBtn = e.target.closest('[data-edit-player]');
     var delBtn = e.target.closest('[data-del-player]');
 
-    if (assignBtn) {
-      var p = playerById(assignBtn.dataset.assign);
+    if (presBtn) {
+      var p = playerById(presBtn.dataset.presence);
       if (!p) return;
-      var target = assignBtn.dataset.flight;
+      var present = p.present !== true;
       try {
-        if (target === 'new') {
-          var created = await api('POST', '/api/flights', { name: '' });
-          target = created.flight.id;
-        }
-        await api('PUT', '/api/players/' + p.id, { flightId: target || null });
-        await pull(true);
-        var flight = M.flightOf(srv.flights, p.id);
-        toast(flight ? t('tn_assigned', { name: p.name, flight: flight.name }) : t('tn_removed', { name: p.name }));
+        await api('PUT', '/api/players/' + p.id, { present: present });
+        toast(t(present ? 'tn_now_here' : 'tn_now_away', { name: p.name }));
+        pull(true);
       } catch (err) { apiError(err); }
       return;
     }
@@ -1201,9 +1199,17 @@
 
   $('#flight-list').addEventListener('click', async function (e) {
     var removeChip = e.target.closest('[data-remove-player]');
+    var addChip = e.target.closest('[data-add-player]');
     var renameBtn = e.target.closest('[data-rename-flight]');
     var delBtn = e.target.closest('[data-del-flight]');
 
+    if (addChip) {
+      try {
+        await api('PUT', '/api/players/' + addChip.dataset.addPlayer, { flightId: addChip.dataset.flight });
+        pull(true);
+      } catch (err) { apiError(err); }
+      return;
+    }
     if (removeChip) {
       var pid = removeChip.dataset.removePlayer;
       try {
@@ -1236,14 +1242,13 @@
 
   $('#randomize-btn').addEventListener('click', async function () {
     if (!srv.players.length) return toast(t('fr_first'), true);
-    var assigned = todaysPlayers();
-    var pool = assigned.length ? assigned : srv.players;
-    if (pool.length < 2) return toast(t('fr_first'), true);
+    var pool = srv.players.filter(function (p) { return p.present === true; });
+    if (pool.length < 2) return toast(t('fr_need_present'), true);
     // Ein Dialog: Text erklärt, was passiert, die Knöpfe 2/3/4 wählen die
     // Flight-Grösse und bestätigen zugleich.
     var res = await showDialog({
       title: t('fr_title'),
-      text: t(assigned.length ? 'fr_text_assigned' : 'fr_text_all', { n: pool.length }),
+      text: t(srv.flights.length ? 'fr_text_redraw' : 'fr_text_present', { n: pool.length }),
       buttons: [
         { label: t('dlg_cancel'), value: null, kind: 'plain' },
         { label: '2', value: 2 },

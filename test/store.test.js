@@ -46,12 +46,24 @@ const legacy = {
 
 test('Migration: alte Datei wird vollständig übernommen', () => {
   const state = migrate(legacy);
-  assert.equal(state.schema, 3);
+  assert.equal(state.schema, 4);
   assert.equal(state.rev, 42);            // aus `version`
   assert.equal(state.players.length, 2);
-  // `present` wird bei der Migration verworfen – Anwesenheit ergibt sich
-  // seither aus der Flight-Zuteilung
-  assert.equal(state.players[0].present, undefined);
+});
+
+test('Migration: fehlendes present wird aus Flights/Scores hergeleitet', () => {
+  const state = migrate({
+    players: [
+      { id: 'p1', name: 'Im Flight', hcp: 10 },
+      { id: 'p2', name: 'Mit Scores', hcp: 10 },
+      { id: 'p3', name: 'Weder noch', hcp: 10 },
+      { id: 'p4', name: 'Explizit weg', hcp: 10, present: false },
+    ],
+    flights: [{ id: 'f1', name: 'Flight 1', playerIds: ['p1'] }],
+    scores: { p2: { 1: { gross: 4, animals: {} } } },
+  });
+  const byId = Object.fromEntries(state.players.map((p) => [p.id, p.present]));
+  assert.deepEqual(byId, { p1: true, p2: true, p3: false, p4: false });
 });
 
 test('Migration: verwaiste Scores und Flight-Zuteilungen verschwinden', () => {

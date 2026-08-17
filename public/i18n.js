@@ -23,6 +23,7 @@ window.I18N = (function () {
     d_badge_played: { de: '🏁 Gespielt', en: '🏁 Played' },
     ev_round_played: { de: 'Sieger: {winners} · Rangliste ansehen', en: 'Winner: {winners} · view leaderboard' },
     ev_none: { de: 'Noch keine Termine erfasst.', en: 'No dates yet.' },
+    ev_past_title: { de: '🗂️ Vergangene Termine ({n})', en: '🗂️ Past dates ({n})' },
     ev_admin_title: { de: '✏️ Termin erfassen / bearbeiten', en: '✏️ Add / edit date' },
     ev_ph_name: { de: 'Name (z.B. Fore the Animals #3)', en: 'Name (e.g. Fore the Animals #3)' },
     ev_ph_flights: { de: 'Flights (z.B. 18:30 & 18:40 Uhr)', en: 'Tee times (e.g. 18:30 & 18:40)' },
@@ -113,14 +114,15 @@ window.I18N = (function () {
     // ---------------- Turnier: Spieler & Flights ----------------
     tn_title: { de: 'Wer spielt heute?', en: 'Who is playing today?' },
     tn_hint: {
-      de: 'Tippe bei einem Spieler auf einen Flight – damit ist er für heute dabei. «–» heisst: spielt heute nicht mit. Mit ＋ entsteht ein neuer Flight.',
-      en: 'Tap a flight next to a player – that puts them in for today. “–” means not playing today. ＋ creates a new flight.',
+      de: 'Markiere mit ✅/💤, wer heute dabei ist, und lose danach die Flights aus. Einzelne Spieler lassen sich nachträglich per Tipp in den Flight-Karten verschieben.',
+      en: 'Use ✅/💤 to mark who is in today, then draw the flights. Individual players can be moved afterwards by tapping in the flight cards.',
     },
     tn_summary: { de: '⛳ {n} von {m} Spielern dabei · {f} Flights', en: '⛳ {n} of {m} players in · {f} flights' },
-    tn_nobody: { de: 'Noch niemand zugeteilt – tippe bei einem Spieler auf ＋.', en: 'Nobody assigned yet – tap ＋ next to a player.' },
-    tn_out: { de: 'spielt heute nicht mit', en: 'not playing today' },
-    tn_assigned: { de: '{name} → {flight}', en: '{name} → {flight}' },
-    tn_removed: { de: '{name} spielt heute nicht mit', en: '{name} is not playing today' },
+    tn_nobody: { de: 'Noch niemand dabei – markiere die Spieler, die heute spielen.', en: 'Nobody marked as in yet – mark the players playing today.' },
+    tn_here: { de: 'dabei', en: 'in' },
+    tn_away: { de: 'nicht dabei', en: 'out' },
+    tn_now_here: { de: '{name} ist dabei ✅', en: '{name} is in ✅' },
+    tn_now_away: { de: '{name} ist heute nicht dabei 💤', en: '{name} is out today 💤' },
     ph_name: { de: 'Name', en: 'Name' },
     ph_hcp: { de: 'HCP', en: 'HCP' },
     p_add: { de: 'Hinzufügen', en: 'Add' },
@@ -161,14 +163,15 @@ window.I18N = (function () {
     },
     p_randomize: { de: '🎲 Flights zufällig auslosen', en: '🎲 Draw random flights' },
     fr_first: { de: 'Zuerst Spieler erfassen', en: 'Add players first' },
+    fr_need_present: { de: 'Mindestens 2 anwesende Spieler nötig', en: 'At least 2 players marked as in required' },
     fr_title: { de: '🎲 Flights auslosen', en: '🎲 Draw flights' },
-    fr_text_assigned: {
-      de: 'Die {n} heute zugeteilten Spieler werden zufällig neu auf Flights verteilt.\nWie viele Spieler pro Flight?',
-      en: 'The {n} players assigned today will be randomly redistributed into flights.\nHow many players per flight?',
+    fr_text_present: {
+      de: 'Die {n} anwesenden Spieler werden zufällig auf Flights verteilt.\nWie viele Spieler pro Flight?',
+      en: 'The {n} players marked as in will be randomly distributed into flights.\nHow many players per flight?',
     },
-    fr_text_all: {
-      de: 'Noch niemand ist zugeteilt – alle {n} Spieler werden zufällig auf Flights verteilt.\nWie viele Spieler pro Flight?',
-      en: 'Nobody is assigned yet – all {n} players will be randomly distributed into flights.\nHow many players per flight?',
+    fr_text_redraw: {
+      de: 'Die bestehenden Flights werden ersetzt: die {n} anwesenden Spieler werden neu ausgelost.\nWie viele Spieler pro Flight?',
+      en: 'The existing flights will be replaced: the {n} players marked as in are redrawn.\nHow many players per flight?',
     },
     fr_done: { de: 'Flights zufällig ausgelost 🎲', en: 'Random flights drawn 🎲' },
 
